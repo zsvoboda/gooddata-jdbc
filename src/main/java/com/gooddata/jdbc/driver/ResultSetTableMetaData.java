@@ -2,171 +2,152 @@ package com.gooddata.jdbc.driver;
 
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
+import java.util.List;
 
 public class ResultSetTableMetaData implements ResultSetMetaData {
 
-	private final String [] columns;
-	private final boolean [] isNumeric;
+	private final List<Statement.CatalogEntry> columns;
 	
-	public ResultSetTableMetaData(final String [] header, final boolean[] isNumeric) {
-		this.columns = header;
-		this.isNumeric=isNumeric;
+	public ResultSetTableMetaData(List<Statement.CatalogEntry> columns) {
+		this.columns = columns;
 	}
 	
+
 	@Override
-	public <T> T unwrap(Class<T> iface) throws SQLException {
-		// TODO Auto-generated method stub
-		return null;
+	public int getColumnCount() {
+		return columns.size();
 	}
 
 	@Override
-	public boolean isWrapperFor(Class<?> iface) throws SQLException {
-		// TODO Auto-generated method stub
+	public boolean isAutoIncrement(int column) {
 		return false;
 	}
 
 	@Override
-	public int getColumnCount() throws SQLException {
-		
-		return columns.length;
-	}
-
-	@Override
-	public boolean isAutoIncrement(int column) throws SQLException {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-	@Override
-	public boolean isCaseSensitive(int column) throws SQLException {
-		// TODO Auto-generated method stub
+	public boolean isCaseSensitive(int column) {
 		return true;
 	}
 
 	@Override
-	public boolean isSearchable(int column) throws SQLException {
-		// TODO Auto-generated method stub
-		return true;
-	}
-
-	@Override
-	public boolean isCurrency(int column) throws SQLException {
-		// TODO Auto-generated method stub
+	public boolean isSearchable(int column) {
 		return false;
 	}
 
 	@Override
-	public int isNullable(int column) throws SQLException {
-		// TODO Auto-generated method stub
+	public boolean isCurrency(int column) {
+		return false;
+	}
+
+	@Override
+	public int isNullable(int column)  {
 		return columnNullableUnknown;
 	}
 
 	@Override
-	public boolean isSigned(int column) throws SQLException {
-		// TODO Auto-generated method stub
+	public boolean isSigned(int column) {
 		return false;
 	}
 
 	@Override
 	public int getColumnDisplaySize(int column) throws SQLException {
-		
-		return (columns[column-1].length()>20)? columns[column-1].length() : 20;
+		throw new SQLFeatureNotSupportedException("Not yet implemented.");
 	}
 
 	@Override
-	public String getColumnLabel(int column) throws SQLException {
-		return columns[column-1];
+	public String getColumnLabel(int column) {
+		return columns.get(column-1).getTitle();
 	}
 
 	@Override
-	public String getColumnName(int column) throws SQLException {
-		return columns[column-1];
+	public String getColumnName(int column) {
+		return columns.get(column-1).getTitle();
 	}
 
 	@Override
-	public String getSchemaName(int column) throws SQLException {
-		// TODO Auto-generated method stub
-		return null;
+	public String getSchemaName(int column)  {
+		return "GD";
 	}
 
 	@Override
-	public int getPrecision(int column) throws SQLException {
-		// TODO Auto-generated method stub
-		return 0;
+	public int getPrecision(int column) {
+		Statement.CatalogEntry c = columns.get(column-1);
+		if(c.getType().equalsIgnoreCase("metric"))
+			return 5;
+		else
+			return 0;
 	}
 
 	@Override
-	public int getScale(int column) throws SQLException {
-		// TODO Auto-generated method stub
-		return 0;
+	public int getScale(int column) {
+		Statement.CatalogEntry c = columns.get(column-1);
+		if(c.getType().equalsIgnoreCase("metric"))
+			return 15;
+		else
+			return 255;
 	}
 
 	@Override
-	public String getTableName(int column) throws SQLException {
-		// TODO Auto-generated method stub
-		return null;
+	public String getTableName(int column)  {
+		return "DATA";
 	}
 
 	@Override
 	public String getCatalogName(int column) throws SQLException {
-		// TODO Auto-generated method stub
-		return null;
+		throw new SQLFeatureNotSupportedException("Not yet implemented.");
 	}
 
 	@Override
-	public int getColumnType(int column) throws SQLException {
-		if (isNumeric[column-1])
-		{
+	public int getColumnType(int column) {
+		Statement.CatalogEntry c = columns.get(column-1);
+		if(c.getType().equalsIgnoreCase("metric"))
 			return java.sql.Types.NUMERIC;
-		}
 		else
-		{
-		    return java.sql.Types.VARCHAR;
-		}
+			return java.sql.Types.VARCHAR;
 	}
 
 	@Override
-	public String getColumnTypeName(int column) throws SQLException {
-		// TODO Auto-generated method stub
-		if (isNumeric[column-1])
-		{
+	public String getColumnTypeName(int column) {
+		Statement.CatalogEntry c = columns.get(column-1);
+		if(c.getType().equalsIgnoreCase("metric"))
 			return "NUMERIC";
-		}
 		else
-		{
-		    return "VARCHAR";
-		}
+			return "VARCHAR";
 	}
 
 	@Override
-	public boolean isReadOnly(int column) throws SQLException {
-		// TODO Auto-generated method stub
+	public boolean isReadOnly(int column) {
 		return true;
 	}
 
 	@Override
-	public boolean isWritable(int column) throws SQLException {
-		// TODO Auto-generated method stub
+	public boolean isWritable(int column) {
 		return false;
 	}
 
 	@Override
-	public boolean isDefinitelyWritable(int column) throws SQLException {
-		// TODO Auto-generated method stub
+	public boolean isDefinitelyWritable(int column) {
 		return false;
 	}
 
 	@Override
-	public String getColumnClassName(int column) throws SQLException {
-		if (isNumeric[column-1])
-		{
+	public String getColumnClassName(int column) {
+		Statement.CatalogEntry c = columns.get(column-1);
+		if(c.getType().equalsIgnoreCase("metric"))
 			return "java.lang.Number";
-		}
 		else
-		{
-		    return "java.lang.String";
-		}
-		
+			return "java.lang.String";
 	}
+
+	@Override
+	public <T> T unwrap(Class<T> iface) throws SQLFeatureNotSupportedException{
+		throw new SQLFeatureNotSupportedException("Not yet implemented.");
+	}
+
+	@Override
+	public boolean isWrapperFor(Class<?> iface)  throws SQLFeatureNotSupportedException {
+		throw new SQLFeatureNotSupportedException("Not yet implemented.");
+	}
+
 
 }

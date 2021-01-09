@@ -41,7 +41,7 @@ public class ResultSetTable implements ResultSet {
 	}
 	@Override
 	public java.sql.ResultSetMetaData getMetaData() throws SQLException {
-		return null;
+		return new ResultSetTableMetaData(this.columns);
 	}
 
 	/**

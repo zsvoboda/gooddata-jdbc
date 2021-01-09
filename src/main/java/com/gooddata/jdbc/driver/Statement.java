@@ -26,7 +26,8 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 public class Statement implements java.sql.Statement {
-	private final static Logger logger = Logger.getGlobal();//Logger.getLogger(Statement.class.getName());
+
+	private final static Logger logger = Logger.getGlobal();
 
 	private final Project workspace;
 	private final ExecuteAfmService gdAfm;
@@ -378,27 +379,27 @@ public class Statement implements java.sql.Statement {
 
 	@Override
 	public int getFetchDirection() throws SQLException {
-		throw new SQLFeatureNotSupportedException("Not supported yet.");
+		return this.resultSet.getFetchDirection();
 	}
 
 	@Override
 	public void setFetchSize(int rows) throws SQLException {
-		throw new SQLFeatureNotSupportedException("Not supported yet.");
+		this.resultSet.setFetchSize(rows);
 	}
 
 	@Override
 	public int getFetchSize() throws SQLException {
-		throw new SQLFeatureNotSupportedException("Not supported yet.");
+		return this.resultSet.getFetchSize();
 	}
 
 	@Override
 	public int getResultSetConcurrency() throws SQLException {
-		throw new SQLFeatureNotSupportedException("Not supported yet.");
+		return this.resultSet.getConcurrency();
 	}
 
 	@Override
-	public int getResultSetType() {
-		return ResultSet.TYPE_SCROLL_INSENSITIVE;
+	public int getResultSetType() throws SQLException {
+		return this.resultSet.getType();
 	}
 
 	@Override
