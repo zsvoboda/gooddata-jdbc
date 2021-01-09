@@ -19,7 +19,7 @@ public class Driver implements java.sql.Driver {
 
 	 static {
 	        try {
-	        	logger.info("MAQL JDBC Driver started");
+	        	logger.info("GooodData JDBC Driver started");
 	            DriverManager.registerDriver(new Driver());
 	        } catch (SQLException e) {
 	            throw new RuntimeException(e);
