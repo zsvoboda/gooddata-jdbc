@@ -4,7 +4,6 @@ import com.gooddata.sdk.model.project.Project;
 import com.gooddata.sdk.service.GoodData;
 import java.io.IOException;
 import java.sql.*;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Executor;
@@ -18,10 +17,12 @@ public class Connection implements java.sql.Connection {
 
     private final GoodData gd;
 
+    private String login;
     private final Project workspace;
 
+    private boolean isClosed = false;
     private boolean autoCommit = false;
-    private final HashMap<String,String> clientInfo = new HashMap<>();
+    private  Properties clientInfo = new Properties();
 
     /**
      * Constructor
@@ -35,7 +36,7 @@ public class Connection implements java.sql.Connection {
 
         logger.info("jdbc4gd: connection constructor url:" + url);
 
-        String login = properties.getProperty("user");
+        this.login = properties.getProperty("user");
         String password = properties.getProperty("password");
 
         logger.info("jdbc4gd: user:" + login);
@@ -59,6 +60,10 @@ public class Connection implements java.sql.Connection {
         this.workspace = gd.getProjectService().getProjectById(pid);
 
         logger.info("gd init end");
+    }
+
+    public String getLogin() {
+        return this.login;
     }
 
     public Project getWorkspace() {
@@ -130,276 +135,226 @@ public class Connection implements java.sql.Connection {
     public void close() {
         logger.info("jdbc4gd: connection method");
         this.gd.logout();
+        this.isClosed = true;
     }
 
     @Override
     public boolean isClosed() throws SQLException {
-        logger.info("jdbc4gd: connection method");
-        throw new SQLFeatureNotSupportedException("Not supported yet.");
+        return this.isClosed;
     }
 
     @Override
     public java.sql.DatabaseMetaData getMetaData() {
-        // TODO Auto-generated method stub
-        logger.info("jdbc4gd: connection method");
-        return null;//new DatabaseMetaData(gd);
+        return new DatabaseMetaData(this);
     }
 
     @Override
     public boolean isReadOnly() {
-        logger.info("jdbc4gd: connection method");
         return true;
     }
 
     @Override
     public void setReadOnly(boolean readOnly) throws SQLException {
-        logger.info("jdbc4gd: connection method");
         throw new SQLFeatureNotSupportedException("Not supported yet.");
     }
 
     @Override
     public String getCatalog() throws SQLException {
-        logger.info("jdbc4gd: connection getCatalog");
         throw new SQLFeatureNotSupportedException("Not supported yet.");
     }
 
     @Override
     public void setCatalog(String catalog) throws SQLException {
-        logger.info("jdbc4gd: connection method");
         throw new SQLFeatureNotSupportedException("Not supported yet.");
     }
 
     @Override
     public int getTransactionIsolation() throws SQLException {
-        logger.info("jdbc4gd: connection method");
         throw new SQLFeatureNotSupportedException("Not supported yet.");
     }
 
     @Override
     public void setTransactionIsolation(int level) throws SQLException {
-        logger.info("jdbc4gd: connection method");
         throw new SQLFeatureNotSupportedException("Not supported yet.");
     }
 
     @Override
     public SQLWarning getWarnings() throws SQLException {
-        logger.info("jdbc4gd: connection method");
         throw new SQLFeatureNotSupportedException("Not supported yet.");
     }
 
     @Override
     public void clearWarnings() throws SQLException {
-        logger.info("jdbc4gd: connection method");
         throw new SQLFeatureNotSupportedException("Not supported yet.");
     }
 
     @Override
-    public com.gooddata.jdbc.driver.Statement createStatement(int resultSetType, int resultSetConcurrency) throws SQLException {
-        logger.info("jdbc4gd: connection createstatement2");
-        throw new SQLFeatureNotSupportedException("Not supported yet.");
+    public java.sql.Statement createStatement(int resultSetType, int resultSetConcurrency) throws SQLException {
+        return this.createStatement();
     }
 
     @Override
     public PreparedStatement prepareStatement(String sql, int resultSetType, int resultSetConcurrency)
             throws SQLException {
-        logger.info("jdbc4gd: connection method");
-        throw new SQLFeatureNotSupportedException("Not supported yet.");
+        return this.prepareStatement(sql);
     }
 
     @Override
     public CallableStatement prepareCall(String sql, int resultSetType, int resultSetConcurrency) throws SQLException {
-        logger.info("jdbc4gd: connection method");
-        throw new SQLFeatureNotSupportedException("Not supported yet.");
+        return this.prepareCall(sql);
     }
 
     @Override
     public Map<String, Class<?>> getTypeMap() throws SQLException {
-        // TODO Auto-generated method stub
-        logger.info("jdbc4gd: connection getTypeMap");
         throw new SQLFeatureNotSupportedException("Not supported yet.");
     }
 
     @Override
     public void setTypeMap(Map<String, Class<?>> map) throws SQLException {
-        logger.info("jdbc4gd: connection method");
         throw new SQLFeatureNotSupportedException("Not supported yet.");
     }
 
     @Override
     public int getHoldability() throws SQLException {
-        logger.info("jdbc4gd: connection method");
-        throw new SQLFeatureNotSupportedException("Not supported yet.");
+        return ResultSet.HOLD_CURSORS_OVER_COMMIT;
     }
 
     @Override
     public void setHoldability(int holdability) throws SQLException {
-        logger.info("jdbc4gd: connection method");
         throw new SQLFeatureNotSupportedException("Not supported yet.");
     }
 
     @Override
     public Savepoint setSavepoint() throws SQLException {
-        logger.info("jdbc4gd: connection method");
         throw new SQLFeatureNotSupportedException("Not supported yet.");
     }
 
     @Override
     public Savepoint setSavepoint(String name) throws SQLException {
-        logger.info("jdbc4gd: connection method");
         throw new SQLFeatureNotSupportedException("Not supported yet.");
     }
 
     @Override
     public void rollback(Savepoint savepoint) throws SQLException {
-        logger.info("jdbc4gd: connection method");
         throw new SQLFeatureNotSupportedException("Not supported yet.");
     }
 
     @Override
     public void releaseSavepoint(Savepoint savepoint) throws SQLException {
-        logger.info("jdbc4gd: connection method");
         throw new SQLFeatureNotSupportedException("Not supported yet.");
     }
 
     @Override
-    public com.gooddata.jdbc.driver.Statement createStatement(int resultSetType, int resultSetConcurrency, int resultSetHoldability)
+    public java.sql.Statement createStatement(int resultSetType, int resultSetConcurrency, int resultSetHoldability)
             throws SQLException {
-        logger.info("jdbc4gd: connection method");
-        throw new SQLFeatureNotSupportedException("Not supported yet.");
+        return this.createStatement();
     }
 
     @Override
     public PreparedStatement prepareStatement(String sql, int resultSetType, int resultSetConcurrency,
                                               int resultSetHoldability) throws SQLException {
-        logger.info("jdbc4gd: connection method");
-        throw new SQLFeatureNotSupportedException("Not supported yet.");
+        return this.prepareStatement(sql);
     }
 
     @Override
     public CallableStatement prepareCall(String sql, int resultSetType, int resultSetConcurrency,
                                          int resultSetHoldability) throws SQLException {
-        logger.info("jdbc4gd: connection method");
-        throw new SQLFeatureNotSupportedException("Not supported yet.");
+        return this.prepareCall(sql);
     }
 
     @Override
     public PreparedStatement prepareStatement(String sql, int autoGeneratedKeys) throws SQLException {
-        logger.info("jdbc4gd: connection method");
-        throw new SQLFeatureNotSupportedException("Not supported yet.");
+        return this.prepareStatement(sql);
     }
 
     @Override
     public PreparedStatement prepareStatement(String sql, int[] columnIndexes) throws SQLException {
-        logger.info("jdbc4gd: connection method");
-        throw new SQLFeatureNotSupportedException("Not supported yet.");
+        return this.prepareStatement(sql);
     }
 
     @Override
     public PreparedStatement prepareStatement(String sql, String[] columnNames) throws SQLException {
-        logger.info("jdbc4gd: connection method");
-        throw new SQLFeatureNotSupportedException("Not supported yet.");
+        return this.prepareStatement(sql);
     }
 
     @Override
     public Clob createClob() throws SQLException {
-        logger.info("jdbc4gd: connection method");
-        throw new SQLFeatureNotSupportedException();
+        throw new SQLFeatureNotSupportedException("Not supported yet.");
     }
 
     @Override
     public Blob createBlob() throws SQLException {
-        logger.info("jdbc4gd: connection method");
         throw new SQLFeatureNotSupportedException("Not supported yet.");
     }
 
     @Override
     public NClob createNClob() throws SQLException {
-        logger.info("jdbc4gd: connection method");
         throw new SQLFeatureNotSupportedException("Not supported yet.");
     }
 
     @Override
     public SQLXML createSQLXML() throws SQLException {
-        logger.info("jdbc4gd: connection method");
         throw new SQLFeatureNotSupportedException("Not supported yet.");
     }
 
     @Override
     public boolean isValid(int timeout) throws SQLException {
-        // TODO Auto-generated method stub
-        logger.info("jdbc4gd: connection isValid");
         throw new SQLFeatureNotSupportedException("Not supported yet.");
     }
 
     @Override
     public void setClientInfo(String name, String value) {
-        logger.info("jdbc4gd: connection method");
         this.clientInfo.put(name, value);
     }
 
     @Override
     public String getClientInfo(String name) {
-        // TODO Auto-generated method stub
-        logger.info("jdbc4gd: connection getClientInfo");
-        return this.clientInfo.get(name);
+        return (String)this.clientInfo.get(name);
     }
 
     @Override
     public Properties getClientInfo() {
-        // TODO Auto-generated method stub
-        logger.info("jdbc4gd: connection getClientInfo");
-        return null;
+        return this.clientInfo;
     }
 
     @Override
     public void setClientInfo(Properties properties){
-        // TODO Auto-generated method stub
-        logger.info("jdbc4gd: connection method");
-
+        this.clientInfo = properties;
     }
 
     @Override
     public Array createArrayOf(String typeName, Object[] elements) throws SQLException {
-        logger.info("jdbc4gd: connection method");
-        throw new SQLFeatureNotSupportedException();
+        throw new SQLFeatureNotSupportedException("Not supported yet.");
     }
 
     @Override
     public Struct createStruct(String typeName, Object[] attributes) throws SQLException {
-        logger.info("jdbc4gd: connection method");
-        throw new SQLFeatureNotSupportedException();
+        throw new SQLFeatureNotSupportedException("Not supported yet.");
     }
 
     @Override
-    public String getSchema() {
-        logger.info("jdbc4gd: connection getSchema");
-        return null;
+    public String getSchema() throws SQLException {
+        throw new SQLFeatureNotSupportedException("Not supported yet.");
     }
 
     @Override
-    public void setSchema(String schema) {
-        logger.info("jdbc4gd: connection method");
+    public void setSchema(String schema) throws SQLException {
+        throw new SQLFeatureNotSupportedException("Not supported yet.");
     }
 
     @Override
     public void abort(Executor executor) {
-        logger.info("jdbc4gd: connection method");
-        close();
-
+        this.close();
     }
 
     @Override
-    public void setNetworkTimeout(Executor executor, int milliseconds) {
-        // TODO Auto-generated method stub
-        logger.info("jdbc4gd: connection method");
-
+    public void setNetworkTimeout(Executor executor, int milliseconds) throws SQLException {
+        throw new SQLFeatureNotSupportedException("Not supported yet.");
     }
 
     @Override
-    public int getNetworkTimeout() {
-        // TODO Auto-generated method stub
-        logger.info("jdbc4gd: connection method");
-        return 0;
+    public int getNetworkTimeout() throws SQLException {
+        throw new SQLFeatureNotSupportedException("Not supported yet.");
     }
 
 }

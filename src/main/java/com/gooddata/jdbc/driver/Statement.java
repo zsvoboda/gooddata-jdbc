@@ -448,8 +448,8 @@ public class Statement implements java.sql.Statement {
 	}
 
 	@Override
-	public int getResultSetHoldability() {
-		return ResultSet.HOLD_CURSORS_OVER_COMMIT;
+	public int getResultSetHoldability() throws SQLException {
+		return this.resultSet.getHoldability();
 	}
 
 	@Override

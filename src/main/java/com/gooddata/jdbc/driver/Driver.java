@@ -13,8 +13,8 @@ public class Driver implements java.sql.Driver {
 
 	private final static Logger logger = Logger.getGlobal();
 
-	private final static int MAJOR_VERSION = 0;
-	private final static int MINOR_VERSION = 5;
+	public final static int MAJOR_VERSION = 0;
+	public final static int MINOR_VERSION = 5;
 	public final static String VERSION = String.format("%x.%x", MAJOR_VERSION, MINOR_VERSION);
 
 	 static {
