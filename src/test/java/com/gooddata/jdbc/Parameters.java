@@ -1,5 +1,6 @@
 package com.gooddata.jdbc;
 
+import com.gooddata.jdbc.driver.Driver;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 
@@ -7,9 +8,12 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
 import java.text.ParseException;
+import java.util.logging.Logger;
 
 
 public class Parameters {
+
+    private final static Logger LOGGER = Logger.getLogger(Parameters.class.getName());
 
     public String getHost() {
         return host;

@@ -1,5 +1,8 @@
 package com.gooddata.jdbc.util;
 
+import com.gooddata.jdbc.driver.Driver;
+import com.sun.istack.NotNull;
+
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.sql.SQLException;
@@ -7,8 +10,11 @@ import java.text.NumberFormat;
 import java.text.ParseException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.logging.Logger;
 
 public class DataTypeParser {
+
+    private final static Logger LOGGER = Logger.getLogger(DataTypeParser.class.getName());
 
     private static boolean containsIgnoreCase(List<String> l, String s) {
         return l.stream().anyMatch(s::equalsIgnoreCase);
@@ -22,7 +28,8 @@ public class DataTypeParser {
      * @return boolean value
      * @throws SQLException in case when the value cannot be converted
      */
-    public static boolean parseBoolean(String textValue) throws SQLException {
+    public static boolean parseBoolean(@NotNull String textValue) throws SQLException {
+        if(textValue == null) return false;
         if(containsIgnoreCase(FALSE_VALUES, textValue)) {
             return false;
         }
@@ -38,7 +45,8 @@ public class DataTypeParser {
      * @return short value
      * @throws SQLException in case when the value cannot be converted
      */
-    public static short parseShort(String textValue) throws SQLException {
+    public static short parseShort(@NotNull String textValue) throws SQLException {
+        if(textValue == null) return 0;
         try {
             return Short.parseShort(textValue);
         }
@@ -53,7 +61,8 @@ public class DataTypeParser {
      * @return int value
      * @throws SQLException in case when the value cannot be converted
      */
-    public static int parseInt(String textValue) throws SQLException {
+    public static int parseInt(@NotNull String textValue) throws SQLException {
+        if(textValue == null) return 0;
         try {
             return Integer.parseInt(textValue);
         }
@@ -68,7 +77,8 @@ public class DataTypeParser {
      * @return long value
      * @throws SQLException in case when the value cannot be converted
      */
-    public static long parseLong(String textValue) throws SQLException {
+    public static long parseLong(@NotNull String textValue) throws SQLException {
+        if(textValue == null) return 0;
         try {
             return Long.parseLong(textValue);
         }
@@ -83,7 +93,8 @@ public class DataTypeParser {
      * @return float value
      * @throws SQLException in case when the value cannot be converted
      */
-    public static float parseFloat(String textValue) throws SQLException {
+    public static float parseFloat(@NotNull String textValue) throws SQLException {
+        if(textValue == null) return 0;
         try {
             return Float.parseFloat(textValue);
         }
@@ -98,7 +109,8 @@ public class DataTypeParser {
      * @return double value
      * @throws SQLException in case when the value cannot be converted
      */
-    public static double parseDouble(String textValue) throws SQLException {
+    public static double parseDouble(@NotNull String textValue) throws SQLException {
+        if(textValue == null) return 0;
         try {
             return Double.parseDouble(textValue);
         }
@@ -113,7 +125,8 @@ public class DataTypeParser {
      * @return BigDecimal value
      * @throws SQLException in case when the value cannot be converted
      */
-    public static BigDecimal parseBigDecimal(String textValue) throws SQLException {
+    public static BigDecimal parseBigDecimal(@NotNull String textValue) throws SQLException {
+        if(textValue == null) return new BigDecimal(0);
         try {
             return new BigDecimal(textValue);
         }
@@ -129,7 +142,8 @@ public class DataTypeParser {
      * @return BigDecimal value
      * @throws SQLException in case when the value cannot be converted
      */
-    public static BigDecimal parseBigDecimal(String textValue, int scale) throws SQLException {
+    public static BigDecimal parseBigDecimal(@NotNull String textValue, int scale) throws SQLException {
+        if(textValue == null) return new BigDecimal(0);
         try {
             return new BigDecimal(textValue, new MathContext(scale));
         }
@@ -144,7 +158,8 @@ public class DataTypeParser {
      * @return object value
      * @throws SQLException in case when the value cannot be converted
      */
-    public static Object parseObject(String textValue) throws SQLException {
+    public static Object parseObject(@NotNull String textValue) throws SQLException {
+        if(textValue == null) return "";
         try {
                 return NumberFormat.getNumberInstance().parse(textValue);
             }

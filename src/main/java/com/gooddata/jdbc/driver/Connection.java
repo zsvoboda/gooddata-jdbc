@@ -1,8 +1,10 @@
 package com.gooddata.jdbc.driver;
 
+import com.gooddata.jdbc.util.LoggingInvocationHandler;
 import com.gooddata.sdk.model.project.Project;
 import com.gooddata.sdk.service.GoodData;
 import java.io.IOException;
+import java.lang.reflect.Proxy;
 import java.sql.*;
 import java.util.Map;
 import java.util.Properties;
@@ -13,12 +15,10 @@ import java.util.regex.Pattern;
 
 public class Connection implements java.sql.Connection {
 
-    private final static Logger logger = Logger.getGlobal();
+    private final static Logger LOGGER = Logger.getLogger(Connection.class.getName());
 
     private final GoodData gd;
-
-    private String login;
-    private final Project workspace;
+    private final DatabaseMetaData databaseMetaData;
 
     private boolean isClosed = false;
     private boolean autoCommit = false;
@@ -34,106 +34,77 @@ public class Connection implements java.sql.Connection {
     public Connection(final String url,
                       final Properties properties) throws SQLException, IOException {
 
-        logger.info("jdbc4gd: connection constructor url:" + url);
-
-        this.login = properties.getProperty("user");
+        String login = properties.getProperty("user");
         String password = properties.getProperty("password");
-
-        logger.info("jdbc4gd: user:" + login);
-
         Pattern p = Pattern.compile("^jdbc:gd://(.*?)/gdc/projects/(.*?)$");
         Matcher m = p.matcher(url);
         m.matches();
-
-        if (m.groupCount() != 2) throw new SQLException("Wrong JDBC URL format");
-
+        if (m.groupCount() != 2)
+            throw new SQLException(String.format("Wrong JDBC URL format: '%s'", url));
         String pid = m.group(2);
         String host = m.group(1);
-
-
-        logger.info("jdbc4gd: pid:" + pid);
-        logger.info("jdbc4gd: server:" + host);
-
-        logger.info("gd init begin");
         this.gd = new GoodData(host, login, password);
-
-        this.workspace = gd.getProjectService().getProjectById(pid);
-
-        logger.info("gd init end");
-    }
-
-    public String getLogin() {
-        return this.login;
-    }
-
-    public Project getWorkspace() {
-        return workspace;
+        Project workspace = gd.getProjectService().getProjectById(pid);
+        this.databaseMetaData = new DatabaseMetaData(this, this.gd, workspace, login);
     }
 
     @Override
     public <T> T unwrap(Class<T> iface) throws SQLException {
-        // TODO Auto-generated method stub
-        logger.info("jdbc4gd: connection unwrap");
         throw new SQLFeatureNotSupportedException("Not supported yet.");
     }
 
     @Override
     public boolean isWrapperFor(Class<?> iface) throws SQLException {
-        // TODO Auto-generated method stub
-        logger.info("jdbc4gd: connection iswrapperfor");
         throw new SQLFeatureNotSupportedException("Not supported yet.");
     }
 
     @Override
     public java.sql.Statement createStatement() {
-        logger.info("jdbc4gd: connection createstatement");
-        return new com.gooddata.jdbc.driver.Statement(gd, this);
+        return (java.sql.Statement) Proxy.newProxyInstance(
+                Driver.class.getClassLoader(),
+                new Class[] { java.sql.Statement.class },
+                new LoggingInvocationHandler(new Statement(this, this.gd,
+                        this.databaseMetaData)));
     }
 
 
     @Override
     public PreparedStatement prepareStatement(String sql) throws SQLException {
-        logger.info("jdbc4gd: connection method");
         throw new SQLFeatureNotSupportedException("Not supported yet.");
     }
 
     @Override
     public CallableStatement prepareCall(String sql) throws SQLException {
-        logger.info("jdbc4gd: connection method");
         throw new SQLFeatureNotSupportedException("Not supported yet.");
     }
 
     @Override
     public String nativeSQL(String sql) throws SQLException {
-        logger.info("jdbc4gd: connection nativesql");
         throw new SQLFeatureNotSupportedException("Not supported yet.");
     }
 
     @Override
     public boolean getAutoCommit() {
-        logger.info("jdbc4gd: connection method");
         return this.autoCommit;
     }
 
     @Override
     public void setAutoCommit(boolean autoCommit) {
-        logger.info("jdbc4gd: connection method");
         this.autoCommit = autoCommit;
     }
 
     @Override
     public void commit() {
-        logger.info("jdbc4gd: connection method");
+
     }
 
     @Override
     public void rollback() {
-        logger.info("jdbc4gd: connection method");
+
     }
 
     @Override
     public void close() {
-        logger.info("jdbc4gd: connection method");
         this.gd.logout();
         this.isClosed = true;
     }
@@ -145,7 +116,10 @@ public class Connection implements java.sql.Connection {
 
     @Override
     public java.sql.DatabaseMetaData getMetaData() {
-        return new DatabaseMetaData(this);
+        return (java.sql.DatabaseMetaData) Proxy.newProxyInstance(
+                Driver.class.getClassLoader(),
+                new Class[] { java.sql.DatabaseMetaData.class },
+                new LoggingInvocationHandler(databaseMetaData));
     }
 
     @Override
@@ -155,17 +129,17 @@ public class Connection implements java.sql.Connection {
 
     @Override
     public void setReadOnly(boolean readOnly) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet.");
+        //throw new SQLFeatureNotSupportedException("Not supported yet.");
     }
 
     @Override
     public String getCatalog() throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet.");
+        return ResultSetTableMetaData.UNIVERSAL_CATALOG_NAME;
     }
 
     @Override
     public void setCatalog(String catalog) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet.");
+        //throw new SQLFeatureNotSupportedException("Not supported yet.");
     }
 
     @Override
@@ -180,12 +154,13 @@ public class Connection implements java.sql.Connection {
 
     @Override
     public SQLWarning getWarnings() throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet.");
+        //throw new SQLFeatureNotSupportedException("Not supported yet.");
+        return new SQLWarning();
     }
 
     @Override
     public void clearWarnings() throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet.");
+        //throw new SQLFeatureNotSupportedException("Not supported yet.");
     }
 
     @Override
@@ -334,7 +309,7 @@ public class Connection implements java.sql.Connection {
 
     @Override
     public String getSchema() throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet.");
+        return this.databaseMetaData.getWorkspaceId();
     }
 
     @Override

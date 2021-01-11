@@ -1,5 +1,6 @@
 package com.gooddata.jdbc.driver;
 
+import com.gooddata.jdbc.util.LoggingInvocationHandler;
 import com.gooddata.sdk.model.executeafm.Execution;
 import com.gooddata.sdk.model.executeafm.ObjQualifier;
 import com.gooddata.sdk.model.executeafm.UriObjQualifier;
@@ -17,191 +18,58 @@ import com.gooddata.sdk.service.executeafm.ExecuteAfmService;
 import com.gooddata.sdk.service.md.MetadataService;
 import net.sf.jsqlparser.JSQLParserException;
 
+import java.lang.reflect.Proxy;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.sql.SQLWarning;
 import java.sql.ResultSet;
 import java.util.*;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 public class Statement implements java.sql.Statement {
 
-	private final static Logger logger = Logger.getGlobal();
+	private final static Logger LOGGER = Logger.getLogger(Statement.class.getName());
 
+
+
+	private final GoodData gd;
 	private final Project workspace;
-	private final ExecuteAfmService gdAfm;
-	private final MetadataService gdMeta;
 	private final Connection connection;
+	private final DatabaseMetaData metadata;
+	private final ExecuteAfmService gdAfm;
 
     private boolean isClosed = false;
 	private ResultSet resultSet;
     private int maxRows = 0;
 
-	/**
-	 * Catalog of LDM objects (attributes and metrics)
-	 */
-	private final Map<String, CatalogEntry> catalog = new HashMap<>();
 
 	/**
-	 *
-	 */
-	public static class CatalogEntry {
-
-		/**
-		 * Constructor
-		 * @param uri LDM object URI
-		 * @param title LDM object title
-		 * @param type LDM object type
-		 * @param identifier LDM object identifier
-		 */
-		public CatalogEntry(String uri, String title, String type, String identifier, ObjQualifier ldmObject) {
-			this.uri = uri;
-			this.title = title;
-			this.type = type;
-			this.identifier = identifier;
-			this.ldmObject = ldmObject;
-		}
-
-		public String getUri() {
-			return uri;
-		}
-
-		public void setUri(String uri) {
-			this.uri = uri;
-		}
-
-		public String getTitle() {
-			return title;
-		}
-
-		public void setTitle(String title) {
-			this.title = title;
-		}
-
-		public String getType() {
-			return type;
-		}
-
-		public void setType(String type) {
-			this.type = type;
-		}
-
-		public String getIdentifier() {
-			return identifier;
-		}
-
-		public void setIdentifier(String identifier) {
-			this.identifier = identifier;
-		}
-
-		public ObjQualifier getLdmObject() {
-			return ldmObject;
-		}
-
-		public void setLdmObject(ObjQualifier ldmObject) {
-			this.ldmObject = ldmObject;
-		}
-
-		private String identifier;
-		private String uri;
-		private String title;
-		private String type;
-
-		private ObjQualifier ldmObject;
-	}
-
-	/**
-	 * Constructor
+	 * Constructor\
+	 * @param con java.sql.Connection
 	 * @param gd GoodData connection class
-	 * @param con SQL connection
+	 * @param metadata database metadata
 	 */
-	public Statement(GoodData gd, Connection con) {
-		logger.info("jdbc4gd: statement constructor");
-		this.gdAfm = gd.getExecuteAfmService();
-		this.gdMeta = gd.getMetadataService();
+	public Statement(Connection con, GoodData gd, DatabaseMetaData metadata) {
 		this.connection = con;
-		this.workspace = con.getWorkspace();
-		this.populateCatalog();
-	}
-
-	/**
-	 * Populates the catalog of attributes and metrics
-	 */
-	private void populateCatalog() {
-		Collection<Entry> metricEntries = this.gdMeta.find(this.workspace, Metric.class);
-
-		for(Entry metric: metricEntries) {
-			this.catalog.put(metric.getUri(), new CatalogEntry(metric.getUri(),
-					metric.getTitle(), metric.getCategory(), metric.getIdentifier(),
-					new UriObjQualifier(metric.getUri())));
-		}
-
-		Collection<Entry> attributeEntries = this.gdMeta.find(this.workspace, Attribute.class);
-		for(Entry attribute: attributeEntries) {
-			Attribute a = this.gdMeta.getObjByUri(attribute.getUri(), Attribute.class);
-			DisplayForm displayForm = a.getDefaultDisplayForm();
-			//TODO getting default display form under the attribute title
-			this.catalog.put(displayForm.getUri(), new CatalogEntry(displayForm.getUri(),
-					a.getTitle(), displayForm.getCategory(), displayForm.getIdentifier(),
-					new UriObjQualifier(displayForm.getUri())));
-		}
-	}
-
-	/**
-	 * Duplicate LDM object exception is thrown when there are multiple LDM objects with the same title
-	 */
-	public static class DuplicateLdmObjectException extends Exception {
-		public DuplicateLdmObjectException(String e) {
-			super(e);
-		}
-	}
-
-	/**
-	 * Thrown when a LDM object with a title isn't found
-	 */
-	public static class LdmObjectNotFoundException extends Exception {
-		public LdmObjectNotFoundException(String e) {
-			super(e);
-		}
-	}
-
-	private CatalogEntry findObjectByName(String name) throws DuplicateLdmObjectException,
-			LdmObjectNotFoundException {
-		List<CatalogEntry> objects = this.catalog.values().stream()
-				.filter(catalogEntry -> name.equalsIgnoreCase(catalogEntry.getTitle())).collect(Collectors.toList());
-		if(objects.size() > 1) {
-			throw new DuplicateLdmObjectException(
-					String.format("Column name '%s' can't be uniquely resolved. " +
-							"There are multiple LDM objects with this title.", name));
-		} else if(objects.size() == 0) {
-			throw new LdmObjectNotFoundException(
-					String.format("Column name '%s' doesn't exist.", name));
-		}
-		return objects.get(0);
-	}
-
-	private List<CatalogEntry> resolveColumns(SQLParser.ParsedSQL sql) throws DuplicateLdmObjectException,
-			LdmObjectNotFoundException {
-		List<CatalogEntry> c = new ArrayList<>();
-		List<String> columns = sql.getColumns();
-		for(String name: columns ) {
-			c.add(findObjectByName(name));
-		}
-		return c;
+		this.gd = gd;
+		this.metadata = metadata;
+		this.workspace = metadata.getWorkspace();
+		this.gdAfm = gd.getExecuteAfmService();
 	}
 
 	/**
 	 * Populates AFM execution parameter
 	 * @param columns resolved SQL columns
 	 * @return AFM object
-	 * @throws DuplicateLdmObjectException when there are multiple LDM object with a named mentioned in the parsed SQL
-	 * @throws LdmObjectNotFoundException when a SQL object (column) can't be resolved
+	 * @throws DatabaseMetaData.DuplicateLdmObjectException when there are multiple LDM object with a named mentioned in the parsed SQL
+	 * @throws DatabaseMetaData.LdmObjectNotFoundException when a SQL object (column) can't be resolved
 	 */
-	private Afm getAfm(List<CatalogEntry> columns) throws DuplicateLdmObjectException,
-			LdmObjectNotFoundException {
+	private Afm getAfm(List<DatabaseMetaData.CatalogEntry> columns) throws DatabaseMetaData.DuplicateLdmObjectException,
+			DatabaseMetaData.LdmObjectNotFoundException {
 		Afm afm = new Afm();
-		for( CatalogEntry o: columns ) {
+		for( DatabaseMetaData.CatalogEntry o: columns ) {
 			if(o.getType().equalsIgnoreCase("attributeDisplayForm")) {
 				afm.addAttribute(new AttributeItem(o.getLdmObject(), o.getIdentifier()));
 			} else if(o.getType().equalsIgnoreCase("metric")) {
@@ -220,16 +88,19 @@ public class Statement implements java.sql.Statement {
 	 */
 	@Override
 	public ResultSet executeQuery(String sql) throws SQLException {
-			logger.info("jdbc4gd: statement executeQuery sql:"+sql);
 		try {
 			SQLParser parser = new SQLParser();
 			SQLParser.ParsedSQL parsedSql = parser.parse(sql);
-			List<CatalogEntry> columns = this.resolveColumns(parsedSql);
+			List<DatabaseMetaData.CatalogEntry> columns = this.metadata.resolveColumns(parsedSql);
 			Afm afm = getAfm(columns);
 			ExecutionResponse rs = this.gdAfm.executeAfm(this.workspace, new Execution(afm));
 			FutureResult<ExecutionResult> fr = this.gdAfm.getResult(rs);
-			return new ResultSetTable(this, fr.get(), columns);
-		} catch (JSQLParserException | LdmObjectNotFoundException | DuplicateLdmObjectException e) {
+			return (java.sql.ResultSet) Proxy.newProxyInstance(
+					Driver.class.getClassLoader(),
+					new Class[] { java.sql.ResultSet.class },
+					new LoggingInvocationHandler(new ResultSetTable(this, fr.get(), columns)));
+		} catch (JSQLParserException | DatabaseMetaData.LdmObjectNotFoundException
+				| DatabaseMetaData.DuplicateLdmObjectException e) {
 			throw new SQLException(e);
 		}
 	}
@@ -349,12 +220,13 @@ public class Statement implements java.sql.Statement {
 
 	@Override
 	public SQLWarning getWarnings() throws SQLException {
-		throw new SQLFeatureNotSupportedException("Not supported yet.");
+		//throw new SQLFeatureNotSupportedException("Not supported yet.");
+		return new SQLWarning();
 	}
 
 	@Override
 	public void clearWarnings() throws SQLException {
-		throw new SQLFeatureNotSupportedException("Not supported yet.");
+		//throw new SQLFeatureNotSupportedException("Not supported yet.");
 	}
 
 	@Override
@@ -379,27 +251,27 @@ public class Statement implements java.sql.Statement {
 
 	@Override
 	public int getFetchDirection() throws SQLException {
-		return this.resultSet.getFetchDirection();
+		return ResultSetTable.FETCH_DIRECTION;
 	}
 
 	@Override
 	public void setFetchSize(int rows) throws SQLException {
-		this.resultSet.setFetchSize(rows);
+		//throw new SQLFeatureNotSupportedException("Not supported yet");
 	}
 
 	@Override
 	public int getFetchSize() throws SQLException {
-		return this.resultSet.getFetchSize();
+		throw new SQLFeatureNotSupportedException("Not supported yet");
 	}
 
 	@Override
 	public int getResultSetConcurrency() throws SQLException {
-		return this.resultSet.getConcurrency();
+		return ResultSetTable.CONCURRENCY;
 	}
 
 	@Override
 	public int getResultSetType() throws SQLException {
-		return this.resultSet.getType();
+		return ResultSetTable.TYPE;
 	}
 
 	@Override
@@ -424,7 +296,8 @@ public class Statement implements java.sql.Statement {
 
 	@Override
 	public boolean getMoreResults(int current) throws SQLException {
-		throw new SQLFeatureNotSupportedException("Not supported yet.");
+		//throw new SQLFeatureNotSupportedException("Not supported yet.");
+		return false;
 	}
 
 	@Override
@@ -449,7 +322,7 @@ public class Statement implements java.sql.Statement {
 
 	@Override
 	public int getResultSetHoldability() throws SQLException {
-		return this.resultSet.getHoldability();
+		return ResultSetTable.HOLDABILITY;
 	}
 
 	@Override

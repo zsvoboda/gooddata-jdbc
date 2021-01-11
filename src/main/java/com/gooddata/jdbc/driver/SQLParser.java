@@ -1,5 +1,6 @@
 package com.gooddata.jdbc.driver;
 
+import com.gooddata.jdbc.util.LoggingInvocationHandler;
 import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.ExpressionVisitor;
@@ -11,10 +12,13 @@ import org.apache.tools.ant.types.resources.Union;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Logger;
 
 public class SQLParser {
 
     public static class ParsedSQL {
+
+        private final static Logger LOGGER = Logger.getLogger(ParsedSQL.class.getName());
 
         private final List<String> columns;
         private final List<String> tables;
@@ -41,6 +45,7 @@ public class SQLParser {
     }
 
     public ParsedSQL parse(String query) throws JSQLParserException {
+        ParsedSQL.LOGGER.fine(String.format("Parsing query '%s'", query));
         net.sf.jsqlparser.statement.Statement st = CCJSqlParserUtil.parse(query);
         if(st instanceof Select) {
             Select sl = (Select) st;
@@ -70,11 +75,15 @@ public class SQLParser {
                         }
 
                         public void	visit(Table tableName) {
-                            tables.add(tableName.toString().replace("\"", ""));
+                            ParsedSQL.LOGGER.fine(String.format("Getting table '%s'", tableName));
+                            if(tableName != null)
+                                tables.add(tableName.toString().replace("\"", "")
+                            );
                         }
 
                     };
-                    fromTables.accept(fv);
+                    if(fromTables != null)
+                        fromTables.accept(fv);
 
                     // TODO WHERE expressions
                     /**

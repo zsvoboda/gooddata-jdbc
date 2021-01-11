@@ -1,14 +1,372 @@
 package com.gooddata.jdbc.driver;
 
+import com.gooddata.jdbc.util.MetadataResultSet;
+import com.gooddata.jdbc.util.TextUtil;
+import com.gooddata.sdk.model.executeafm.ObjQualifier;
+import com.gooddata.sdk.model.executeafm.UriObjQualifier;
+import com.gooddata.sdk.model.md.Attribute;
+import com.gooddata.sdk.model.md.DisplayForm;
+import com.gooddata.sdk.model.md.Entry;
+import com.gooddata.sdk.model.md.Metric;
+import com.gooddata.sdk.model.project.Project;
+import com.gooddata.sdk.service.GoodData;
+import com.gooddata.sdk.service.md.MetadataService;
+
 import java.sql.*;
 import java.sql.Connection;
+import java.util.*;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class DatabaseMetaData implements java.sql.DatabaseMetaData {
 
+    private final static Logger LOGGER = Logger.getLogger(DatabaseMetaData.class.getName());
+
     private com.gooddata.jdbc.driver.Connection connection;
 
-    public DatabaseMetaData(com.gooddata.jdbc.driver.Connection connection) {
+    private final Project workspace;
+    private final MetadataService gdMeta;
+    private final String user;
+
+    private final MetadataResultSet schemaResultSet;
+    private final MetadataResultSet catalogResultSet;
+    private final MetadataResultSet tableTypeResultSet;
+    private final MetadataResultSet tableResultSet;
+    private final MetadataResultSet columnResultSet;
+    private final MetadataResultSet emptyResultSet;
+
+
+    /**
+     * Catalog of LDM objects (attributes and metrics)
+     */
+    private final Map<String, CatalogEntry> catalog = new HashMap<>();
+
+    public DatabaseMetaData(com.gooddata.jdbc.driver.Connection connection, GoodData gd,
+                            Project workspace, String user) throws SQLException {
         this.connection = connection;
+        this.gdMeta = gd.getMetadataService();
+        this.workspace = workspace;
+        this.user = user;
+        this.populateCatalog();
+
+        this.schemaResultSet = this.populateSchemaResultSet();
+        this.catalogResultSet = new MetadataResultSet(
+                Arrays.asList(
+                        new MetadataResultSet.MetaDataColumn("TABLE_CAT",
+                                Arrays.asList(ResultSetTableMetaData.UNIVERSAL_CATALOG_NAME))
+                )
+        );
+        this.tableTypeResultSet = new MetadataResultSet(
+                Arrays.asList(
+                        new MetadataResultSet.MetaDataColumn("TABLE_TYPE",
+                                Arrays.asList("TABLE"))
+                )
+        );
+        this.tableResultSet = this.populateTableResultSet();
+        this.columnResultSet = this.populateColumnResultSet();
+        this.emptyResultSet = this.populateEmptyResultSet();
+    }
+
+    private MetadataResultSet populateEmptyResultSet() throws SQLException {
+        List<String> empty = new ArrayList<>();
+        List<MetadataResultSet.MetaDataColumn> data = Arrays.asList(
+                new MetadataResultSet.MetaDataColumn("1",
+                        empty),
+                new MetadataResultSet.MetaDataColumn("2",
+                        empty),
+                new MetadataResultSet.MetaDataColumn("3",
+                        empty),
+                new MetadataResultSet.MetaDataColumn("4",
+                        empty),
+                new MetadataResultSet.MetaDataColumn("5",
+                        empty),
+                new MetadataResultSet.MetaDataColumn("6",
+                        empty),
+                new MetadataResultSet.MetaDataColumn("7",
+                        empty),
+                new MetadataResultSet.MetaDataColumn("8",
+                        empty),
+                new MetadataResultSet.MetaDataColumn("9",
+                        empty),
+                new MetadataResultSet.MetaDataColumn("10",
+                        empty)
+        );
+        return new MetadataResultSet(data);
+    }
+
+    private MetadataResultSet populateSchemaResultSet() throws SQLException {
+        List<String> uniqueSchemas = this.getSchemasList();
+        List<String> catalogs = uniqueSchemas.stream()
+                .map(e -> ResultSetTableMetaData.UNIVERSAL_CATALOG_NAME).collect(Collectors.toList());
+        List<MetadataResultSet.MetaDataColumn> data = Arrays.asList(
+                new MetadataResultSet.MetaDataColumn("TABLE_SCHEM",
+                        uniqueSchemas),
+                new MetadataResultSet.MetaDataColumn("TABLE_CATALOG",
+                        catalogs)
+        );
+        return new MetadataResultSet(data);
+    }
+
+    private MetadataResultSet populateColumnResultSet() throws SQLException {
+        List<String> columns = this.catalog.values().stream()
+                .map(i->i.getTitle()).collect(Collectors.toList());
+        List<String> empty = columns.stream()
+                        .map(e -> "")
+                        .collect(Collectors.toList());
+        List<String> ordinal = IntStream.range(1, columns.size()+1)
+                .boxed().map(e -> Integer.toString(e)).collect(Collectors.toList());
+
+        List<String> catalogs = columns.stream()
+                .map(e -> ResultSetTableMetaData.UNIVERSAL_CATALOG_NAME).collect(Collectors.toList());
+        List<MetadataResultSet.MetaDataColumn> data = Arrays.asList(
+                new MetadataResultSet.MetaDataColumn("TABLE_CAT",
+                        columns.stream()
+                                .map(e -> ResultSetTableMetaData.UNIVERSAL_CATALOG_NAME)
+                                .collect(Collectors.toList())),
+                new MetadataResultSet.MetaDataColumn("TABLE_SCHEM",
+                        columns.stream()
+                                .map(e -> this.workspace.getId())
+                                .collect(Collectors.toList())),
+                new MetadataResultSet.MetaDataColumn("TABLE_NAME",
+                        columns.stream()
+                                .map(e -> ResultSetTableMetaData.UNIVERSAL_TABLE_NAME)
+                                .collect(Collectors.toList())),
+                new MetadataResultSet.MetaDataColumn("COLUMN_NAME",
+                        columns),
+                new MetadataResultSet.MetaDataColumn("DATA_TYPE", "INTEGER",
+                        this.catalog.values().stream()
+                                .map(e -> e.getType().equals("metric")?
+                                        Integer.toString(java.sql.Types.NUMERIC) : Integer.toString(java.sql.Types.VARCHAR))
+                                .collect(Collectors.toList())),
+                new MetadataResultSet.MetaDataColumn("TYPE_NAME",
+                        this.catalog.values().stream()
+                                .map(e -> e.getType().equals("metric") ?
+                                        new String("NUMERIC") : new String("VARCHAR"))
+                                .collect(Collectors.toList())),
+                new MetadataResultSet.MetaDataColumn("COLUMN_SIZE",  "INTEGER",
+                        this.catalog.values().stream()
+                                .map(e -> e.getType().equals("metric") ?
+                                        new String("15") : new String("255"))
+                                .collect(Collectors.toList())),
+                new MetadataResultSet.MetaDataColumn("BUFFER_LENGTH", empty),
+                new MetadataResultSet.MetaDataColumn("DECIMAL_DIGITS", "INTEGER",
+                        this.catalog.values().stream()
+                                .map(e -> e.getType().equals("metric") ?
+                                        new String("5") : new String(""))
+                                .collect(Collectors.toList())),
+                new MetadataResultSet.MetaDataColumn("NUM_PREC_RADIX", "INTEGER",
+                        columns.stream()
+                                .map(e -> "10")
+                                .collect(Collectors.toList())),
+                new MetadataResultSet.MetaDataColumn("NULLABLE", "INTEGER",
+                        columns.stream()
+                                .map(e -> "columnNullableUnknown")
+                                .collect(Collectors.toList())),
+                new MetadataResultSet.MetaDataColumn("REMARKS", empty) ,
+                new MetadataResultSet.MetaDataColumn("COLUMN_DEF", empty),
+                new MetadataResultSet.MetaDataColumn("SQL_DATA_TYPE",  "INTEGER", empty),
+                new MetadataResultSet.MetaDataColumn("SQL_DATETIME_SUB",  "INTEGER", empty),
+                new MetadataResultSet.MetaDataColumn("CHAR_OCTET_LENGTH",  "INTEGER", empty),
+                new MetadataResultSet.MetaDataColumn("ORDINAL_POSITION",  "INTEGER", ordinal),
+                new MetadataResultSet.MetaDataColumn("IS_NULLABLE",
+                        columns.stream()
+                                .map(e -> "YES")
+                                .collect(Collectors.toList())),
+                new MetadataResultSet.MetaDataColumn("SCOPE_CATALOG", empty),
+                new MetadataResultSet.MetaDataColumn("SCOPE_SCHEMA", empty),
+                new MetadataResultSet.MetaDataColumn("SCOPE_TABLE", empty),
+                new MetadataResultSet.MetaDataColumn("SOURCE_DATA_TYPE", empty),
+                new MetadataResultSet.MetaDataColumn("IS_AUTOINCREMENT",
+                        columns.stream()
+                                .map(e -> "NO")
+                                .collect(Collectors.toList())),
+                new MetadataResultSet.MetaDataColumn("IS_GENERATEDCOLUMN",
+                        columns.stream()
+                                .map(e -> "NO")
+                                .collect(Collectors.toList()))
+        );
+        return new MetadataResultSet(data);
+    }
+
+    private MetadataResultSet populateTableResultSet() throws SQLException {
+        List<MetadataResultSet.MetaDataColumn> data = Arrays.asList(
+                new MetadataResultSet.MetaDataColumn("TABLE_CAT",
+                        Arrays.asList(ResultSetTableMetaData.UNIVERSAL_CATALOG_NAME)),
+                new MetadataResultSet.MetaDataColumn("TABLE_SCHEM",
+                        Arrays.asList(this.workspace.getId())),
+                new MetadataResultSet.MetaDataColumn("TABLE_NAME",
+                        Arrays.asList(ResultSetTableMetaData.UNIVERSAL_TABLE_NAME)),
+                new MetadataResultSet.MetaDataColumn("TABLE_TYPE",
+                        Arrays.asList("TABLE")),
+                new MetadataResultSet.MetaDataColumn("REMARKS",
+                        Arrays.asList("")),
+                new MetadataResultSet.MetaDataColumn("TYPE_CAT",
+                        Arrays.asList("")),
+                new MetadataResultSet.MetaDataColumn("TYPE_SCHEM",
+                        Arrays.asList("")),
+                new MetadataResultSet.MetaDataColumn("TYPE_NAME",
+                        Arrays.asList("")),
+                new MetadataResultSet.MetaDataColumn("SELF_REFERENCING_COL_NAME",
+                        Arrays.asList("")),
+                new MetadataResultSet.MetaDataColumn("REF_GENERATION",
+                        Arrays.asList(""))
+        );
+        return new MetadataResultSet(data);
+    }
+
+    /**
+     *
+     */
+    public static class CatalogEntry {
+
+        /**
+         * Constructor
+         * @param uri LDM object URI
+         * @param title LDM object title
+         * @param type LDM object type
+         * @param identifier LDM object identifier
+         */
+        public CatalogEntry(String uri, String title, String type, String identifier, ObjQualifier ldmObject) {
+            this.uri = uri;
+            this.title = title;
+            this.type = type;
+            this.identifier = identifier;
+            this.ldmObject = ldmObject;
+        }
+
+        public String getUri() {
+            return uri;
+        }
+
+        public void setUri(String uri) {
+            this.uri = uri;
+        }
+
+        public String getTitle() {
+            return title;
+        }
+
+        public void setTitle(String title) {
+            this.title = title;
+        }
+
+        public String getType() {
+            return type;
+        }
+
+        public void setType(String type) {
+            this.type = type;
+        }
+
+        public String getIdentifier() {
+            return identifier;
+        }
+
+        public void setIdentifier(String identifier) {
+            this.identifier = identifier;
+        }
+
+        public ObjQualifier getLdmObject() {
+            return ldmObject;
+        }
+
+        public void setLdmObject(ObjQualifier ldmObject) {
+            this.ldmObject = ldmObject;
+        }
+
+        private String identifier;
+        private String uri;
+        private String title;
+        private String type;
+
+        private ObjQualifier ldmObject;
+    }
+
+    public int getCatalogRowCount() {
+        return this.catalog.size();
+    }
+
+    /**
+     * Populates the catalog of attributes and metrics
+     */
+    private void populateCatalog() {
+        Collection<Entry> metricEntries = this.gdMeta.find(this.workspace, Metric.class);
+
+        for(Entry metric: metricEntries) {
+            this.catalog.put(metric.getUri(), new CatalogEntry(metric.getUri(),
+                    metric.getTitle(), metric.getCategory(), metric.getIdentifier(),
+                    new UriObjQualifier(metric.getUri())));
+        }
+
+        Collection<Entry> attributeEntries = this.gdMeta.find(this.workspace, Attribute.class);
+        for(Entry attribute: attributeEntries) {
+            Attribute a = this.gdMeta.getObjByUri(attribute.getUri(), Attribute.class);
+            DisplayForm displayForm = a.getDefaultDisplayForm();
+            //TODO getting default display form under the attribute title
+            this.catalog.put(displayForm.getUri(), new CatalogEntry(displayForm.getUri(),
+                    a.getTitle(), displayForm.getCategory(), displayForm.getIdentifier(),
+                    new UriObjQualifier(displayForm.getUri())));
+        }
+    }
+
+    /**
+     * Duplicate LDM object exception is thrown when there are multiple LDM objects with the same title
+     */
+    public static class DuplicateLdmObjectException extends Exception {
+        public DuplicateLdmObjectException(String e) {
+            super(e);
+        }
+    }
+
+    /**
+     * Thrown when a LDM object with a title isn't found
+     */
+    public static class LdmObjectNotFoundException extends Exception {
+        public LdmObjectNotFoundException(String e) {
+            super(e);
+        }
+    }
+
+    private CatalogEntry findObjectByName(String name) throws DuplicateLdmObjectException,
+            LdmObjectNotFoundException {
+        List<CatalogEntry> objects = this.catalog.values().stream()
+                .filter(catalogEntry -> name.equalsIgnoreCase(catalogEntry.getTitle())).collect(Collectors.toList());
+        if(objects.size() > 1) {
+            throw new DuplicateLdmObjectException(
+                    String.format("Column name '%s' can't be uniquely resolved. " +
+                            "There are multiple LDM objects with this title.", name));
+        } else if(objects.size() == 0) {
+            throw new LdmObjectNotFoundException(
+                    String.format("Column name '%s' doesn't exist.", name));
+        }
+        return objects.get(0);
+    }
+
+    protected List<CatalogEntry> resolveColumns(SQLParser.ParsedSQL sql) throws DuplicateLdmObjectException,
+            LdmObjectNotFoundException {
+        List<CatalogEntry> c = new ArrayList<>();
+        List<String> columns = sql.getColumns();
+        for(String name: columns ) {
+            c.add(findObjectByName(name));
+        }
+        return c;
+    }
+
+    public String getUser() {
+        return this.user;
+    }
+
+    public Project getWorkspace() {
+        return this.workspace;
+    }
+
+    public String getWorkspaceId() {
+        return this.workspace.getId();
+    }
+
+    public String getWorkspaceUri() {
+        return this.workspace.getUri();
     }
 
     @Override
@@ -22,13 +380,13 @@ public class DatabaseMetaData implements java.sql.DatabaseMetaData {
     }
 
     @Override
-    public String getURL()  {
-        return null;
+    public String getURL() throws SQLException {
+        throw new SQLFeatureNotSupportedException("Not supported yet.");
     }
 
     @Override
     public String getUserName()  {
-        return this.connection.getLogin();
+        return this.user;
     }
 
     @Override
@@ -138,42 +496,43 @@ public class DatabaseMetaData implements java.sql.DatabaseMetaData {
 
     @Override
     public String getIdentifierQuoteString()  {
-        return null;
+        return "\"";
     }
 
     @Override
-    public String getSQLKeywords()  {
-        return null;
+    public String getSQLKeywords() throws SQLException {
+        throw new SQLFeatureNotSupportedException("Not supported yet.");
     }
 
     @Override
-    public String getNumericFunctions()  {
-        return null;
+    public String getNumericFunctions() throws SQLException {
+        throw new SQLFeatureNotSupportedException("Not supported yet.");
     }
 
     @Override
-    public String getStringFunctions()  {
-        return null;
+    public String getStringFunctions()  throws SQLException {
+        throw new SQLFeatureNotSupportedException("Not supported yet.");
     }
 
     @Override
-    public String getSystemFunctions()  {
-        return null;
+    public String getSystemFunctions()  throws SQLException {
+        throw new SQLFeatureNotSupportedException("Not supported yet.");
     }
 
     @Override
-    public String getTimeDateFunctions()  {
-        return null;
+    public String getTimeDateFunctions()  throws SQLException {
+        throw new SQLFeatureNotSupportedException("Not supported yet.");
     }
 
     @Override
     public String getSearchStringEscape()  {
-        return null;
+        return "\\";
     }
 
     @Override
-    public String getExtraNameCharacters()  {
-        return null;
+    public String getExtraNameCharacters()  throws SQLException {
+        //throw new SQLFeatureNotSupportedException("Not supported yet.");
+        return "";
     }
 
     @Override
@@ -312,18 +671,18 @@ public class DatabaseMetaData implements java.sql.DatabaseMetaData {
     }
 
     @Override
-    public String getSchemaTerm()  {
-        return null;
+    public String getSchemaTerm()  throws SQLException {
+        return "SCHEMA";
     }
 
     @Override
-    public String getProcedureTerm()  {
-        return null;
+    public String getProcedureTerm()  throws SQLException {
+        return "PROCEDURE";
     }
 
     @Override
-    public String getCatalogTerm()  {
-        return null;
+    public String getCatalogTerm()  throws SQLException {
+        return "CATALOG";
     }
 
     @Override
@@ -332,8 +691,8 @@ public class DatabaseMetaData implements java.sql.DatabaseMetaData {
     }
 
     @Override
-    public String getCatalogSeparator()  {
-        return null;
+    public String getCatalogSeparator()  throws SQLException {
+        throw new SQLFeatureNotSupportedException("Not supported yet.");
     }
 
     @Override
@@ -462,78 +821,78 @@ public class DatabaseMetaData implements java.sql.DatabaseMetaData {
     }
 
     @Override
-    public int getMaxBinaryLiteralLength()  {
-        return 0;
+    public int getMaxBinaryLiteralLength()  throws SQLException {
+        throw new SQLFeatureNotSupportedException("Not supported yet.");
     }
 
     @Override
-    public int getMaxCharLiteralLength()  {
-        return 0;
+    public int getMaxCharLiteralLength()  throws SQLException {
+        throw new SQLFeatureNotSupportedException("Not supported yet.");
     }
 
     @Override
-    public int getMaxColumnNameLength()  {
-        return 0;
+    public int getMaxColumnNameLength()  throws SQLException {
+        throw new SQLFeatureNotSupportedException("Not supported yet.");
     }
 
     @Override
-    public int getMaxColumnsInGroupBy()  {
-        return 0;
+    public int getMaxColumnsInGroupBy()  throws SQLException {
+        throw new SQLFeatureNotSupportedException("Not supported yet.");
     }
 
     @Override
-    public int getMaxColumnsInIndex()  {
-        return 0;
+    public int getMaxColumnsInIndex()  throws SQLException {
+        throw new SQLFeatureNotSupportedException("Not supported yet.");
     }
 
     @Override
-    public int getMaxColumnsInOrderBy()  {
-        return 0;
+    public int getMaxColumnsInOrderBy()  throws SQLException {
+        throw new SQLFeatureNotSupportedException("Not supported yet.");
     }
 
     @Override
-    public int getMaxColumnsInSelect()  {
-        return 0;
+    public int getMaxColumnsInSelect()  throws SQLException {
+        throw new SQLFeatureNotSupportedException("Not supported yet.");
     }
 
     @Override
-    public int getMaxColumnsInTable()  {
-        return 0;
+    public int getMaxColumnsInTable()  throws SQLException {
+        throw new SQLFeatureNotSupportedException("Not supported yet.");
     }
 
     @Override
-    public int getMaxConnections()  {
-        return 0;
+    public int getMaxConnections()  throws SQLException {
+        throw new SQLFeatureNotSupportedException("Not supported yet.");
     }
 
     @Override
-    public int getMaxCursorNameLength()  {
-        return 0;
+    public int getMaxCursorNameLength()  throws SQLException {
+        throw new SQLFeatureNotSupportedException("Not supported yet.");
     }
 
     @Override
-    public int getMaxIndexLength()  {
-        return 0;
+    public int getMaxIndexLength()  throws SQLException {
+        throw new SQLFeatureNotSupportedException("Not supported yet.");
     }
 
     @Override
-    public int getMaxSchemaNameLength()  {
-        return 0;
+    public int getMaxSchemaNameLength()  throws SQLException {
+        throw new SQLFeatureNotSupportedException("Not supported yet.");
     }
 
     @Override
-    public int getMaxProcedureNameLength()  {
-        return 0;
+    public int getMaxProcedureNameLength()  throws SQLException {
+        throw new SQLFeatureNotSupportedException("Not supported yet.");
     }
 
     @Override
-    public int getMaxCatalogNameLength()  {
-        return 0;
+    public int getMaxCatalogNameLength()  throws SQLException {
+        throw new SQLFeatureNotSupportedException("Not supported yet.");
     }
 
     @Override
-    public int getMaxRowSize()  {
-        return 0;
+    public int getMaxRowSize()  throws SQLException {
+        throw new SQLFeatureNotSupportedException("Not supported yet.");
     }
 
     @Override
@@ -542,33 +901,33 @@ public class DatabaseMetaData implements java.sql.DatabaseMetaData {
     }
 
     @Override
-    public int getMaxStatementLength()  {
-        return 0;
+    public int getMaxStatementLength()  throws SQLException {
+        throw new SQLFeatureNotSupportedException("Not supported yet.");
     }
 
     @Override
-    public int getMaxStatements()  {
-        return 0;
+    public int getMaxStatements()  throws SQLException {
+        throw new SQLFeatureNotSupportedException("Not supported yet.");
     }
 
     @Override
-    public int getMaxTableNameLength()  {
-        return 0;
+    public int getMaxTableNameLength()  throws SQLException {
+        throw new SQLFeatureNotSupportedException("Not supported yet.");
     }
 
     @Override
-    public int getMaxTablesInSelect()  {
-        return 0;
+    public int getMaxTablesInSelect()  throws SQLException {
+        throw new SQLFeatureNotSupportedException("Not supported yet.");
     }
 
     @Override
-    public int getMaxUserNameLength()  {
-        return 0;
+    public int getMaxUserNameLength()  throws SQLException {
+        throw new SQLFeatureNotSupportedException("Not supported yet.");
     }
 
     @Override
-    public int getDefaultTransactionIsolation()  {
-        return 0;
+    public int getDefaultTransactionIsolation()  throws SQLException {
+        throw new SQLFeatureNotSupportedException("Not supported yet.");
     }
 
     @Override
@@ -602,88 +961,119 @@ public class DatabaseMetaData implements java.sql.DatabaseMetaData {
     }
 
     @Override
-    public ResultSet getProcedures(String catalog, String schemaPattern, String procedureNamePattern)  {
-        return null;
+    public ResultSet getProcedures(String catalog, String schemaPattern,
+                                   String procedureNamePattern)    throws SQLException {
+        //throw new SQLFeatureNotSupportedException("Not supported yet.");
+        return this.emptyResultSet;
     }
 
     @Override
-    public ResultSet getProcedureColumns(String catalog, String schemaPattern, String procedureNamePattern, String columnNamePattern)  {
-        return null;
+    public ResultSet getProcedureColumns(String catalog, String schemaPattern,
+                                         String procedureNamePattern,
+                                         String columnNamePattern)    throws SQLException {
+        //throw new SQLFeatureNotSupportedException("Not supported yet.");
+        return this.emptyResultSet;
     }
 
     @Override
     public ResultSet getTables(String catalog, String schemaPattern, String tableNamePattern, String[] types)  {
-        return null;
+        //TODO filter the resultset
+        return this.tableResultSet;
     }
 
     @Override
     public ResultSet getSchemas()  {
-        return null;
+        return this.schemaResultSet;
+    }
+
+    private List<String> getSchemasList() throws SQLException {
+        Set<String> schemas = new HashSet<>();
+        for(String uri: this.catalog.keySet()) {
+            schemas.add(TextUtil.extractWorkspaceIdFromUri(uri));
+        }
+        return new ArrayList<>(schemas);
     }
 
     @Override
     public ResultSet getCatalogs()  {
-        return null;
+        return this.catalogResultSet;
     }
 
     @Override
     public ResultSet getTableTypes()  {
-        return null;
+        return this.tableTypeResultSet;
     }
 
     @Override
-    public ResultSet getColumns(String catalog, String schemaPattern, String tableNamePattern, String columnNamePattern)  {
-        return null;
+    public ResultSet getColumns(String catalog, String schemaPattern,
+                                String tableNamePattern,
+                                String columnNamePattern)  {
+        //TODO filter the resultset
+        return this.columnResultSet;
     }
 
     @Override
-    public ResultSet getColumnPrivileges(String catalog, String schema, String table, String columnNamePattern)  {
-        return null;
+    public ResultSet getColumnPrivileges(String catalog, String schema, String table,
+                                         String columnNamePattern) throws SQLException {
+        throw new SQLFeatureNotSupportedException("Not supported yet.");
     }
 
     @Override
-    public ResultSet getTablePrivileges(String catalog, String schemaPattern, String tableNamePattern)  {
-        return null;
+    public ResultSet getTablePrivileges(String catalog, String schemaPattern,
+                                        String tableNamePattern)  throws SQLException {
+        throw new SQLFeatureNotSupportedException("Not supported yet.");
     }
 
     @Override
-    public ResultSet getBestRowIdentifier(String catalog, String schema, String table, int scope, boolean nullable)  {
-        return null;
+    public ResultSet getBestRowIdentifier(String catalog, String schema, String table,
+                                          int scope, boolean nullable) throws SQLException {
+        throw new SQLFeatureNotSupportedException("Not supported yet.");
     }
 
     @Override
-    public ResultSet getVersionColumns(String catalog, String schema, String table)  {
-        return null;
+    public ResultSet getVersionColumns(String catalog, String schema,
+                                       String table) throws SQLException {
+        throw new SQLFeatureNotSupportedException("Not supported yet.");
     }
 
     @Override
-    public ResultSet getPrimaryKeys(String catalog, String schema, String table)  {
-        return null;
+    public ResultSet getPrimaryKeys(String catalog, String schema, String table) throws SQLException {
+        //throw new SQLFeatureNotSupportedException("Not supported yet.");
+        return this.emptyResultSet;
     }
 
     @Override
-    public ResultSet getImportedKeys(String catalog, String schema, String table)  {
-        return null;
+    public ResultSet getImportedKeys(String catalog, String schema, String table) throws SQLException {
+        //throw new SQLFeatureNotSupportedException("Not supported yet.");
+        return this.emptyResultSet;
     }
 
     @Override
-    public ResultSet getExportedKeys(String catalog, String schema, String table)  {
-        return null;
+    public ResultSet getExportedKeys(String catalog, String schema, String table) throws SQLException {
+        //throw new SQLFeatureNotSupportedException("Not supported yet.");
+        return this.emptyResultSet;
     }
 
     @Override
-    public ResultSet getCrossReference(String parentCatalog, String parentSchema, String parentTable, String foreignCatalog, String foreignSchema, String foreignTable)  {
-        return null;
+    public ResultSet getCrossReference(String parentCatalog, String parentSchema,
+                                       String parentTable, String foreignCatalog,
+                                       String foreignSchema, String foreignTable) throws SQLException {
+        //throw new SQLFeatureNotSupportedException("Not supported yet.");
+        return this.emptyResultSet;
     }
 
     @Override
-    public ResultSet getTypeInfo()  {
-        return null;
+    public ResultSet getTypeInfo() throws SQLException {
+        //throw new SQLFeatureNotSupportedException("Not supported yet.");
+        return this.emptyResultSet;
     }
 
     @Override
-    public ResultSet getIndexInfo(String catalog, String schema, String table, boolean unique, boolean approximate)  {
-        return null;
+    public ResultSet getIndexInfo(String catalog, String schema,
+                                  String table, boolean unique,
+                                  boolean approximate) throws SQLException {
+        //throw new SQLFeatureNotSupportedException("Not supported yet.");
+        return this.emptyResultSet;
     }
 
     @Override
@@ -747,13 +1137,15 @@ public class DatabaseMetaData implements java.sql.DatabaseMetaData {
     }
 
     @Override
-    public ResultSet getUDTs(String catalog, String schemaPattern, String typeNamePattern, int[] types)  {
-        return null;
+    public ResultSet getUDTs(String catalog, String schemaPattern,
+                             String typeNamePattern, int[] types)  throws SQLException {
+        //throw new SQLFeatureNotSupportedException("Not supported yet.");
+        return this.emptyResultSet;
     }
 
     @Override
     public Connection getConnection()  {
-        return null;
+        return this.connection;
     }
 
     @Override
@@ -777,18 +1169,25 @@ public class DatabaseMetaData implements java.sql.DatabaseMetaData {
     }
 
     @Override
-    public ResultSet getSuperTypes(String catalog, String schemaPattern, String typeNamePattern)  {
-        return null;
+    public ResultSet getSuperTypes(String catalog, String schemaPattern,
+                                   String typeNamePattern) throws SQLException {
+        //throw new SQLFeatureNotSupportedException("Not supported yet.");
+        return this.emptyResultSet;
     }
 
     @Override
-    public ResultSet getSuperTables(String catalog, String schemaPattern, String tableNamePattern)  {
-        return null;
+    public ResultSet getSuperTables(String catalog, String schemaPattern,
+                                    String tableNamePattern) throws SQLException {
+        //throw new SQLFeatureNotSupportedException("Not supported yet.");
+        return this.emptyResultSet;
     }
 
     @Override
-    public ResultSet getAttributes(String catalog, String schemaPattern, String typeNamePattern, String attributeNamePattern)  {
-        return null;
+    public ResultSet getAttributes(String catalog, String schemaPattern,
+                                   String typeNamePattern,
+                                   String attributeNamePattern) throws SQLException {
+        //throw new SQLFeatureNotSupportedException("Not supported yet.");
+        return this.emptyResultSet;
     }
 
     @Override
@@ -803,22 +1202,22 @@ public class DatabaseMetaData implements java.sql.DatabaseMetaData {
 
     @Override
     public int getDatabaseMajorVersion()  {
-        return 0;
+        return Driver.MAJOR_VERSION;
     }
 
     @Override
     public int getDatabaseMinorVersion()  {
-        return 0;
+        return Driver.MINOR_VERSION;
     }
 
     @Override
     public int getJDBCMajorVersion()  {
-        return 0;
+        return Driver.MAJOR_VERSION;
     }
 
     @Override
     public int getJDBCMinorVersion()  {
-        return 0;
+        return Driver.MINOR_VERSION;
     }
 
     @Override
@@ -843,7 +1242,8 @@ public class DatabaseMetaData implements java.sql.DatabaseMetaData {
 
     @Override
     public ResultSet getSchemas(String catalog, String schemaPattern) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        //TODO filter the resultset
+        return this.schemaResultSet;
     }
 
     @Override
@@ -858,27 +1258,31 @@ public class DatabaseMetaData implements java.sql.DatabaseMetaData {
 
     @Override
     public ResultSet getClientInfoProperties()  throws SQLException{
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        //throw new SQLFeatureNotSupportedException("Not supported yet.");
+        return this.emptyResultSet;
     }
 
     @Override
     public ResultSet getFunctions(String catalog, String schemaPattern, String functionNamePattern)
             throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        //throw new SQLFeatureNotSupportedException("Not supported yet");
+        return this.emptyResultSet;
     }
 
     @Override
     public ResultSet getFunctionColumns(String catalog, String schemaPattern,
                                         String functionNamePattern,
                                         String columnNamePattern) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        //throw new SQLFeatureNotSupportedException("Not supported yet");
+        return this.emptyResultSet;
     }
 
     @Override
     public ResultSet getPseudoColumns(String catalog, String schemaPattern,
                                       String tableNamePattern,
                                       String columnNamePattern)  throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        //throw new SQLFeatureNotSupportedException("Not supported yet");
+        return this.emptyResultSet;
     }
 
     @Override
@@ -887,12 +1291,12 @@ public class DatabaseMetaData implements java.sql.DatabaseMetaData {
     }
 
     @Override
-    public <T> T unwrap(Class<T> iface)  {
-        return null;
+    public <T> T unwrap(Class<T> iface) throws SQLException {
+        throw new SQLFeatureNotSupportedException("Not supported yet.");
     }
 
     @Override
-    public boolean isWrapperFor(Class<?> iface)  {
-        return false;
+    public boolean isWrapperFor(Class<?> iface) throws SQLException {
+        throw new SQLFeatureNotSupportedException("Not supported yet.");
     }
 }

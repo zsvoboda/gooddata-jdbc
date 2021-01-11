@@ -5,13 +5,17 @@ import org.testng.annotations.Test;
 
 import java.sql.Driver;
 import java.sql.DriverManager;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 
 public class TestStatement {
+
+    private final static Logger LOGGER = Logger.getLogger(TestStatement.class.getName());
 
     // JDBC driver name and database URL
     private static final String JDBC_DRIVER = "com.gooddata.jdbc.driver.Driver";
@@ -22,9 +26,9 @@ public class TestStatement {
 
     private Driver driver;
     private java.sql.Connection connection;
-    private Statement statement;
-    private ResultSetTable resultSet;
-    private ResultSetTable resultSet2;
+    private java.sql.Statement statement;
+    private ResultSet resultSet;
+    private ResultSet resultSet2;
     private List<String> columnnList;
     private List<String> columnnList2;
 
@@ -35,9 +39,9 @@ public class TestStatement {
         String url = String.format(DB_URL, p.getHost(), p.getWorkspace());
         this.driver = DriverManager.getDriver(url);
         this.connection = DriverManager.getConnection(url, p.getUsername(), p.getPassword());
-        this.statement = (Statement)this.connection.createStatement();
-        this.resultSet = (ResultSetTable) this.statement.executeQuery("SELECT " + COLUMNS + " FROM DATA");
-        this.resultSet2 = (ResultSetTable) this.statement.executeQuery("SELECT " + COLUMNS2 + " FROM DATA");
+        this.statement = (java.sql.Statement)this.connection.createStatement();
+        this.resultSet = (ResultSet) this.statement.executeQuery("SELECT " + COLUMNS + " FROM DATA");
+        this.resultSet2 = (ResultSet) this.statement.executeQuery("SELECT " + COLUMNS2 + " FROM DATA");
         this.columnnList = Arrays.stream(COLUMNS.split(", ")).map(i->i.replaceAll("\"","")).collect(Collectors.toList());
         this.columnnList2 = Arrays.stream(COLUMNS2.split(", ")).map(i->i.replaceAll("\"","")).collect(Collectors.toList());
 
@@ -65,22 +69,22 @@ public class TestStatement {
         System.out.println("\nRESULT 1\n");
         while(this.resultSet.next()) {
         System.out.println(String.format("%s, %s, %s, %s, %s",
-                this.resultSet.getTextValue(1),
-                this.resultSet.getTextValue(2),
-                this.resultSet.getTextValue(3),
-                this.resultSet.getTextValue(4),
-                this.resultSet.getTextValue(5)
+                this.resultSet.getString(1),
+                this.resultSet.getString(2),
+                this.resultSet.getString(3),
+                this.resultSet.getDouble(4),
+                this.resultSet.getInt(5)
                 ));
         }
         this.resultSet.beforeFirst();
         System.out.println("\nRESULT 1 columns\n");
         while(this.resultSet.next()) {
             System.out.println(String.format("%s, %s, %s, %s, %s",
-                    this.resultSet.getTextValue(columnnList.get(0)),
-                    this.resultSet.getTextValue(columnnList.get(1)),
-                    this.resultSet.getTextValue(columnnList.get(2)),
-                    this.resultSet.getTextValue(columnnList.get(3)),
-                    this.resultSet.getTextValue(columnnList.get(4))
+                    this.resultSet.getString(1),
+                    this.resultSet.getString(2),
+                    this.resultSet.getString(3),
+                    this.resultSet.getDouble(4),
+                    this.resultSet.getInt(5)
             ));
         }
     }
@@ -90,14 +94,14 @@ public class TestStatement {
         System.out.println("\nRESULT 2\n");
         while(this.resultSet2.next()) {
             System.out.println(String.format("%s",
-                    this.resultSet2.getTextValue(1)
+                    this.resultSet2.getInt(1)
             ));
         }
         this.resultSet2.beforeFirst();
         System.out.println("\nRESULT 2 columns\n");
         while(this.resultSet2.next()) {
             System.out.println(String.format("%s",
-                    this.resultSet2.getTextValue(columnnList2.get(0))
+                    this.resultSet2.getInt(columnnList2.get(0))
             ));
         }
     }

@@ -1,27 +1,45 @@
 package com.gooddata.jdbc.driver;
 
+import com.gooddata.jdbc.util.LoggingInvocationHandler;
+
+import java.io.FileInputStream;
+import java.io.FileReader;
 import java.io.IOException;
+import java.io.Reader;
+import java.lang.reflect.Proxy;
 import java.sql.DriverManager;
 import java.sql.DriverPropertyInfo;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.util.Properties;
 import java.util.logging.Level;
+import java.util.logging.LogManager;
 import java.util.logging.Logger;
 
 public class Driver implements java.sql.Driver {
 
-	private final static Logger logger = Logger.getGlobal();
+	private final static Logger LOGGER = Logger.getLogger(Driver.class.getName());;
 
 	public final static int MAJOR_VERSION = 0;
 	public final static int MINOR_VERSION = 5;
 	public final static String VERSION = String.format("%x.%x", MAJOR_VERSION, MINOR_VERSION);
 
+	static void setupLogging() throws IOException {
+		Logger log = Logger.getGlobal();
+		FileInputStream fis =  new FileInputStream(String.format("%s/.logging",
+			System.getProperty("user.home")));
+		LogManager.getLogManager().readConfiguration(fis);
+		log.setUseParentHandlers(false);
+		fis.close();
+	}
+
 	 static {
-	        try {
-	        	logger.info("GooodData JDBC Driver started");
+
+		 try {
+		 		setupLogging();
+	        	LOGGER.info("GooodData JDBC Driver started");
 	            DriverManager.registerDriver(new Driver());
-	        } catch (SQLException e) {
+	        } catch (IOException | SQLException e) {
 	            throw new RuntimeException(e);
 	        }
 	    }
@@ -29,7 +47,7 @@ public class Driver implements java.sql.Driver {
 	/**
 	 * Default constructor
 	 */
-    private Driver() {}
+    public Driver() {}
 
 	/**
 	 * Creates a new connection
@@ -41,17 +59,12 @@ public class Driver implements java.sql.Driver {
 	@Override
 	public java.sql.Connection connect(String url, Properties info) throws SQLException {
 		if (this.acceptsURL(url)) {
-        	if (info.getProperty("debug", "false").equals("true"))
-        	{
-        	    logger.setLevel(Level.INFO);
-        	}
-        	else
-        	{
-        		logger.setLevel(Level.WARNING);
-        	}
-        	logger.info("jdbc4gd: connect url:"+url);
 			try {
-				return new Connection(url, info);
+
+				return (java.sql.Connection) Proxy.newProxyInstance(
+						Driver.class.getClassLoader(),
+						new Class[] { java.sql.Connection.class },
+						new LoggingInvocationHandler(new Connection(url, info)));
 			} catch (IOException e) {
 				throw new SQLException(e);
 			}
@@ -64,38 +77,32 @@ public class Driver implements java.sql.Driver {
 
 	@Override
 	public boolean acceptsURL(String url) {
-    	logger.info("jdbc4gd: acceptsURL url:"+url);
 		return url.startsWith("jdbc:gd:");
 	}
 
 	@Override
 	public DriverPropertyInfo[] getPropertyInfo(String url, Properties info) throws SQLException {
-		logger.info("jdbc4gd: getPropertyInfo");
 		throw new SQLFeatureNotSupportedException("Sorry, getPropertyInfo call isn't supported yet.");
 	}
 
 	@Override
 	public int getMajorVersion() {
-		logger.info("jdbc4gd: getMajorVersion");
 		return MAJOR_VERSION;
 	}
 
 	@Override
 	public int getMinorVersion() {
-		logger.info("jdbc4gd: getMinorVersion");
 		return MINOR_VERSION;
 	}
 
 	@Override
 	public boolean jdbcCompliant() {
-		logger.info("jdbc4gd: jdbcCompliant");
 		return false;
 	}
 
 	@Override
 	public Logger getParentLogger() {
-		logger.info("jdbc4gd: getParentLogger");
-		return logger;
+		return LOGGER;
 	}
 
 }
