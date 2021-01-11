@@ -126,7 +126,7 @@ public class DataTypeParser {
      * @throws SQLException in case when the value cannot be converted
      */
     public static BigDecimal parseBigDecimal(@NotNull String textValue) throws SQLException {
-        if(textValue == null) return new BigDecimal(0);
+        if(textValue == null) return null;
         try {
             return new BigDecimal(textValue);
         }
@@ -143,7 +143,7 @@ public class DataTypeParser {
      * @throws SQLException in case when the value cannot be converted
      */
     public static BigDecimal parseBigDecimal(@NotNull String textValue, int scale) throws SQLException {
-        if(textValue == null) return new BigDecimal(0);
+        if(textValue == null) return null;
         try {
             return new BigDecimal(textValue, new MathContext(scale));
         }
@@ -159,12 +159,20 @@ public class DataTypeParser {
      * @throws SQLException in case when the value cannot be converted
      */
     public static Object parseObject(@NotNull String textValue) throws SQLException {
-        if(textValue == null) return "";
+        if(textValue == null) return null;
         try {
-                return NumberFormat.getNumberInstance().parse(textValue);
+                return parseInt(textValue);
             }
-            catch (ParseException e) {
-                return textValue;
+            catch (SQLException e) {
+                try {
+                    return parseLong(textValue);
+                } catch(SQLException e1) {
+                    try {
+                        return parseDouble(textValue);
+                    } catch(SQLException e2) {
+                        return textValue;
+                    }
+                }
             }
         }
 

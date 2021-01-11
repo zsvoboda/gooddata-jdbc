@@ -11,8 +11,8 @@ import java.util.logging.Logger;
 
 public class ResultSetTableMetaData extends AbstractResultSetMetaData implements ResultSetMetaData {
 
-	public final static String UNIVERSAL_TABLE_NAME = "GDTABLE";
-	public final static String UNIVERSAL_CATALOG_NAME = "GDCATALOG";
+	public final static String UNIVERSAL_TABLE_NAME = "LDM";
+	public final static String UNIVERSAL_CATALOG_NAME = "";
 
 	private final static Logger LOGGER = Logger.getLogger(ResultSetTableMetaData.class.getName());
 

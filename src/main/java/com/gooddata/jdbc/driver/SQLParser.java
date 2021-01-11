@@ -1,6 +1,5 @@
 package com.gooddata.jdbc.driver;
 
-import com.gooddata.jdbc.util.LoggingInvocationHandler;
 import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.ExpressionVisitor;

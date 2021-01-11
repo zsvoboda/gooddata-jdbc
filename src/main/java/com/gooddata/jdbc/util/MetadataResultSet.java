@@ -2,6 +2,7 @@ package com.gooddata.jdbc.util;
 
 import com.gooddata.jdbc.driver.DatabaseMetaData;
 
+import java.lang.reflect.Proxy;
 import java.sql.*;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -14,7 +15,7 @@ public class MetadataResultSet extends AbstractResultSet {
 
     private final int rowCount;
 
-    private final MetadataResultSetMetaData metadata;
+    private final ResultSetMetaData metadata;
 
     public static class MetaDataColumn {
         private String name;

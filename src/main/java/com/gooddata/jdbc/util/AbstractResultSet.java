@@ -58,7 +58,7 @@ public abstract class AbstractResultSet implements java.sql.ResultSet {
 
     @Override
     public Object getObject(int columnIndex, Map<String, Class<?>> map) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        return getObject(columnIndex);
     }
 
     @Override
@@ -129,7 +129,7 @@ public abstract class AbstractResultSet implements java.sql.ResultSet {
 
     @Override
     public <T> T getObject(int columnIndex, Class<T> type) throws SQLException {
-        return null;
+        return (T)getObject(columnIndex);
     }
 
     private static final List<String> FALSE_VALUES = Arrays.asList("0", "false", "f");
@@ -250,12 +250,12 @@ public abstract class AbstractResultSet implements java.sql.ResultSet {
 
     @Override
     public Object getObject(int columnIndex) throws SQLException {
-        return getString(columnIndex);
+        return DataTypeParser.parseObject(getTextValue(columnIndex));
     }
 
     @Override
     public <T> T getObject(String columnLabel, Class<T> type) throws SQLException {
-        return null;
+        return (T)getObject(columnLabel);
     }
 
     /**
@@ -277,7 +277,7 @@ public abstract class AbstractResultSet implements java.sql.ResultSet {
 
     @Override
     public Object getObject(String columnLabel) throws SQLException {
-        return getString(this.findColumn(columnLabel));
+        return getObject(this.findColumn(columnLabel));
     }
 
     /**

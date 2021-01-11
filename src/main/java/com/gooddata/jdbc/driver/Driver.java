@@ -1,7 +1,5 @@
 package com.gooddata.jdbc.driver;
 
-import com.gooddata.jdbc.util.LoggingInvocationHandler;
-
 import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
@@ -61,10 +59,7 @@ public class Driver implements java.sql.Driver {
 		if (this.acceptsURL(url)) {
 			try {
 
-				return (java.sql.Connection) Proxy.newProxyInstance(
-						Driver.class.getClassLoader(),
-						new Class[] { java.sql.Connection.class },
-						new LoggingInvocationHandler(new Connection(url, info)));
+				return new Connection(url, info);
 			} catch (IOException e) {
 				throw new SQLException(e);
 			}

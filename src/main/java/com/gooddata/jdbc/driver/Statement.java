@@ -1,6 +1,5 @@
 package com.gooddata.jdbc.driver;
 
-import com.gooddata.jdbc.util.LoggingInvocationHandler;
 import com.gooddata.sdk.model.executeafm.Execution;
 import com.gooddata.sdk.model.executeafm.ObjQualifier;
 import com.gooddata.sdk.model.executeafm.UriObjQualifier;
@@ -95,10 +94,7 @@ public class Statement implements java.sql.Statement {
 			Afm afm = getAfm(columns);
 			ExecutionResponse rs = this.gdAfm.executeAfm(this.workspace, new Execution(afm));
 			FutureResult<ExecutionResult> fr = this.gdAfm.getResult(rs);
-			return (java.sql.ResultSet) Proxy.newProxyInstance(
-					Driver.class.getClassLoader(),
-					new Class[] { java.sql.ResultSet.class },
-					new LoggingInvocationHandler(new ResultSetTable(this, fr.get(), columns)));
+			return new ResultSetTable(this, fr.get(), columns);
 		} catch (JSQLParserException | DatabaseMetaData.LdmObjectNotFoundException
 				| DatabaseMetaData.DuplicateLdmObjectException e) {
 			throw new SQLException(e);

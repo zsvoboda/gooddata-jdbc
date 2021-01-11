@@ -28,13 +28,22 @@ public class LoggingInvocationHandler implements InvocationHandler {
                 method.getDeclaringClass().getName(),
                 method.getName(),
                 argsText));
-        Object r = method.invoke(delegate, args);
-        LOGGER.info(String.format("INVOKED class: '%s' method: '%s' args: %s returns: %s",
-                method.getDeclaringClass().getName(),
-                method.getName(),
-                argsText,
-                r));
-        return r;
+        try {
+            Object r = method.invoke(delegate, args);
+            String cls = "null";
+            if(r != null)
+                cls = r.getClass().getName();
+            LOGGER.info(String.format("INVOKED class: '%s' method: '%s' args: %s returns: %s class: %s",
+                    method.getDeclaringClass().getName(),
+                    method.getName(),
+                    argsText,
+                    r,
+                    cls));
+            return r;
+        } catch(Throwable e) {
+            LOGGER.info(String.format("EXCEPTION %s",e.toString()));
+            throw e;
+        }
     }
 
 }

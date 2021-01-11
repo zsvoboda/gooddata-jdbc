@@ -1,10 +1,8 @@
 package com.gooddata.jdbc.driver;
 
-import com.gooddata.jdbc.util.LoggingInvocationHandler;
 import com.gooddata.sdk.model.project.Project;
 import com.gooddata.sdk.service.GoodData;
 import java.io.IOException;
-import java.lang.reflect.Proxy;
 import java.sql.*;
 import java.util.Map;
 import java.util.Properties;
@@ -60,11 +58,7 @@ public class Connection implements java.sql.Connection {
 
     @Override
     public java.sql.Statement createStatement() {
-        return (java.sql.Statement) Proxy.newProxyInstance(
-                Driver.class.getClassLoader(),
-                new Class[] { java.sql.Statement.class },
-                new LoggingInvocationHandler(new Statement(this, this.gd,
-                        this.databaseMetaData)));
+        return new Statement(this, this.gd, this.databaseMetaData);
     }
 
 
@@ -116,10 +110,7 @@ public class Connection implements java.sql.Connection {
 
     @Override
     public java.sql.DatabaseMetaData getMetaData() {
-        return (java.sql.DatabaseMetaData) Proxy.newProxyInstance(
-                Driver.class.getClassLoader(),
-                new Class[] { java.sql.DatabaseMetaData.class },
-                new LoggingInvocationHandler(databaseMetaData));
+        return databaseMetaData;
     }
 
     @Override
@@ -134,7 +125,7 @@ public class Connection implements java.sql.Connection {
 
     @Override
     public String getCatalog() throws SQLException {
-        return ResultSetTableMetaData.UNIVERSAL_CATALOG_NAME;
+        return "";
     }
 
     @Override
@@ -155,7 +146,7 @@ public class Connection implements java.sql.Connection {
     @Override
     public SQLWarning getWarnings() throws SQLException {
         //throw new SQLFeatureNotSupportedException("Not supported yet.");
-        return new SQLWarning();
+        return null;
     }
 
     @Override
@@ -274,7 +265,7 @@ public class Connection implements java.sql.Connection {
 
     @Override
     public boolean isValid(int timeout) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet.");
+        return true;
     }
 
     @Override
@@ -314,7 +305,7 @@ public class Connection implements java.sql.Connection {
 
     @Override
     public void setSchema(String schema) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet.");
+        //throw new SQLFeatureNotSupportedException("Not supported yet.");
     }
 
     @Override
