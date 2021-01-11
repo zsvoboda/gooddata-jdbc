@@ -1,5 +1,6 @@
 package com.gooddata.jdbc.driver;
 
+import com.gooddata.jdbc.util.LoggingInvocationHandler;
 import com.gooddata.sdk.model.executeafm.Execution;
 import com.gooddata.sdk.model.executeafm.ObjQualifier;
 import com.gooddata.sdk.model.executeafm.UriObjQualifier;
@@ -31,8 +32,6 @@ public class Statement implements java.sql.Statement {
 
 	private final static Logger LOGGER = Logger.getLogger(Statement.class.getName());
 
-
-
 	private final GoodData gd;
 	private final Project workspace;
 	private final Connection connection;
@@ -42,6 +41,8 @@ public class Statement implements java.sql.Statement {
     private boolean isClosed = false;
 	private ResultSet resultSet;
     private int maxRows = 0;
+
+    private int fetchSize = 0;
 
 
 	/**
@@ -94,7 +95,11 @@ public class Statement implements java.sql.Statement {
 			Afm afm = getAfm(columns);
 			ExecutionResponse rs = this.gdAfm.executeAfm(this.workspace, new Execution(afm));
 			FutureResult<ExecutionResult> fr = this.gdAfm.getResult(rs);
-			return new ResultSetTable(this, fr.get(), columns);
+			ResultSet r = new ResultSetTable(this, fr.get(), columns);
+			return (java.sql.ResultSet) Proxy.newProxyInstance(
+					Driver.class.getClassLoader(),
+					new Class[] { java.sql.ResultSet.class },
+					new LoggingInvocationHandler(r));
 		} catch (JSQLParserException | DatabaseMetaData.LdmObjectNotFoundException
 				| DatabaseMetaData.DuplicateLdmObjectException e) {
 			throw new SQLException(e);
@@ -155,18 +160,18 @@ public class Statement implements java.sql.Statement {
 
 	@Override
 	public <T> T unwrap(Class<T> iface) throws SQLException {
-		throw new SQLFeatureNotSupportedException("Not supported yet.");
+		throw new SQLFeatureNotSupportedException("Statement.unwrap is not supported yet.");
 	}
 
 	@Override
 	public boolean isWrapperFor(Class<?> iface) throws SQLException {
-		throw new SQLFeatureNotSupportedException("Not supported yet.");
+		throw new SQLFeatureNotSupportedException("Statement.isWrapperFor is not supported yet.");
 	}
 
 
 	@Override
 	public int executeUpdate(String sql) throws SQLException {
-		throw new SQLFeatureNotSupportedException("Not supported yet.");
+		throw new SQLFeatureNotSupportedException("Statement.executeUpdate is not supported yet.");
 	}
 
 	@Override
@@ -176,12 +181,12 @@ public class Statement implements java.sql.Statement {
 
 	@Override
 	public int getMaxFieldSize() throws SQLException {
-		throw new SQLFeatureNotSupportedException("Not supported yet.");
+		throw new SQLFeatureNotSupportedException("Statement.getMaxFieldSize is not supported yet.");
 	}
 
 	@Override
 	public void setMaxFieldSize(int max) throws SQLException {
-		throw new SQLFeatureNotSupportedException("Not supported yet.");
+		throw new SQLFeatureNotSupportedException("Statement.setMaxFieldSize is not supported yet.");
 	}
 
 	@Override
@@ -196,93 +201,92 @@ public class Statement implements java.sql.Statement {
 
 	@Override
 	public void setEscapeProcessing(boolean enable) throws SQLException {
-		throw new SQLFeatureNotSupportedException("Not supported yet.");
+		throw new SQLFeatureNotSupportedException("Statement.setEscapeProcessing is not supported yet.");
 	}
 
 	@Override
 	public int getQueryTimeout() throws SQLException {
-		throw new SQLFeatureNotSupportedException("Not supported yet.");
+		throw new SQLFeatureNotSupportedException("Statement.getQueryTimeout is not supported yet.");
 	}
 
 	@Override
 	public void setQueryTimeout(int seconds) throws SQLException {
-		throw new SQLFeatureNotSupportedException("Not supported yet.");
+		throw new SQLFeatureNotSupportedException("Statement.setQueryTimeout is not supported yet.");
 	}
 
 	@Override
 	public void cancel() throws SQLException {
-		throw new SQLFeatureNotSupportedException("Not supported yet.");
+		throw new SQLFeatureNotSupportedException("Statement.cancel is not supported yet.");
 	}
 
 	@Override
 	public SQLWarning getWarnings() throws SQLException {
-		//throw new SQLFeatureNotSupportedException("Not supported yet.");
-		return new SQLWarning();
+		throw new SQLFeatureNotSupportedException("Statement.getWarnings is not supported yet.");
 	}
 
 	@Override
 	public void clearWarnings() throws SQLException {
-		//throw new SQLFeatureNotSupportedException("Not supported yet.");
+		throw new SQLFeatureNotSupportedException("Statement.clearWarnings is not supported yet.");
 	}
 
 	@Override
 	public void setCursorName(String name) throws SQLException {
-		throw new SQLFeatureNotSupportedException("Not supported yet.");
+		throw new SQLFeatureNotSupportedException("Statement.setCursorName is not supported yet.");
 	}
 
 	@Override
 	public int getUpdateCount() throws SQLException {
-		throw new SQLFeatureNotSupportedException("Not supported yet.");
+		return -1;
 	}
 
 	@Override
 	public boolean getMoreResults() throws SQLException {
-		throw new SQLFeatureNotSupportedException("Not supported yet.");
+		return false;
 	}
 
 	@Override
 	public void setFetchDirection(int direction) throws SQLException {
-		throw new SQLFeatureNotSupportedException("Not supported yet.");
+		throw new SQLFeatureNotSupportedException("Statement.setFetchDirection is not supported yet.");
 	}
 
 	@Override
 	public int getFetchDirection() throws SQLException {
-		return ResultSetTable.FETCH_DIRECTION;
+		throw new SQLFeatureNotSupportedException("Statement.getFetchDirection is not supported yet.");
 	}
 
 	@Override
 	public void setFetchSize(int rows) throws SQLException {
-		//throw new SQLFeatureNotSupportedException("Not supported yet");
+		this.fetchSize = rows;
 	}
 
 	@Override
 	public int getFetchSize() throws SQLException {
-		throw new SQLFeatureNotSupportedException("Not supported yet");
+		return this.fetchSize;
 	}
 
 	@Override
 	public int getResultSetConcurrency() throws SQLException {
-		return ResultSetTable.CONCURRENCY;
+		throw new SQLFeatureNotSupportedException("Statement.getResultSetConcurrency is not supported yet.");
 	}
 
 	@Override
 	public int getResultSetType() throws SQLException {
-		return ResultSetTable.TYPE;
+		throw new SQLFeatureNotSupportedException("Statement.getResultSetType is not supported yet.");
 	}
 
 	@Override
 	public void addBatch(String sql) throws SQLException {
-		throw new SQLFeatureNotSupportedException("Not supported yet.");
+		throw new SQLFeatureNotSupportedException("Statement.addBatch is not supported yet.");
 	}
 
 	@Override
 	public void clearBatch() throws SQLException {
-		throw new SQLFeatureNotSupportedException("Not supported yet.");
+		throw new SQLFeatureNotSupportedException("Statement.clearBatch is not supported yet.");
 	}
 
 	@Override
 	public int[] executeBatch() throws SQLException {
-		throw new SQLFeatureNotSupportedException("Not supported yet.");
+		throw new SQLFeatureNotSupportedException("Statement.executeBatch is not supported yet.");
 	}
 
 	@Override
@@ -292,33 +296,32 @@ public class Statement implements java.sql.Statement {
 
 	@Override
 	public boolean getMoreResults(int current) throws SQLException {
-		//throw new SQLFeatureNotSupportedException("Not supported yet.");
 		return false;
 	}
 
 	@Override
 	public ResultSet getGeneratedKeys() throws SQLException {
-		throw new SQLFeatureNotSupportedException("Not supported yet.");
+		throw new SQLFeatureNotSupportedException("Statement.getGeneratedKeys is not supported yet.");
 	}
 
 	@Override
 	public int executeUpdate(String sql, int autoGeneratedKeys) throws SQLException {
-		throw new SQLFeatureNotSupportedException("Not supported yet.");
+		throw new SQLFeatureNotSupportedException("Statement.executeUpdate is not supported yet.");
 	}
 
 	@Override
 	public int executeUpdate(String sql, int[] columnIndexes) throws SQLException {
-		throw new SQLFeatureNotSupportedException("Not supported yet.");
+		throw new SQLFeatureNotSupportedException("Statement.executeUpdate is not supported yet.");
 	}
 
 	@Override
 	public int executeUpdate(String sql, String[] columnNames) throws SQLException {
-		throw new SQLFeatureNotSupportedException("Not supported yet.");
+		throw new SQLFeatureNotSupportedException("Statement.executeUpdate is not supported yet.");
 	}
 
 	@Override
 	public int getResultSetHoldability() throws SQLException {
-		return ResultSetTable.HOLDABILITY;
+		throw new SQLFeatureNotSupportedException("Statement.getResultSetHoldability is not supported yet.");
 	}
 
 	@Override
@@ -328,12 +331,12 @@ public class Statement implements java.sql.Statement {
 
 	@Override
 	public void setPoolable(boolean poolable) throws SQLException {
-		throw new SQLFeatureNotSupportedException("Not supported yet.");
+		throw new SQLFeatureNotSupportedException("Statement.setPoolable is not supported yet.");
 	}
 
 	@Override
 	public boolean isPoolable() throws SQLException {
-		throw new SQLFeatureNotSupportedException("Not supported yet.");
+		throw new SQLFeatureNotSupportedException("Statement.isPoolable is not supported yet.");
 	}
 
 	@Override

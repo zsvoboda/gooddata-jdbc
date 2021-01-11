@@ -471,58 +471,57 @@ public abstract class AbstractResultSet implements java.sql.ResultSet {
 
     @Override
     public SQLWarning getWarnings() throws SQLException {
-        //throw new SQLFeatureNotSupportedException("Not implemented yet");
-        return new SQLWarning();
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.getWarnings is not implemented yet");
     }
 
     @Override
     public void clearWarnings() throws SQLException {
-        //throw new SQLFeatureNotSupportedException("Not implemented yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.clearWarnings is not implemented yet");
     }
 
     @Override
     public void setFetchDirection(int direction) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.setFetchDirection is not implemented yet");
     }
 
     @Override
     public int getFetchDirection() throws SQLException {
-        return FETCH_DIRECTION;
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.getFetchDirection is not implemented yet");
     }
 
     @Override
     public void setFetchSize(int rows) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.setFetchSize is not implemented yet");
     }
 
     @Override
     public int getFetchSize() throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.getFetchSize is not implemented yet");
     }
 
     @Override
     public int getType() throws SQLException {
-        return TYPE;
+        return TYPE_SCROLL_INSENSITIVE;
     }
 
     @Override
     public int getConcurrency() throws SQLException {
-        return CONCURRENCY;
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.getConcurrency is not implemented yet");
     }
 
     @Override
     public InputStream getAsciiStream(int columnIndex) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.getAsciiStream is not implemented yet");
     }
 
     @Override
     public InputStream getUnicodeStream(int columnIndex) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.getUnicodeStream is not implemented yet");
     }
 
     @Override
     public InputStream getBinaryStream(int columnIndex) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.getBinaryStream is not implemented yet");
     }
 
     /**
@@ -548,587 +547,587 @@ public abstract class AbstractResultSet implements java.sql.ResultSet {
 
     @Override
     public Reader getCharacterStream(int columnIndex) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.getCharacterStream is not implemented yet");
     }
 
     @Override
     public Reader getCharacterStream(String columnLabel) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.getCharacterStream is not implemented yet");
     }
 
     @Override
     public boolean rowUpdated() throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.rowUpdated is not implemented yet");
     }
 
     @Override
     public boolean rowInserted() throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.rowInserted is not implemented yet");
     }
 
     @Override
     public boolean rowDeleted() throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.rowDeleted is not implemented yet");
     }
 
     @Override
     public void updateNull(int columnIndex) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateNull is not implemented yet");
     }
 
     @Override
     public void updateBoolean(int columnIndex, boolean x) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateBoolean is not implemented yet");
     }
 
     @Override
     public void updateByte(int columnIndex, byte x) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateByte is not implemented yet");
     }
 
     @Override
     public void updateShort(int columnIndex, short x) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateShort is not implemented yet");
     }
 
     @Override
     public void updateInt(int columnIndex, int x) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateInt is not implemented yet");
     }
 
     @Override
     public void updateLong(int columnIndex, long x) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateLong is not implemented yet");
     }
 
     @Override
     public void updateFloat(int columnIndex, float x) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateFloat is not implemented yet");
     }
 
     @Override
     public void updateDouble(int columnIndex, double x) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateDouble is not implemented yet");
     }
 
     @Override
     public void updateBigDecimal(int columnIndex, BigDecimal x) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateBigDecimal is not implemented yet");
     }
 
     @Override
     public void updateString(int columnIndex, String x) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateString is not implemented yet");
     }
 
     @Override
     public void updateBytes(int columnIndex, byte[] x) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateBytes is not implemented yet");
     }
 
     @Override
     public void updateDate(int columnIndex, Date x) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateDate is not implemented yet");
     }
 
     @Override
     public void updateTime(int columnIndex, Time x) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateTime is not implemented yet");
     }
 
     @Override
     public void updateTimestamp(int columnIndex, Timestamp x) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateTimestamp is not implemented yet");
     }
 
     @Override
     public void updateAsciiStream(int columnIndex, InputStream x, int length) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateAsciiStream is not implemented yet");
     }
 
     @Override
     public void updateBinaryStream(int columnIndex, InputStream x, int length) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateBinaryStream is not implemented yet");
     }
 
     @Override
     public void updateCharacterStream(int columnIndex, Reader x, int length) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateCharacterStream is not implemented yet");
     }
 
     @Override
     public void updateObject(int columnIndex, Object x, int scaleOrLength) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateObject is not implemented yet");
     }
 
     @Override
     public void updateObject(int columnIndex, Object x) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateObject is not implemented yet");
     }
 
     @Override
     public void updateNull(String columnLabel) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateNull is not implemented yet");
     }
 
     @Override
     public void updateBoolean(String columnLabel, boolean x) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateBoolean is not implemented yet");
     }
 
     @Override
     public void updateByte(String columnLabel, byte x) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateByte is not implemented yet");
     }
 
     @Override
     public void updateShort(String columnLabel, short x) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateShort is not implemented yet");
     }
 
     @Override
     public void updateInt(String columnLabel, int x) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateInt is not implemented yet");
     }
 
     @Override
     public void updateLong(String columnLabel, long x) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateLong is not implemented yet");
     }
 
     @Override
     public void updateFloat(String columnLabel, float x) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateFloat is not implemented yet");
     }
 
     @Override
     public void updateDouble(String columnLabel, double x) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateDouble is not implemented yet");
     }
 
     @Override
     public void updateBigDecimal(String columnLabel, BigDecimal x) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateBigDecimal is not implemented yet");
     }
 
     @Override
     public void updateString(String columnLabel, String x) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateString is not implemented yet");
     }
 
     @Override
     public void updateBytes(String columnLabel, byte[] x) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateBytes is not implemented yet");
     }
 
     @Override
     public void updateDate(String columnLabel, Date x) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateDate is not implemented yet");
     }
 
     @Override
     public void updateTime(String columnLabel, Time x) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateTime is not implemented yet");
     }
 
     @Override
     public void updateTimestamp(String columnLabel, Timestamp x) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateTimestamp is not implemented yet");
     }
 
     @Override
     public void updateAsciiStream(String columnLabel, InputStream x, int length) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateAsciiStream is not implemented yet");
     }
 
     @Override
     public void updateBinaryStream(String columnLabel, InputStream x, int length) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateBinaryStream is not implemented yet");
     }
 
     @Override
     public void updateCharacterStream(String columnLabel, Reader reader, int length) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateCharacterStream is not implemented yet");
     }
 
     @Override
     public void updateObject(String columnLabel, Object x, int scaleOrLength) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateObject is not implemented yet");
     }
 
     @Override
     public void updateObject(String columnLabel, Object x) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateObject is not implemented yet");
     }
 
     @Override
     public void insertRow() throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.insertRow is not implemented yet");
     }
 
     @Override
     public void updateRow() throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateRow is not implemented yet");
     }
 
     @Override
     public void deleteRow() throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.deleteRow is not implemented yet");
     }
 
     @Override
     public void refreshRow() throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.refreshRow is not implemented yet");
     }
 
     @Override
     public void cancelRowUpdates() throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.cancelRowUpdates is not implemented yet");
     }
 
     @Override
     public void moveToInsertRow() throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.moveToInsertRow is not implemented yet");
     }
 
     @Override
     public void moveToCurrentRow() throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.moveToCurrentRow is not implemented yet");
     }
 
     @Override
     public Ref getRef(int columnIndex) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.getRef is not implemented yet");
     }
 
     @Override
     public Blob getBlob(int columnIndex) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.getBlob is not implemented yet");
     }
 
     @Override
     public Clob getClob(int columnIndex) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.getClob is not implemented yet");
     }
 
     @Override
     public Array getArray(int columnIndex) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.getArray is not implemented yet");
     }
 
     @Override
     public Object getObject(String columnLabel, Map<String, Class<?>> map) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        return this.getObject(columnLabel);
     }
 
     @Override
     public Ref getRef(String columnLabel) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.getRef is not implemented yet");
     }
 
     @Override
     public Blob getBlob(String columnLabel) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.getBlob is not implemented yet");
     }
 
     @Override
     public Clob getClob(String columnLabel) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.getClob is not implemented yet");
     }
 
     @Override
     public Array getArray(String columnLabel) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.getArray is not implemented yet");
     }
 
     @Override
     public URL getURL(int columnIndex) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.getURL is not implemented yet");
     }
 
     @Override
     public URL getURL(String columnLabel) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.getURL is not implemented yet");
     }
 
     @Override
     public void updateRef(int columnIndex, Ref x) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateRef is not implemented yet");
     }
 
     @Override
     public void updateRef(String columnLabel, Ref x) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateRef is not implemented yet");
     }
 
     @Override
     public void updateBlob(int columnIndex, Blob x) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateBlob is not implemented yet");
     }
 
     @Override
     public void updateBlob(String columnLabel, Blob x) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateBlob is not implemented yet");
     }
 
     @Override
     public void updateClob(int columnIndex, Clob x) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateClob is not implemented yet");
     }
 
     @Override
     public void updateClob(String columnLabel, Clob x) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateClob is not implemented yet");
     }
 
     @Override
     public void updateArray(int columnIndex, Array x) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateArray is not implemented yet");
     }
 
     @Override
     public void updateArray(String columnLabel, Array x) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateArray is not implemented yet");
     }
 
     @Override
     public RowId getRowId(int columnIndex) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.getRowId is not implemented yet");
     }
 
     @Override
     public RowId getRowId(String columnLabel) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.getRowId is not implemented yet");
     }
 
     @Override
     public void updateRowId(int columnIndex, RowId x) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateRowId is not implemented yet");
     }
 
     @Override
     public void updateRowId(String columnLabel, RowId x) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateRowId is not implemented yet");
     }
 
     @Override
     public void updateNString(int columnIndex, String nString) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateNString is not implemented yet");
     }
 
     @Override
     public void updateNString(String columnLabel, String nString) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateNString is not implemented yet");
     }
 
     @Override
     public void updateNClob(int columnIndex, NClob nClob) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateNClob is not implemented yet");
     }
 
     @Override
     public void updateNClob(String columnLabel, NClob nClob) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateNClob is not implemented yet");
     }
 
     @Override
     public NClob getNClob(int columnIndex) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.getNClob is not implemented yet");
     }
 
     @Override
     public NClob getNClob(String columnLabel) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.getNClob is not implemented yet");
     }
 
     @Override
     public SQLXML getSQLXML(int columnIndex) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.getSQLXML is not implemented yet");
     }
 
     @Override
     public SQLXML getSQLXML(String columnLabel) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.getSQLXML is not implemented yet");
     }
 
     @Override
     public void updateSQLXML(int columnIndex, SQLXML xmlObject) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateSQLXML is not implemented yet");
     }
 
     @Override
     public void updateSQLXML(String columnLabel, SQLXML xmlObject) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateSQLXML is not implemented yet");
     }
 
     @Override
     public String getNString(int columnIndex) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.getNString is not implemented yet");
     }
 
     @Override
     public String getNString(String columnLabel) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.getNString is not implemented yet");
     }
 
     @Override
     public Reader getNCharacterStream(int columnIndex) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.getNCharacterStream is not implemented yet");
     }
 
     @Override
     public Reader getNCharacterStream(String columnLabel) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.getNCharacterStream is not implemented yet");
     }
 
     @Override
     public void updateNCharacterStream(int columnIndex, Reader x, long length) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateNCharacterStream is not implemented yet");
     }
 
     @Override
     public void updateNCharacterStream(String columnLabel, Reader reader, long length) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateNCharacterStream is not implemented yet");
     }
 
     @Override
     public void updateAsciiStream(int columnIndex, InputStream x, long length) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateAsciiStream is not implemented yet");
     }
 
     @Override
     public void updateBinaryStream(int columnIndex, InputStream x, long length) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateBinaryStream is not implemented yet");
     }
 
     @Override
     public void updateCharacterStream(int columnIndex, Reader x, long length) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateCharacterStream is not implemented yet");
     }
 
     @Override
     public void updateAsciiStream(String columnLabel, InputStream x, long length) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateAsciiStream is not implemented yet");
     }
 
     @Override
     public void updateBinaryStream(String columnLabel, InputStream x, long length) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateBinaryStream is not implemented yet");
     }
 
     @Override
     public void updateCharacterStream(String columnLabel, Reader reader, long length) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateCharacterStream is not implemented yet");
     }
 
     @Override
     public void updateBlob(int columnIndex, InputStream inputStream, long length) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateBlob is not implemented yet");
     }
 
     @Override
     public void updateBlob(String columnLabel, InputStream inputStream, long length) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateBlob is not implemented yet");
     }
 
     @Override
     public void updateClob(int columnIndex, Reader reader, long length) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateClob is not implemented yet");
     }
 
     @Override
     public void updateClob(String columnLabel, Reader reader, long length) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateClob is not implemented yet");
     }
 
     @Override
     public void updateNClob(int columnIndex, Reader reader, long length) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateNClob is not implemented yet");
     }
 
     @Override
     public void updateNClob(String columnLabel, Reader reader, long length) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateNClob is not implemented yet");
     }
 
     @Override
     public void updateNCharacterStream(int columnIndex, Reader x) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateNCharacterStream is not implemented yet");
     }
 
     @Override
     public void updateNCharacterStream(String columnLabel, Reader reader) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateNCharacterStream is not implemented yet");
     }
 
     @Override
     public void updateAsciiStream(int columnIndex, InputStream x) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateAsciiStream is not implemented yet");
     }
 
     @Override
     public void updateBinaryStream(int columnIndex, InputStream x) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateBinaryStream is not implemented yet");
     }
 
     @Override
     public void updateCharacterStream(int columnIndex, Reader x) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateCharacterStream is not implemented yet");
     }
 
     @Override
     public void updateAsciiStream(String columnLabel, InputStream x) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateAsciiStream is not implemented yet");
     }
 
     @Override
     public void updateBinaryStream(String columnLabel, InputStream x) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateBinaryStream is not implemented yet");
     }
 
     @Override
     public void updateCharacterStream(String columnLabel, Reader reader) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateCharacterStream is not implemented yet");
     }
 
     @Override
     public void updateBlob(int columnIndex, InputStream inputStream) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateBlob is not implemented yet");
     }
 
     @Override
     public void updateBlob(String columnLabel, InputStream inputStream) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateBlob is not implemented yet");
     }
 
     @Override
     public void updateClob(int columnIndex, Reader reader) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateClob is not implemented yet");
     }
 
     @Override
     public void updateClob(String columnLabel, Reader reader) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateClob is not implemented yet");
     }
 
     @Override
     public void updateNClob(int columnIndex, Reader reader) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateNClob is not implemented yet");
     }
 
     @Override
     public void updateNClob(String columnLabel, Reader reader) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.updateNClob is not implemented yet");
     }
 
     @Override
     public <T> T unwrap(Class<T> iface) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.unwrap is not implemented yet");
     }
 
     @Override
     public boolean isWrapperFor(Class<?> iface) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("AbstractResultSet.isWrapperFor is not implemented yet");
     }
 
 }

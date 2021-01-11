@@ -100,7 +100,7 @@ public class MetadataResultSet extends AbstractResultSet {
 
     @Override
     public Statement getStatement() throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet.");
+        throw new SQLFeatureNotSupportedException("MetadataResultSet.getStatement is not implemented yet");
     }
 
     @Override

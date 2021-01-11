@@ -77,7 +77,7 @@ public class Driver implements java.sql.Driver {
 
 	@Override
 	public DriverPropertyInfo[] getPropertyInfo(String url, Properties info) throws SQLException {
-		throw new SQLFeatureNotSupportedException("Sorry, getPropertyInfo call isn't supported yet.");
+		throw new SQLFeatureNotSupportedException("Driver.getPropertyInfo is not supported yet.");
 	}
 
 	@Override

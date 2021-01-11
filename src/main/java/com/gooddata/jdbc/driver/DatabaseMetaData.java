@@ -399,7 +399,7 @@ public class DatabaseMetaData implements java.sql.DatabaseMetaData {
 
     @Override
     public String getURL() throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet.");
+        throw new SQLFeatureNotSupportedException("DatabaseMetaData.getURL is not implemented yet");
     }
 
     @Override
@@ -519,27 +519,27 @@ public class DatabaseMetaData implements java.sql.DatabaseMetaData {
 
     @Override
     public String getSQLKeywords() throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet.");
+        throw new SQLFeatureNotSupportedException("DatabaseMetaData.getSQLKeywords is not implemented yet");
     }
 
     @Override
     public String getNumericFunctions() throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet.");
+        throw new SQLFeatureNotSupportedException("DatabaseMetaData.getNumericFunctions is not implemented yet");
     }
 
     @Override
     public String getStringFunctions()  throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet.");
+        throw new SQLFeatureNotSupportedException("DatabaseMetaData.getStringFunctions is not implemented yet");
     }
 
     @Override
     public String getSystemFunctions()  throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet.");
+        throw new SQLFeatureNotSupportedException("DatabaseMetaData.getSystemFunctions is not implemented yet");
     }
 
     @Override
     public String getTimeDateFunctions()  throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet.");
+        throw new SQLFeatureNotSupportedException("DatabaseMetaData.getTimeDateFunctions is not implemented yet");
     }
 
     @Override
@@ -549,8 +549,7 @@ public class DatabaseMetaData implements java.sql.DatabaseMetaData {
 
     @Override
     public String getExtraNameCharacters()  throws SQLException {
-        //throw new SQLFeatureNotSupportedException("Not supported yet.");
-        return "";
+        throw new SQLFeatureNotSupportedException("DatabaseMetaData.getExtraNameCharacters is not implemented yet");
     }
 
     @Override
@@ -710,7 +709,7 @@ public class DatabaseMetaData implements java.sql.DatabaseMetaData {
 
     @Override
     public String getCatalogSeparator()  throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet.");
+        throw new SQLFeatureNotSupportedException("DatabaseMetaData.getCatalogSeparator is not implemented yet");
     }
 
     @Override
@@ -945,7 +944,7 @@ public class DatabaseMetaData implements java.sql.DatabaseMetaData {
 
     @Override
     public int getDefaultTransactionIsolation()  throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet.");
+        throw new SQLFeatureNotSupportedException("DatabaseMetaData.getDefaultTransactionIsolation is not implemented yet");
     }
 
     @Override
@@ -981,7 +980,6 @@ public class DatabaseMetaData implements java.sql.DatabaseMetaData {
     @Override
     public ResultSet getProcedures(String catalog, String schemaPattern,
                                    String procedureNamePattern)    throws SQLException {
-        //throw new SQLFeatureNotSupportedException("Not supported yet.");
         return this.populateEmptyResultSet();
     }
 
@@ -989,8 +987,7 @@ public class DatabaseMetaData implements java.sql.DatabaseMetaData {
     public ResultSet getProcedureColumns(String catalog, String schemaPattern,
                                          String procedureNamePattern,
                                          String columnNamePattern)    throws SQLException {
-        //throw new SQLFeatureNotSupportedException("Not supported yet.");
-        return this.populateEmptyResultSet();
+        throw new SQLFeatureNotSupportedException("DatabaseMetaData.getProcedureColumns is not implemented yet");
     }
 
     @Override
@@ -1034,25 +1031,25 @@ public class DatabaseMetaData implements java.sql.DatabaseMetaData {
     @Override
     public ResultSet getColumnPrivileges(String catalog, String schema, String table,
                                          String columnNamePattern) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet.");
+        throw new SQLFeatureNotSupportedException("DatabaseMetaData.getColumnPrivileges is not implemented yet");
     }
 
     @Override
     public ResultSet getTablePrivileges(String catalog, String schemaPattern,
                                         String tableNamePattern)  throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet.");
+        throw new SQLFeatureNotSupportedException("DatabaseMetaData.getTablePrivileges is not implemented yet");
     }
 
     @Override
     public ResultSet getBestRowIdentifier(String catalog, String schema, String table,
                                           int scope, boolean nullable) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet.");
+        throw new SQLFeatureNotSupportedException("DatabaseMetaData.getBestRowIdentifier is not implemented yet");
     }
 
     @Override
     public ResultSet getVersionColumns(String catalog, String schema,
                                        String table) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet.");
+        throw new SQLFeatureNotSupportedException("DatabaseMetaData.getVersionColumns is not implemented yet");
     }
 
     @Override
@@ -1069,7 +1066,7 @@ public class DatabaseMetaData implements java.sql.DatabaseMetaData {
 
     @Override
     public ResultSet getExportedKeys(String catalog, String schema, String table) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet.");
+        throw new SQLFeatureNotSupportedException("DatabaseMetaData.getExportedKeys is not implemented yet");
         //return this.emptyResultSet;
     }
 
@@ -1077,13 +1074,13 @@ public class DatabaseMetaData implements java.sql.DatabaseMetaData {
     public ResultSet getCrossReference(String parentCatalog, String parentSchema,
                                        String parentTable, String foreignCatalog,
                                        String foreignSchema, String foreignTable) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet.");
+        throw new SQLFeatureNotSupportedException("DatabaseMetaData.getCrossReference is not implemented yet");
         //return this.emptyResultSet;
     }
 
     @Override
     public ResultSet getTypeInfo() throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet.");
+        throw new SQLFeatureNotSupportedException("DatabaseMetaData.getTypeInfo is not implemented yet");
         //return this.emptyResultSet;
     }
 
@@ -1158,7 +1155,7 @@ public class DatabaseMetaData implements java.sql.DatabaseMetaData {
     @Override
     public ResultSet getUDTs(String catalog, String schemaPattern,
                              String typeNamePattern, int[] types)  throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet.");
+        throw new SQLFeatureNotSupportedException("DatabaseMetaData.getUDTs is not implemented yet");
         //return this.emptyResultSet;
     }
 
@@ -1190,14 +1187,14 @@ public class DatabaseMetaData implements java.sql.DatabaseMetaData {
     @Override
     public ResultSet getSuperTypes(String catalog, String schemaPattern,
                                    String typeNamePattern) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet.");
+        throw new SQLFeatureNotSupportedException("DatabaseMetaData.getSuperTypes is not implemented yet");
         //return this.emptyResultSet;
     }
 
     @Override
     public ResultSet getSuperTables(String catalog, String schemaPattern,
                                     String tableNamePattern) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet.");
+        throw new SQLFeatureNotSupportedException("DatabaseMetaData.getSuperTables is not implemented yet");
         //return this.emptyResultSet;
     }
 
@@ -1205,7 +1202,7 @@ public class DatabaseMetaData implements java.sql.DatabaseMetaData {
     public ResultSet getAttributes(String catalog, String schemaPattern,
                                    String typeNamePattern,
                                    String attributeNamePattern) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet.");
+        throw new SQLFeatureNotSupportedException("DatabaseMetaData.getAttributes is not implemented yet");
         //return this.emptyResultSet;
     }
 
@@ -1256,7 +1253,7 @@ public class DatabaseMetaData implements java.sql.DatabaseMetaData {
 
     @Override
     public RowIdLifetime getRowIdLifetime() throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        throw new SQLFeatureNotSupportedException("DatabaseMetaData.getRowIdLifetime is not implemented yet");
     }
 
     @Override
@@ -1277,7 +1274,7 @@ public class DatabaseMetaData implements java.sql.DatabaseMetaData {
 
     @Override
     public ResultSet getClientInfoProperties()  throws SQLException{
-        throw new SQLFeatureNotSupportedException("Not supported yet.");
+        throw new SQLFeatureNotSupportedException("DatabaseMetaData.getClientInfoProperties is not implemented yet");
         //return this.emptyResultSet;
     }
 
@@ -1292,16 +1289,14 @@ public class DatabaseMetaData implements java.sql.DatabaseMetaData {
     public ResultSet getFunctionColumns(String catalog, String schemaPattern,
                                         String functionNamePattern,
                                         String columnNamePattern) throws SQLException {
-        //throw new SQLFeatureNotSupportedException("Not supported yet");
-        return this.populateEmptyResultSet();
+        throw new SQLFeatureNotSupportedException("DatabaseMetaData.getFunctionColumns is not implemented yet");
     }
 
     @Override
     public ResultSet getPseudoColumns(String catalog, String schemaPattern,
                                       String tableNamePattern,
                                       String columnNamePattern)  throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
-        //return this.emptyResultSet;
+        throw new SQLFeatureNotSupportedException("DatabaseMetaData.getPseudoColumns is not implemented yet");
     }
 
     @Override
@@ -1311,11 +1306,11 @@ public class DatabaseMetaData implements java.sql.DatabaseMetaData {
 
     @Override
     public <T> T unwrap(Class<T> iface) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet.");
+        throw new SQLFeatureNotSupportedException("DatabaseMetaData.unwrap is not implemented yet");
     }
 
     @Override
     public boolean isWrapperFor(Class<?> iface) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet.");
+        throw new SQLFeatureNotSupportedException("DatabaseMetaData.isWrapperFor is not implemented yet");
     }
 }

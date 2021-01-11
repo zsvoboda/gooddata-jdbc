@@ -21,7 +21,7 @@ public class TestStatement {
     private static final String JDBC_DRIVER = "com.gooddata.jdbc.driver.Driver";
     private static final String DB_URL = "jdbc:gd://%s/gdc/projects/%s";
 
-    private static final String COLUMNS = "\"Quarter/Year (Date)\", \"Product Category\", Product, Revenue, \"# of Orders\"";
+    private static final String COLUMNS = "\"Quarter/Year (Date)\", Product, Revenue, \"# of Orders\", \"Product Category\"";
     private static final String COLUMNS2 = "\"# of Orders\"";
 
     private Driver driver;
@@ -42,8 +42,8 @@ public class TestStatement {
         this.statement = (java.sql.Statement)this.connection.createStatement();
         this.resultSet = (ResultSet) this.statement.executeQuery("SELECT " + COLUMNS + " FROM DATA");
         this.resultSet2 = (ResultSet) this.statement.executeQuery("SELECT " + COLUMNS2 + " FROM DATA");
-        this.columnnList = Arrays.stream(COLUMNS.split(", ")).map(i->i.replaceAll("\"","")).collect(Collectors.toList());
-        this.columnnList2 = Arrays.stream(COLUMNS2.split(", ")).map(i->i.replaceAll("\"","")).collect(Collectors.toList());
+        this.columnnList = Arrays.stream(COLUMNS.split(",")).map(i->i.replaceAll("\"","").trim()).collect(Collectors.toList());
+        this.columnnList2 = Arrays.stream(COLUMNS2.split(",")).map(i->i.replaceAll("\"","").trim()).collect(Collectors.toList());
 
     }
 
@@ -71,20 +71,20 @@ public class TestStatement {
         System.out.println(String.format("%s, %s, %s, %s, %s",
                 this.resultSet.getString(1),
                 this.resultSet.getString(2),
-                this.resultSet.getString(3),
-                this.resultSet.getDouble(4),
-                this.resultSet.getInt(5)
+                this.resultSet.getDouble(3),
+                this.resultSet.getInt(4),
+                this.resultSet.getString(5)
                 ));
         }
         this.resultSet.beforeFirst();
         System.out.println("\nRESULT 1 columns\n");
         while(this.resultSet.next()) {
             System.out.println(String.format("%s, %s, %s, %s, %s",
-                    this.resultSet.getString(1),
-                    this.resultSet.getString(2),
-                    this.resultSet.getString(3),
-                    this.resultSet.getDouble(4),
-                    this.resultSet.getInt(5)
+                    this.resultSet.getString(columnnList.get(0)),
+                    this.resultSet.getString(columnnList.get(1)),
+                    this.resultSet.getDouble(columnnList.get(2)),
+                    this.resultSet.getInt(columnnList.get(3)),
+                    this.resultSet.getString(columnnList.get(4))
             ));
         }
     }

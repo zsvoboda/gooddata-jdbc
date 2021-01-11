@@ -176,27 +176,4 @@ public class DataTypeParser {
             }
         }
 
-    /*
-    private static List<Class> TYPES = Arrays.asList(
-            Short.class,
-            Integer.class,
-            Long.class,
-            Float.class,
-            Double.class
-    );
-
-
-    public static <T> T parseObject(String textValue, Class<T> type) throws SQLException {
-        try {
-            for(Class t: TYPES) {
-                try {
-                    if(t.equals(Short.class)) return parseShort(textValue);
-
-            }
-        }
-        catch (NumberFormatException e) {
-            throw new SQLException(e);
-        }
-    }
- */
 }

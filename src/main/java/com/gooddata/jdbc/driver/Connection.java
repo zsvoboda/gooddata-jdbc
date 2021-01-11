@@ -48,12 +48,12 @@ public class Connection implements java.sql.Connection {
 
     @Override
     public <T> T unwrap(Class<T> iface) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet.");
+        throw new SQLFeatureNotSupportedException("Connection.unwrap is not supported yet.");
     }
 
     @Override
     public boolean isWrapperFor(Class<?> iface) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet.");
+        throw new SQLFeatureNotSupportedException("Connection.isWrapperFor is not supported yet.");
     }
 
     @Override
@@ -64,17 +64,17 @@ public class Connection implements java.sql.Connection {
 
     @Override
     public PreparedStatement prepareStatement(String sql) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet.");
+        throw new SQLFeatureNotSupportedException("Connection.prepareStatement is not supported yet.");
     }
 
     @Override
     public CallableStatement prepareCall(String sql) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet.");
+        throw new SQLFeatureNotSupportedException("Connection.prepareCall is not supported yet.");
     }
 
     @Override
     public String nativeSQL(String sql) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet.");
+        throw new SQLFeatureNotSupportedException("Connection.nativeSQL is not supported yet.");
     }
 
     @Override
@@ -120,7 +120,7 @@ public class Connection implements java.sql.Connection {
 
     @Override
     public void setReadOnly(boolean readOnly) throws SQLException {
-        //throw new SQLFeatureNotSupportedException("Not supported yet.");
+        throw new SQLFeatureNotSupportedException("Connection.setReadOnly is not supported yet.");
     }
 
     @Override
@@ -135,23 +135,22 @@ public class Connection implements java.sql.Connection {
 
     @Override
     public int getTransactionIsolation() throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet.");
+        throw new SQLFeatureNotSupportedException("Connection.getTransactionIsolation is not supported yet.");
     }
 
     @Override
     public void setTransactionIsolation(int level) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet.");
+        throw new SQLFeatureNotSupportedException("Connection.setTransactionIsolation is not supported yet.");
     }
 
     @Override
     public SQLWarning getWarnings() throws SQLException {
-        //throw new SQLFeatureNotSupportedException("Not supported yet.");
-        return null;
+        throw new SQLFeatureNotSupportedException("Connection.getWarnings is not supported yet.");
     }
 
     @Override
     public void clearWarnings() throws SQLException {
-        //throw new SQLFeatureNotSupportedException("Not supported yet.");
+        throw new SQLFeatureNotSupportedException("Connection.getWarnings is not supported yet.");
     }
 
     @Override
@@ -172,42 +171,42 @@ public class Connection implements java.sql.Connection {
 
     @Override
     public Map<String, Class<?>> getTypeMap() throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet.");
+        throw new SQLFeatureNotSupportedException("Connection.getTypeMap is not supported yet.");
     }
 
     @Override
     public void setTypeMap(Map<String, Class<?>> map) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet.");
+        throw new SQLFeatureNotSupportedException("Connection.setTypeMap is not supported yet.");
     }
 
     @Override
     public int getHoldability() throws SQLException {
-        return ResultSet.HOLD_CURSORS_OVER_COMMIT;
+        throw new SQLFeatureNotSupportedException("Connection.getHoldability is not supported yet.");
     }
 
     @Override
     public void setHoldability(int holdability) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet.");
+        throw new SQLFeatureNotSupportedException("Connection.setHoldability is not supported yet.");
     }
 
     @Override
     public Savepoint setSavepoint() throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet.");
+        throw new SQLFeatureNotSupportedException("Connection.setSavepoint is not supported yet.");
     }
 
     @Override
     public Savepoint setSavepoint(String name) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet.");
+        throw new SQLFeatureNotSupportedException("Connection.setSavepoint is not supported yet.");
     }
 
     @Override
     public void rollback(Savepoint savepoint) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet.");
+        throw new SQLFeatureNotSupportedException("Connection.rollback is not supported yet.");
     }
 
     @Override
     public void releaseSavepoint(Savepoint savepoint) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet.");
+        throw new SQLFeatureNotSupportedException("Connection.releaseSavepoint is not supported yet.");
     }
 
     @Override
@@ -245,22 +244,22 @@ public class Connection implements java.sql.Connection {
 
     @Override
     public Clob createClob() throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet.");
+        throw new SQLFeatureNotSupportedException("Connection.createClob is not supported yet.");
     }
 
     @Override
     public Blob createBlob() throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet.");
+        throw new SQLFeatureNotSupportedException("Connection.createBlob is not supported yet.");
     }
 
     @Override
     public NClob createNClob() throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet.");
+        throw new SQLFeatureNotSupportedException("Connection.createNClob is not supported yet.");
     }
 
     @Override
     public SQLXML createSQLXML() throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet.");
+        throw new SQLFeatureNotSupportedException("Connection.createSQLXML is not supported yet.");
     }
 
     @Override
@@ -290,12 +289,12 @@ public class Connection implements java.sql.Connection {
 
     @Override
     public Array createArrayOf(String typeName, Object[] elements) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet.");
+        throw new SQLFeatureNotSupportedException("Connection.createArrayOf is not supported yet.");
     }
 
     @Override
     public Struct createStruct(String typeName, Object[] attributes) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet.");
+        throw new SQLFeatureNotSupportedException("Connection.createStruct is not supported yet.");
     }
 
     @Override
@@ -305,7 +304,7 @@ public class Connection implements java.sql.Connection {
 
     @Override
     public void setSchema(String schema) throws SQLException {
-        //throw new SQLFeatureNotSupportedException("Not supported yet.");
+        throw new SQLFeatureNotSupportedException("Connection.setSchema is not supported yet.");
     }
 
     @Override
@@ -315,12 +314,12 @@ public class Connection implements java.sql.Connection {
 
     @Override
     public void setNetworkTimeout(Executor executor, int milliseconds) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet.");
+        throw new SQLFeatureNotSupportedException("Connection.setNetworkTimeout is not supported yet.");
     }
 
     @Override
     public int getNetworkTimeout() throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet.");
+        throw new SQLFeatureNotSupportedException("Connection.getNetworkTimeout is not supported yet.");
     }
 
 }

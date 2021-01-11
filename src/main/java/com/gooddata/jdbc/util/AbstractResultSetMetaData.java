@@ -50,7 +50,7 @@ public abstract class AbstractResultSetMetaData implements ResultSetMetaData {
 
 	@Override
 	public int getColumnDisplaySize(int column) throws SQLException {
-		throw new SQLFeatureNotSupportedException("Not yet implemented.");
+		throw new SQLFeatureNotSupportedException("AbstractResultSetMetaData.getColumnDisplaySize is not implemented yet");
 	}
 
 	@Override
@@ -100,12 +100,12 @@ public abstract class AbstractResultSetMetaData implements ResultSetMetaData {
 
 	@Override
 	public <T> T unwrap(Class<T> iface) throws SQLFeatureNotSupportedException{
-		throw new SQLFeatureNotSupportedException("Not yet implemented.");
+		throw new SQLFeatureNotSupportedException("AbstractResultSetMetaData.unwrap is not implemented yet");
 	}
 
 	@Override
 	public boolean isWrapperFor(Class<?> iface)  throws SQLFeatureNotSupportedException {
-		throw new SQLFeatureNotSupportedException("Not yet implemented.");
+		throw new SQLFeatureNotSupportedException("AbstractResultSetMetaData.isWrapperFor is not implemented yet");
 	}
 
 }

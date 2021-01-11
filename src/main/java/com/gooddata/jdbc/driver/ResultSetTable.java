@@ -26,6 +26,8 @@ public class ResultSetTable extends AbstractResultSet implements ResultSet {
 	private final List<DatabaseMetaData.CatalogEntry> columns;
 	private final Statement statement;
 
+	private int[] columnStatementPosition;
+
 	private int currentIndex = -1;
 
 	/**
@@ -39,7 +41,24 @@ public class ResultSetTable extends AbstractResultSet implements ResultSet {
 		this.afmExecutionResult = result;
 		this.columns = columns;
 		this.statement = statement;
+		this.computeColumnsStatementPositions(columns);
 	}
+
+	/** Computes column index to AFM header and data structures */
+	private void computeColumnsStatementPositions(List<DatabaseMetaData.CatalogEntry> columns) {
+		this.columnStatementPosition =  new int[columns.size()];
+		int metricPosition = 0;
+		int attributePosition = 0;
+		for(int i=0; i<this.columnStatementPosition.length; i++) {
+			if(columns.get(i).getType().equals("metric")) {
+				this.columnStatementPosition[i] = metricPosition++;
+			}
+			else {
+				this.columnStatementPosition[i] = attributePosition++;
+			}
+		}
+	}
+
 	@Override
 	public java.sql.ResultSetMetaData getMetaData() throws SQLException {
 		return new ResultSetTableMetaData(this.columns);
@@ -57,20 +76,25 @@ public class ResultSetTable extends AbstractResultSet implements ResultSet {
 		int realIndex = columnIndex - 1;
 		if( realIndex >= this.columns.size() )
 			throw new SQLException("Column index too high.");
-		List<List<List<ResultHeaderItem>>> headers = this.afmExecutionResult.getHeaderItems();
-		if(headers.size() == 2) {
-			List<List<ResultHeaderItem>> headerColumns = headers.get(0);;
-			List<Data> numbers = this.afmExecutionResult.getData();
-			if(realIndex < headerColumns.size()) {
-				return headerColumns.get(realIndex).get(this.currentIndex).getName();
+
+		DatabaseMetaData.CatalogEntry column = this.columns.get(realIndex);
+		if(column.getType().equals("metric")) {
+			Data data = this.afmExecutionResult.getData().get(this.currentIndex);
+			if(data instanceof DataList) {
+				DataList row = (DataList)data;
+				return row.get(this.columnStatementPosition[realIndex]).textValue();
 			}
-			else {
-				return numbers.get(this.currentIndex).asList().get(realIndex - headerColumns.size()).textValue();
+			else if(data instanceof DataValue) {
+				DataValue value = (DataValue)data;
+				return value.textValue();
+			} else {
+				throw new SQLException(String.format("ResultSetTable.getTextValue invalid data instance '%s'",
+						data.getClass().getName()));
 			}
 		}
 		else {
-			List<Data> numbers = this.afmExecutionResult.getData();
-			return numbers.get(this.currentIndex).textValue();
+			return this.afmExecutionResult.getHeaderItems().get(0).get(this.columnStatementPosition[realIndex])
+					.get(this.currentIndex).getName();
 		}
 	}
 
@@ -138,13 +162,13 @@ public class ResultSetTable extends AbstractResultSet implements ResultSet {
 
 	@Override
 	public int getRow() {
-		return this.currentIndex > 0 ? this.currentIndex : 0;
+		return this.currentIndex + 1;
 	}
 
 	@Override
 	public boolean absolute(int row) {
-		if(row >= 0 && row < this.afmExecutionResult.getData().size()) {
-			this.currentIndex = row;
+		if(row > 0 && row <= this.afmExecutionResult.getData().size()) {
+			this.currentIndex = row - 1;
 			return true;
 		}
 		return false;
@@ -152,7 +176,7 @@ public class ResultSetTable extends AbstractResultSet implements ResultSet {
 
 	@Override
 	public boolean relative(int rowsIncrement) {
-		return absolute(this.currentIndex + rowsIncrement);
+		return absolute(this.currentIndex + 1 + rowsIncrement);
 	}
 
 
