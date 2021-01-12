@@ -2,20 +2,13 @@ package com.gooddata.jdbc.driver;
 
 import com.gooddata.jdbc.util.LoggingInvocationHandler;
 import com.gooddata.sdk.model.executeafm.Execution;
-import com.gooddata.sdk.model.executeafm.ObjQualifier;
-import com.gooddata.sdk.model.executeafm.UriObjQualifier;
 import com.gooddata.sdk.model.executeafm.afm.*;
 import com.gooddata.sdk.model.executeafm.response.ExecutionResponse;
 import com.gooddata.sdk.model.executeafm.result.ExecutionResult;
-import com.gooddata.sdk.model.md.Attribute;
-import com.gooddata.sdk.model.md.DisplayForm;
-import com.gooddata.sdk.model.md.Entry;
-import com.gooddata.sdk.model.md.Metric;
 import com.gooddata.sdk.model.project.Project;
 import com.gooddata.sdk.service.FutureResult;
 import com.gooddata.sdk.service.GoodData;
 import com.gooddata.sdk.service.executeafm.ExecuteAfmService;
-import com.gooddata.sdk.service.md.MetadataService;
 import net.sf.jsqlparser.JSQLParserException;
 
 import java.lang.reflect.Proxy;
@@ -24,15 +17,12 @@ import java.sql.SQLFeatureNotSupportedException;
 import java.sql.SQLWarning;
 import java.sql.ResultSet;
 import java.util.*;
-import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
 public class Statement implements java.sql.Statement {
 
 	private final static Logger LOGGER = Logger.getLogger(Statement.class.getName());
 
-	private final GoodData gd;
 	private final Project workspace;
 	private final Connection connection;
 	private final DatabaseMetaData metadata;
@@ -53,7 +43,6 @@ public class Statement implements java.sql.Statement {
 	 */
 	public Statement(Connection con, GoodData gd, DatabaseMetaData metadata) {
 		this.connection = con;
-		this.gd = gd;
 		this.metadata = metadata;
 		this.workspace = metadata.getWorkspace();
 		this.gdAfm = gd.getExecuteAfmService();
@@ -96,10 +85,7 @@ public class Statement implements java.sql.Statement {
 			ExecutionResponse rs = this.gdAfm.executeAfm(this.workspace, new Execution(afm));
 			FutureResult<ExecutionResult> fr = this.gdAfm.getResult(rs);
 			ResultSet r = new ResultSetTable(this, fr.get(), columns);
-			return (java.sql.ResultSet) Proxy.newProxyInstance(
-					Driver.class.getClassLoader(),
-					new Class[] { java.sql.ResultSet.class },
-					new LoggingInvocationHandler(r));
+			return r;
 		} catch (JSQLParserException | DatabaseMetaData.LdmObjectNotFoundException
 				| DatabaseMetaData.DuplicateLdmObjectException e) {
 			throw new SQLException(e);

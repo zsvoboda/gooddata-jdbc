@@ -3,7 +3,10 @@ package com.gooddata.jdbc.driver;
 import net.sf.jsqlparser.JSQLParserException;
 import org.testng.annotations.Test;
 
+import java.sql.SQLException;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class TestSQLParser {
 

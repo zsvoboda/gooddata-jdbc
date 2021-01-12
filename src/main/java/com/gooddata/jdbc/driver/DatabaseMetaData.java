@@ -1,5 +1,6 @@
 package com.gooddata.jdbc.driver;
 
+import com.gooddata.jdbc.util.DataTypeParser;
 import com.gooddata.jdbc.util.MetadataResultSet;
 import com.gooddata.jdbc.util.TextUtil;
 import com.gooddata.sdk.model.executeafm.ObjQualifier;
@@ -130,37 +131,29 @@ public class DatabaseMetaData implements java.sql.DatabaseMetaData {
                         columns),
                 new MetadataResultSet.MetaDataColumn("DATA_TYPE", "INTEGER",
                         this.catalog.values().stream()
-                                .map(e -> e.getType().equals("metric")?
-                                        Integer.toString(java.sql.Types.NUMERIC)
-                                        : Integer.toString(java.sql.Types.VARCHAR))
+                                .map(e -> Integer.toString(
+                                        DataTypeParser.convertSQLDataTypeNameToJavaSQLType(e.getDataType())))
                                 .collect(Collectors.toList())),
                 new MetadataResultSet.MetaDataColumn("TYPE_NAME",
                         this.catalog.values().stream()
-                                .map(e -> e.getType().equals("metric") ?
-                                        new String("Numeric")
-                                        : new String("Varchar"))
+                                .map(e -> e.getDataType())
                                 .collect(Collectors.toList())),
                 new MetadataResultSet.MetaDataColumn("COLUMN_SIZE",  "INTEGER",
                         this.catalog.values().stream()
-                                .map(e -> e.getType().equals("metric") ?
-                                        new String("15")
-                                        : new String("255"))
+                                .map(e -> Integer.toString(e.getSize()))
                                 .collect(Collectors.toList())),
                 new MetadataResultSet.MetaDataColumn("BUFFER_LENGTH", "INTEGER",
                         this.catalog.values().stream()
-                        .map(e -> e.getType().equals("metric") ?
-                                new String("15")
-                                : new String("255"))
+                        .map(e -> Integer.toString(e.getSize()))
                         .collect(Collectors.toList())),
                 new MetadataResultSet.MetaDataColumn("DECIMAL_DIGITS", "INTEGER",
                         this.catalog.values().stream()
-                                .map(e -> e.getType().equals("metric") ?
-                                        new String("2") : (String)null)
+                                .map(e -> Integer.toString(e.getPrecision()))
                                 .collect(Collectors.toList())),
                 new MetadataResultSet.MetaDataColumn("NUM_PREC_RADIX", "INTEGER",
                         this.catalog.values().stream()
-                                .map(e -> e.getType().equals("metric") ?
-                                        new String("10") : (String)null)
+                                .map(e -> e.getType().equalsIgnoreCase("metric")
+                                        ? "10" : (String)null)
                                 .collect(Collectors.toList())),
                 new MetadataResultSet.MetaDataColumn("NULLABLE", "INTEGER",
                         columns.stream()
@@ -170,16 +163,15 @@ public class DatabaseMetaData implements java.sql.DatabaseMetaData {
                 new MetadataResultSet.MetaDataColumn("COLUMN_DEF", empty),
                 new MetadataResultSet.MetaDataColumn("SQL_DATA_TYPE",  "INTEGER",
                         this.catalog.values().stream()
-                            .map(e -> e.getType().equals("metric")?
-                                Integer.toString(java.sql.Types.NUMERIC)
-                                : Integer.toString(java.sql.Types.VARCHAR))
-                            .collect(Collectors.toList())),
+                                .map(e -> Integer.toString(
+                                        DataTypeParser.convertSQLDataTypeNameToJavaSQLType(e.getDataType())))
+                                .collect(Collectors.toList())),
                 new MetadataResultSet.MetaDataColumn("SQL_DATETIME_SUB",  "INTEGER", nil),
                 new MetadataResultSet.MetaDataColumn("CHAR_OCTET_LENGTH", "INTEGER",
                         this.catalog.values().stream()
                         .map(e -> e.getType().equals("metric") ?
                                 (String)null
-                                : new String("255"))
+                                : Integer.toString(e.getSize()))
                         .collect(Collectors.toList())),
                 new MetadataResultSet.MetaDataColumn("ORDINAL_POSITION",  "INTEGER", ordinal),
                 new MetadataResultSet.MetaDataColumn("IS_NULLABLE",
@@ -249,6 +241,23 @@ public class DatabaseMetaData implements java.sql.DatabaseMetaData {
             this.ldmObject = ldmObject;
         }
 
+        public CatalogEntry(String uri, String title,  String type, String identifier, ObjQualifier ldmObject,
+                            String dataType, int size, int precision) {
+            this.identifier = identifier;
+            this.uri = uri;
+            this.title = title;
+            this.type = type;
+            this.dataType = dataType;
+            this.size = size;
+            this.precision = precision;
+            this.ldmObject = ldmObject;
+        }
+
+        public  CatalogEntry cloneEntry() {
+            return new CatalogEntry(this.uri, this.title, this.type, this.identifier, this.ldmObject, this.dataType,
+                    this.size, this. precision);
+        }
+
         public String getUri() {
             return uri;
         }
@@ -285,16 +294,38 @@ public class DatabaseMetaData implements java.sql.DatabaseMetaData {
             return ldmObject;
         }
 
-        public void setLdmObject(ObjQualifier ldmObject) {
-            this.ldmObject = ldmObject;
+        public void setDataType(String dataType) {
+            this.dataType = dataType;
+        }
+
+        public String getDataType() {
+            return dataType;
+        }
+
+        public int getSize() {
+            return size;
+        }
+
+        public void setSize(int size) {
+            this.size = size;
+        }
+
+        public int getPrecision() {
+            return precision;
+        }
+
+        public void setPrecision(int precision) {
+            this.precision = precision;
         }
 
         private String identifier;
         private String uri;
         private String title;
         private String type;
-
-        private ObjQualifier ldmObject;
+        private String dataType;
+        private int size;
+        private int precision;
+        private final ObjQualifier ldmObject;
     }
 
     public int getCatalogRowCount() {
@@ -308,23 +339,27 @@ public class DatabaseMetaData implements java.sql.DatabaseMetaData {
     /**
      * Populates the catalog of attributes and metrics
      */
-    private void populateCatalog() {
+    private void populateCatalog() throws SQLException {
         Collection<Entry> metricEntries = this.gdMeta.find(this.workspace, Metric.class);
 
         for(Entry metric: metricEntries) {
-                this.catalog.put(metric.getUri(), new CatalogEntry(metric.getUri(),
+            CatalogEntry e = new CatalogEntry(metric.getUri(),
                     metric.getTitle(), metric.getCategory(), metric.getIdentifier(),
-                    new UriObjQualifier(metric.getUri())));
+                    new UriObjQualifier(metric.getUri()));
+                setColumnDataType(e, DEFAULT_METRIC_DATATYPE);
+                this.catalog.put(metric.getUri(), e);
         }
 
         Collection<Entry> attributeEntries = this.gdMeta.find(this.workspace, Attribute.class);
         for(Entry attribute: attributeEntries) {
                 Attribute a = this.gdMeta.getObjByUri(attribute.getUri(), Attribute.class);
                 DisplayForm displayForm = a.getDefaultDisplayForm();
+                CatalogEntry e = new CatalogEntry(displayForm.getUri(),
+                    a.getTitle(), displayForm.getCategory(), displayForm.getIdentifier(),
+                    new UriObjQualifier(displayForm.getUri()));
                 //TODO getting default display form under the attribute title
-                this.catalog.put(displayForm.getUri(), new CatalogEntry(displayForm.getUri(),
-                        a.getTitle(), displayForm.getCategory(), displayForm.getIdentifier(),
-                        new UriObjQualifier(displayForm.getUri())));
+                setColumnDataType(e, DEFAULT_ATTRIBUTE_DATATYPE);
+                this.catalog.put(displayForm.getUri(), e);
         }
     }
 
@@ -358,15 +393,46 @@ public class DatabaseMetaData implements java.sql.DatabaseMetaData {
             throw new LdmObjectNotFoundException(
                     String.format("Column name '%s' doesn't exist.", name));
         }
-        return objects.get(0);
+        return objects.get(0).cloneEntry();
     }
 
-    protected List<CatalogEntry> resolveColumns(SQLParser.ParsedSQL sql) throws DuplicateLdmObjectException,
-            LdmObjectNotFoundException {
+    private CatalogEntry setColumnDataType(CatalogEntry column, String dataType) throws SQLException {
+        DataTypeParser.ParsedSQLDataType d = DataTypeParser.parseSqlDatatype(dataType);
+        column.setDataType(d.getName());
+        column.setSize(d.getSize());
+        column.setPrecision(d.getPrecision());
+        return column;
+    }
+
+    public static String DEFAULT_ATTRIBUTE_DATATYPE = "VARCHAR(255)";
+    public static String DEFAULT_METRIC_DATATYPE = "DECIMAL(13,2)";
+
+    protected List<CatalogEntry> resolveColumns(SQLParser.ParsedSQL sql)
+            throws DuplicateLdmObjectException,
+            LdmObjectNotFoundException, SQLException {
+
         List<CatalogEntry> c = new ArrayList<>();
         List<String> columns = sql.getColumns();
-        for(String name: columns ) {
-            c.add(findObjectByName(name));
+        for(String column: columns ) {
+            if(column.contains("::")) {
+                String[] parsedColumn = Arrays.stream(column.split("::"))
+                        .map(s->s.trim()).toArray(String[]::new);
+                if(parsedColumn == null || parsedColumn.length != 2)
+                    throw new LdmObjectNotFoundException(String.format("Column '%s' doesn't exist.", column));
+                CatalogEntry newColumn = findObjectByName(parsedColumn[0]);
+                setColumnDataType(newColumn, parsedColumn[1]);
+                c.add(newColumn);
+            }
+            else {
+                CatalogEntry newColumn = findObjectByName(column);
+                if(newColumn.getType().equals("metric")) {
+                    setColumnDataType(newColumn, DEFAULT_METRIC_DATATYPE);
+                }
+                else {
+                    setColumnDataType(newColumn, DEFAULT_ATTRIBUTE_DATATYPE);
+                }
+                c.add(newColumn);
+            }
         }
         return c;
     }

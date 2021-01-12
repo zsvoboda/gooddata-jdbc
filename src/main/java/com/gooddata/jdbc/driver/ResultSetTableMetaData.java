@@ -1,11 +1,11 @@
 package com.gooddata.jdbc.driver;
 
 import com.gooddata.jdbc.util.AbstractResultSetMetaData;
+import com.gooddata.jdbc.util.DataTypeParser;
 import com.gooddata.jdbc.util.TextUtil;
 
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
-import java.sql.SQLFeatureNotSupportedException;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -51,10 +51,7 @@ public class ResultSetTableMetaData extends AbstractResultSetMetaData implements
 		if(column <= 0 || column > this.columns.size())
 			throw new SQLException(String.format("Column index %d column out of range.", column));
 		DatabaseMetaData.CatalogEntry c = columns.get(column - 1);
-		if(c.getType().equalsIgnoreCase("metric"))
-			return 5;
-		else
-			return 0;
+		return c.getPrecision();
 	}
 
 	@Override
@@ -62,10 +59,7 @@ public class ResultSetTableMetaData extends AbstractResultSetMetaData implements
 		if(column <= 0 || column > this.columns.size())
 			throw new SQLException(String.format("Column index %d column out of range.", column));
 		DatabaseMetaData.CatalogEntry c = columns.get(column-1);
-		if(c.getType().equalsIgnoreCase("metric"))
-			return 15;
-		else
-			return 255;
+		return c.getSize();
 	}
 
 	@Override
@@ -83,10 +77,7 @@ public class ResultSetTableMetaData extends AbstractResultSetMetaData implements
 		if(column <= 0 || column > this.columns.size())
 			throw new SQLException(String.format("Column index %d column out of range.", column));
 		DatabaseMetaData.CatalogEntry c = columns.get(column-1);
-		if(c.getType().equalsIgnoreCase("metric"))
-			return java.sql.Types.NUMERIC;
-		else
-			return java.sql.Types.VARCHAR;
+		return DataTypeParser.convertSQLDataTypeNameToJavaSQLType(c.getDataType());
 	}
 
 	@Override
@@ -94,10 +85,7 @@ public class ResultSetTableMetaData extends AbstractResultSetMetaData implements
 		if(column <= 0 || column > this.columns.size())
 			throw new SQLException(String.format("Column index %d column out of range.", column));
 		DatabaseMetaData.CatalogEntry c = columns.get(column-1);
-		if(c.getType().equalsIgnoreCase("metric"))
-			return "NUMERIC";
-		else
-			return "VARCHAR";
+		return c.getDataType();
 	}
 
 	@Override
@@ -105,10 +93,7 @@ public class ResultSetTableMetaData extends AbstractResultSetMetaData implements
 		if(column <= 0 || column > this.columns.size())
 			throw new SQLException(String.format("Column index %d column out of range.", column));
 		DatabaseMetaData.CatalogEntry c = columns.get(column-1);
-		if(c.getType().equalsIgnoreCase("metric"))
-			return "java.lang.Number";
-		else
-			return "java.lang.String";
+		return DataTypeParser.convertSQLDataTypeNameToJavaClassName(c.getDataType());
 	}
 
 }

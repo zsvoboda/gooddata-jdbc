@@ -250,7 +250,9 @@ public abstract class AbstractResultSet implements java.sql.ResultSet {
 
     @Override
     public Object getObject(int columnIndex) throws SQLException {
-        return DataTypeParser.parseObject(getTextValue(columnIndex));
+        ResultSetMetaData m = this.getMetaData();
+        return DataTypeParser.parseObject(getTextValue(columnIndex),
+                m.getColumnType(columnIndex), m.getPrecision(columnIndex));
     }
 
     @Override

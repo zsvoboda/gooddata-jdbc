@@ -41,4 +41,25 @@ public class TestDataTypeParser {
         assert(DataTypeParser.parseInt("1.2") == 1.2);
     }
 
+    @Test
+    public void testParseDatatype() throws SQLException {
+        assert(DataTypeParser.parseSqlDatatype("DATETIME").getName().equalsIgnoreCase("DATETIME"));
+        assert(DataTypeParser.parseSqlDatatype("VARCHAR(32)").getName().equalsIgnoreCase("VARCHAR"));
+        assert(DataTypeParser.parseSqlDatatype("Varchar(32)").getName().equalsIgnoreCase("VARCHAR"));
+        assert(DataTypeParser.parseSqlDatatype("varchar(32)").getName().equalsIgnoreCase("VARCHAR"));
+        assert(DataTypeParser.parseSqlDatatype("varchar(32)").getName().equalsIgnoreCase("VARCHAR"));
+        assert(DataTypeParser.parseSqlDatatype("varChar(32)").getName().equalsIgnoreCase("VARCHAR"));
+        assert(DataTypeParser.parseSqlDatatype("VARCHAR (32)").getSize() == 32);
+        assert(DataTypeParser.parseSqlDatatype("VARCHAR ( 32)").getSize() == 32);
+        assert(DataTypeParser.parseSqlDatatype("VARCHAR ( 32 )").getSize() == 32);
+        assert(DataTypeParser.parseSqlDatatype("VARCHAR( 32 )").getSize() == 32);
+        assert(DataTypeParser.parseSqlDatatype("VARCHAR(32 )").getSize() == 32);
+        assert(DataTypeParser.parseSqlDatatype(" VARCHAR(32 ) ").getSize() == 32);
+        assert(DataTypeParser.parseSqlDatatype("DECIMAL(13,2)").getName().equalsIgnoreCase("DECIMAL"));
+        assert(DataTypeParser.parseSqlDatatype("DECIMAL (13,2)").getSize() == 13);
+        assert(DataTypeParser.parseSqlDatatype("DECIMAL ( 13,2) ").getPrecision() == 2);
+        assert(DataTypeParser.parseSqlDatatype("DECIMAL ( 13 , 2 ) ").getPrecision() == 2);
+        assert(DataTypeParser.parseSqlDatatype("DECIMAL ( 13 , 2) ").getPrecision() == 2);
+    }
+
 }
