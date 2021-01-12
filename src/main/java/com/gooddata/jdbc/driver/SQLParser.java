@@ -4,7 +4,10 @@ import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.ExpressionVisitor;
 import net.sf.jsqlparser.expression.ExpressionVisitorAdapter;
+import net.sf.jsqlparser.expression.operators.conditional.AndExpression;
+import net.sf.jsqlparser.expression.operators.relational.*;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
+import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.select.*;
 import org.apache.tools.ant.types.resources.Union;
@@ -67,10 +70,12 @@ public class SQLParser {
 
                         public void	visit(SubJoin subjoin) {
                             errors.add(new JSQLParserException("JOIN queries aren't supported."));
+                            super.visit(subjoin);
                         }
 
                         public void	visit(SubSelect subSelect) {
                             errors.add(new JSQLParserException("Subqueries queries aren't supported."));
+                            super.visit(subSelect);
                         }
 
                         public void	visit(Table tableName) {
@@ -78,6 +83,7 @@ public class SQLParser {
                             if(tableName != null)
                                 tables.add(tableName.toString().replace("\"", "")
                             );
+                            super.visit(tableName);
                         }
 
                     };
@@ -85,17 +91,76 @@ public class SQLParser {
                         fromTables.accept(fv);
 
                     // TODO WHERE expressions
-                    /**
+
                     Expression where = plainSelect.getWhere();
-                    ExpressionVisitor ev = new ExpressionVisitorAdapter() {};
-                    where.accept(ev);
-                     */
-                }
+                    ExpressionVisitor ev = new ExpressionVisitorAdapter() {
 
-                public void visit(Union u) {
-                    errors.add(new JSQLParserException("UNIONs queries aren't supported."));
-                }
+                        public void visit(Between expr) {
+                            expr.getLeftExpression().accept(this);
+                            expr.getBetweenExpressionStart().accept(this);
+                            expr.getBetweenExpressionEnd().accept(this);
+                        }
 
+                        public void visit(EqualsTo expr) {
+                            System.out.println(expr);
+                            visitBinaryExpression(expr);
+                        }
+
+                        public void visit(GreaterThan expr) {
+                            System.out.println(expr);
+                            visitBinaryExpression(expr);
+                        }
+
+
+                        public void visit(GreaterThanEquals expr) {
+                            System.out.println(expr);
+                            visitBinaryExpression(expr);
+                        }
+
+                        @Override
+                        public void visit(MinorThan expr) {
+                            System.out.println(expr);
+                            visitBinaryExpression(expr);
+                        }
+
+                        @Override
+                        public void visit(MinorThanEquals expr) {
+                            System.out.println(expr);
+                            visitBinaryExpression(expr);
+                        }
+
+                        @Override
+                        public void visit(NotEqualsTo expr) {
+                            System.out.println(expr);
+                            visitBinaryExpression(expr);
+                        }
+
+                        @Override
+                        public void visit(Column column) {
+                            System.out.println(column);
+                        }
+
+
+                        public void visit(InExpression expr) {
+                            if (expr.getLeftExpression() != null) {
+                                expr.getLeftExpression().accept(this);
+                            } else if (expr.getLeftItemsList() != null) {
+                                expr.getLeftItemsList().accept(this);
+                            }
+                            if (expr.getRightExpression() != null) {
+                                expr.getRightExpression().accept(this);
+                            } else if (expr.getRightItemsList() != null) {
+                                expr.getRightItemsList().accept(this);
+                            } else {
+                                expr.getMultiExpressionList().accept(this);
+                            }
+                        }
+
+                    };
+                    if(where != null)
+                        where.accept(ev);
+                    super.visit(plainSelect);
+                }
             };
             sb.accept(sv);
             if(errors.size()>0) {
