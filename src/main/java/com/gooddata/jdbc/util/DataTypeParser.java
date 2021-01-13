@@ -72,7 +72,7 @@ public class DataTypeParser {
             return Integer.parseInt(textValue);
         } catch (NumberFormatException e) {
             try {
-                return parseInt(textValue.split("\\.")[0]);
+                return Integer.parseInt(textValue.split("\\.")[0]);
             } catch(NumberFormatException e1) {
                 throw new SQLException(e1);
             }
@@ -186,6 +186,30 @@ public class DataTypeParser {
             }
             throw new SQLException(String.format(
                     "Unsupported java.sql.Types type '%d'", sqlType));
+    }
+
+    /**
+     * Return Object value
+     *
+     * @param textValue text value
+     * @return object value
+     * @throws SQLException in case when the value cannot be converted
+     */
+    public static Object parseObject(@NotNull String textValue) throws SQLException {
+        if (textValue == null) return null;
+        try {
+            return parseInt(textValue);
+        } catch (SQLException e) {
+            try {
+                return parseLong(textValue);
+            } catch (SQLException e1) {
+                try {
+                    return parseDouble(textValue);
+                } catch (SQLException e2) {
+                    return textValue;
+                }
+            }
+        }
     }
 
     public static int convertSQLDataTypeNameToJavaSQLType(String sqlTypeName)  {

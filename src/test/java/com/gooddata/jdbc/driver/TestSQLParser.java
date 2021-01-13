@@ -1,12 +1,11 @@
 package com.gooddata.jdbc.driver;
 
 import net.sf.jsqlparser.JSQLParserException;
+import net.sf.jsqlparser.expression.Expression;
+import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import org.testng.annotations.Test;
 
-import java.sql.SQLException;
 import java.util.logging.Logger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class TestSQLParser {
 
@@ -24,6 +23,12 @@ public class TestSQLParser {
         assert(parsedSQL.getColumns().contains("c1"));
         assert(parsedSQL.getColumns().contains("c2"));
         assert(parsedSQL.getTables().contains("t1"));
+    }
+
+    @Test
+    public void testParseExpression() throws JSQLParserException {
+        SQLParser.ParsedSQL parsedSQL = parser.parse("SELECT REVENUE WHERE REVENUE > (3+4)*(4+5)");
+
     }
 
 }

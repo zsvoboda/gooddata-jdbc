@@ -2,45 +2,36 @@ package com.gooddata.jdbc.driver;
 
 import com.gooddata.jdbc.util.DataTypeParser;
 import com.gooddata.jdbc.util.MetadataResultSet;
-import com.gooddata.jdbc.util.TextUtil;
-import com.gooddata.sdk.model.executeafm.ObjQualifier;
-import com.gooddata.sdk.model.executeafm.UriObjQualifier;
-import com.gooddata.sdk.model.md.Attribute;
-import com.gooddata.sdk.model.md.DisplayForm;
-import com.gooddata.sdk.model.md.Entry;
-import com.gooddata.sdk.model.md.Metric;
 import com.gooddata.sdk.model.project.Project;
 import com.gooddata.sdk.service.GoodData;
-import com.gooddata.sdk.service.md.MetadataService;
 
 import java.sql.*;
 import java.sql.Connection;
 import java.util.*;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class DatabaseMetaData implements java.sql.DatabaseMetaData {
 
-    private final static Logger LOGGER = Logger.getLogger(DatabaseMetaData.class.getName());
-
     private final com.gooddata.jdbc.driver.Connection connection;
     private final Project workspace;
-    private final MetadataService gdMeta;
     private final String user;
 
     /**
      * Catalog of LDM objects (attributes and metrics)
      */
-    private final Map<String, CatalogEntry> catalog = new HashMap<>();
+    private final AfmCatalog  catalog = new AfmCatalog();
 
     public DatabaseMetaData(com.gooddata.jdbc.driver.Connection connection, GoodData gd,
                             Project workspace, String user) throws SQLException {
         this.connection = connection;
-        this.gdMeta = gd.getMetadataService();
         this.workspace = workspace;
         this.user = user;
-        this.populateCatalog();
+        this.catalog.populate(gd, workspace);
+    }
+
+    public AfmCatalog getCatalog() {
+        return catalog;
     }
 
     private MetadataResultSet populateCatalogResultSet() {
@@ -89,7 +80,7 @@ public class DatabaseMetaData implements java.sql.DatabaseMetaData {
     }
 
     private MetadataResultSet populateSchemaResultSet() throws SQLException {
-        List<String> uniqueSchemas = this.getSchemasList();
+        List<String> uniqueSchemas = this.catalog.getAllSchemas();
         List<String> catalogs = uniqueSchemas.stream()
                 .map(e -> "").collect(Collectors.toList());
         List<MetadataResultSet.MetaDataColumn> data = Arrays.asList(
@@ -103,7 +94,7 @@ public class DatabaseMetaData implements java.sql.DatabaseMetaData {
 
     private MetadataResultSet populateColumnResultSet() throws SQLException {
 
-        List<String> columns = this.catalog.values().stream()
+        List<String> columns = this.catalog.entries().stream()
                 .map(i->i.getTitle()).collect(Collectors.toList());
         List<String> nil = columns.stream()
                         .map(e -> (String)null)
@@ -130,28 +121,28 @@ public class DatabaseMetaData implements java.sql.DatabaseMetaData {
                 new MetadataResultSet.MetaDataColumn("COLUMN_NAME",
                         columns),
                 new MetadataResultSet.MetaDataColumn("DATA_TYPE", "INTEGER",
-                        this.catalog.values().stream()
+                        this.catalog.entries().stream()
                                 .map(e -> Integer.toString(
                                         DataTypeParser.convertSQLDataTypeNameToJavaSQLType(e.getDataType())))
                                 .collect(Collectors.toList())),
                 new MetadataResultSet.MetaDataColumn("TYPE_NAME",
-                        this.catalog.values().stream()
+                        this.catalog.entries().stream()
                                 .map(e -> e.getDataType())
                                 .collect(Collectors.toList())),
                 new MetadataResultSet.MetaDataColumn("COLUMN_SIZE",  "INTEGER",
-                        this.catalog.values().stream()
+                        this.catalog.entries().stream()
                                 .map(e -> Integer.toString(e.getSize()))
                                 .collect(Collectors.toList())),
                 new MetadataResultSet.MetaDataColumn("BUFFER_LENGTH", "INTEGER",
-                        this.catalog.values().stream()
+                        this.catalog.entries().stream()
                         .map(e -> Integer.toString(e.getSize()))
                         .collect(Collectors.toList())),
                 new MetadataResultSet.MetaDataColumn("DECIMAL_DIGITS", "INTEGER",
-                        this.catalog.values().stream()
+                        this.catalog.entries().stream()
                                 .map(e -> Integer.toString(e.getPrecision()))
                                 .collect(Collectors.toList())),
                 new MetadataResultSet.MetaDataColumn("NUM_PREC_RADIX", "INTEGER",
-                        this.catalog.values().stream()
+                        this.catalog.entries().stream()
                                 .map(e -> e.getType().equalsIgnoreCase("metric")
                                         ? "10" : (String)null)
                                 .collect(Collectors.toList())),
@@ -162,13 +153,13 @@ public class DatabaseMetaData implements java.sql.DatabaseMetaData {
                 new MetadataResultSet.MetaDataColumn("REMARKS", nil) ,
                 new MetadataResultSet.MetaDataColumn("COLUMN_DEF", empty),
                 new MetadataResultSet.MetaDataColumn("SQL_DATA_TYPE",  "INTEGER",
-                        this.catalog.values().stream()
+                        this.catalog.entries().stream()
                                 .map(e -> Integer.toString(
                                         DataTypeParser.convertSQLDataTypeNameToJavaSQLType(e.getDataType())))
                                 .collect(Collectors.toList())),
                 new MetadataResultSet.MetaDataColumn("SQL_DATETIME_SUB",  "INTEGER", nil),
                 new MetadataResultSet.MetaDataColumn("CHAR_OCTET_LENGTH", "INTEGER",
-                        this.catalog.values().stream()
+                        this.catalog.entries().stream()
                         .map(e -> e.getType().equals("metric") ?
                                 (String)null
                                 : Integer.toString(e.getSize()))
@@ -219,222 +210,6 @@ public class DatabaseMetaData implements java.sql.DatabaseMetaData {
                         empty)
         );
         return new MetadataResultSet(data);
-    }
-
-    /**
-     *
-     */
-    public static class CatalogEntry {
-
-        /**
-         * Constructor
-         * @param uri LDM object URI
-         * @param title LDM object title
-         * @param type LDM object type
-         * @param identifier LDM object identifier
-         */
-        public CatalogEntry(String uri, String title, String type, String identifier, ObjQualifier ldmObject) {
-            this.uri = uri;
-            this.title = title;
-            this.type = type;
-            this.identifier = identifier;
-            this.ldmObject = ldmObject;
-        }
-
-        public CatalogEntry(String uri, String title,  String type, String identifier, ObjQualifier ldmObject,
-                            String dataType, int size, int precision) {
-            this.identifier = identifier;
-            this.uri = uri;
-            this.title = title;
-            this.type = type;
-            this.dataType = dataType;
-            this.size = size;
-            this.precision = precision;
-            this.ldmObject = ldmObject;
-        }
-
-        public  CatalogEntry cloneEntry() {
-            return new CatalogEntry(this.uri, this.title, this.type, this.identifier, this.ldmObject, this.dataType,
-                    this.size, this. precision);
-        }
-
-        public String getUri() {
-            return uri;
-        }
-
-        public void setUri(String uri) {
-            this.uri = uri;
-        }
-
-        public String getTitle() {
-            return title;
-        }
-
-        public void setTitle(String title) {
-            this.title = title;
-        }
-
-        public String getType() {
-            return type;
-        }
-
-        public void setType(String type) {
-            this.type = type;
-        }
-
-        public String getIdentifier() {
-            return identifier;
-        }
-
-        public void setIdentifier(String identifier) {
-            this.identifier = identifier;
-        }
-
-        public ObjQualifier getLdmObject() {
-            return ldmObject;
-        }
-
-        public void setDataType(String dataType) {
-            this.dataType = dataType;
-        }
-
-        public String getDataType() {
-            return dataType;
-        }
-
-        public int getSize() {
-            return size;
-        }
-
-        public void setSize(int size) {
-            this.size = size;
-        }
-
-        public int getPrecision() {
-            return precision;
-        }
-
-        public void setPrecision(int precision) {
-            this.precision = precision;
-        }
-
-        private String identifier;
-        private String uri;
-        private String title;
-        private String type;
-        private String dataType;
-        private int size;
-        private int precision;
-        private final ObjQualifier ldmObject;
-    }
-
-    public int getCatalogRowCount() {
-        return this.catalog.size();
-    }
-
-
-    List<String> LDM = Arrays.asList("Quarter/Year (Date)", "Product Category",
-            "Product","Revenue", "# of Orders");
-
-    /**
-     * Populates the catalog of attributes and metrics
-     */
-    private void populateCatalog() throws SQLException {
-        Collection<Entry> metricEntries = this.gdMeta.find(this.workspace, Metric.class);
-
-        for(Entry metric: metricEntries) {
-            CatalogEntry e = new CatalogEntry(metric.getUri(),
-                    metric.getTitle(), metric.getCategory(), metric.getIdentifier(),
-                    new UriObjQualifier(metric.getUri()));
-                setColumnDataType(e, DEFAULT_METRIC_DATATYPE);
-                this.catalog.put(metric.getUri(), e);
-        }
-
-        Collection<Entry> attributeEntries = this.gdMeta.find(this.workspace, Attribute.class);
-        for(Entry attribute: attributeEntries) {
-                Attribute a = this.gdMeta.getObjByUri(attribute.getUri(), Attribute.class);
-                DisplayForm displayForm = a.getDefaultDisplayForm();
-                CatalogEntry e = new CatalogEntry(displayForm.getUri(),
-                    a.getTitle(), displayForm.getCategory(), displayForm.getIdentifier(),
-                    new UriObjQualifier(displayForm.getUri()));
-                //TODO getting default display form under the attribute title
-                setColumnDataType(e, DEFAULT_ATTRIBUTE_DATATYPE);
-                this.catalog.put(displayForm.getUri(), e);
-        }
-    }
-
-    /**
-     * Duplicate LDM object exception is thrown when there are multiple LDM objects with the same title
-     */
-    public static class DuplicateLdmObjectException extends Exception {
-        public DuplicateLdmObjectException(String e) {
-            super(e);
-        }
-    }
-
-    /**
-     * Thrown when a LDM object with a title isn't found
-     */
-    public static class LdmObjectNotFoundException extends Exception {
-        public LdmObjectNotFoundException(String e) {
-            super(e);
-        }
-    }
-
-    private CatalogEntry findObjectByName(String name) throws DuplicateLdmObjectException,
-            LdmObjectNotFoundException {
-        List<CatalogEntry> objects = this.catalog.values().stream()
-                .filter(catalogEntry -> name.equalsIgnoreCase(catalogEntry.getTitle())).collect(Collectors.toList());
-        if(objects.size() > 1) {
-            throw new DuplicateLdmObjectException(
-                    String.format("Column name '%s' can't be uniquely resolved. " +
-                            "There are multiple LDM objects with this title.", name));
-        } else if(objects.size() == 0) {
-            throw new LdmObjectNotFoundException(
-                    String.format("Column name '%s' doesn't exist.", name));
-        }
-        return objects.get(0).cloneEntry();
-    }
-
-    private CatalogEntry setColumnDataType(CatalogEntry column, String dataType) throws SQLException {
-        DataTypeParser.ParsedSQLDataType d = DataTypeParser.parseSqlDatatype(dataType);
-        column.setDataType(d.getName());
-        column.setSize(d.getSize());
-        column.setPrecision(d.getPrecision());
-        return column;
-    }
-
-    public static String DEFAULT_ATTRIBUTE_DATATYPE = "VARCHAR(255)";
-    public static String DEFAULT_METRIC_DATATYPE = "DECIMAL(13,2)";
-
-    protected List<CatalogEntry> resolveColumns(SQLParser.ParsedSQL sql)
-            throws DuplicateLdmObjectException,
-            LdmObjectNotFoundException, SQLException {
-
-        List<CatalogEntry> c = new ArrayList<>();
-        List<String> columns = sql.getColumns();
-        for(String column: columns ) {
-            if(column.contains("::")) {
-                String[] parsedColumn = Arrays.stream(column.split("::"))
-                        .map(s->s.trim()).toArray(String[]::new);
-                if(parsedColumn == null || parsedColumn.length != 2)
-                    throw new LdmObjectNotFoundException(String.format("Column '%s' doesn't exist.", column));
-                CatalogEntry newColumn = findObjectByName(parsedColumn[0]);
-                setColumnDataType(newColumn, parsedColumn[1]);
-                c.add(newColumn);
-            }
-            else {
-                CatalogEntry newColumn = findObjectByName(column);
-                if(newColumn.getType().equals("metric")) {
-                    setColumnDataType(newColumn, DEFAULT_METRIC_DATATYPE);
-                }
-                else {
-                    setColumnDataType(newColumn, DEFAULT_ATTRIBUTE_DATATYPE);
-                }
-                c.add(newColumn);
-            }
-        }
-        return c;
     }
 
     public String getUser() {
@@ -1068,13 +843,6 @@ public class DatabaseMetaData implements java.sql.DatabaseMetaData {
         return this.populateSchemaResultSet();
     }
 
-    private List<String> getSchemasList() throws SQLException {
-        Set<String> schemas = new HashSet<>();
-        for(String uri: this.catalog.keySet()) {
-            schemas.add(TextUtil.extractWorkspaceIdFromUri(uri));
-        }
-        return new ArrayList<>(schemas);
-    }
 
     @Override
     public ResultSet getCatalogs()  throws SQLException {

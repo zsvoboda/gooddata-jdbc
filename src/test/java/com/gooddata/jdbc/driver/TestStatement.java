@@ -40,9 +40,9 @@ public class TestStatement {
         this.driver = DriverManager.getDriver(url);
         this.connection = DriverManager.getConnection(url, p.getUsername(), p.getPassword());
         this.statement = (java.sql.Statement)this.connection.createStatement();
-        this.resultSet = (ResultSet) this.statement.executeQuery("SELECT " + COLUMNS + " WHERE REVENUE > 1000 " +
-                "AND \"Product Category\" = 'Home' AND \"Product Category\" IN ('Home','Outdoor')");
-        this.resultSet2 = (ResultSet) this.statement.executeQuery("SELECT " + COLUMNS2 + " WHERE REVENUE > 1000 ");
+        this.resultSet = (ResultSet) this.statement.executeQuery("SELECT " + COLUMNS +
+                " WHERE \"Product Category\" = 'Home' AND REVENUE > 1000 AND \"# of Orders\" > 20");
+        this.resultSet2 = (ResultSet) this.statement.executeQuery("SELECT " + COLUMNS2);
         this.columnnList = Arrays.stream(COLUMNS.split(", "))
                 .map(i->i.replaceAll("\"","")
                 .trim())

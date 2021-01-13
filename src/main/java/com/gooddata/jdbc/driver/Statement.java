@@ -1,6 +1,5 @@
 package com.gooddata.jdbc.driver;
 
-import com.gooddata.jdbc.util.LoggingInvocationHandler;
 import com.gooddata.sdk.model.executeafm.Execution;
 import com.gooddata.sdk.model.executeafm.afm.*;
 import com.gooddata.sdk.model.executeafm.response.ExecutionResponse;
@@ -11,7 +10,6 @@ import com.gooddata.sdk.service.GoodData;
 import com.gooddata.sdk.service.executeafm.ExecuteAfmService;
 import net.sf.jsqlparser.JSQLParserException;
 
-import java.lang.reflect.Proxy;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.sql.SQLWarning;
@@ -50,21 +48,25 @@ public class Statement implements java.sql.Statement {
 
 	/**
 	 * Populates AFM execution parameter
-	 * @param columns resolved SQL columns
+	 * @param columns AFM columns
+	 * @param filters AFM filters
 	 * @return AFM object
-	 * @throws DatabaseMetaData.DuplicateLdmObjectException when there are multiple LDM object with a named mentioned in the parsed SQL
-	 * @throws DatabaseMetaData.LdmObjectNotFoundException when a SQL object (column) can't be resolved
+	 * @throws AfmColumn.DuplicateLdmObjectException when there are multiple LDM object with a named mentioned in the parsed SQL
+	 * @throws AfmColumn.LdmObjectNotFoundException when a SQL object (column) can't be resolved
 	 */
-	private Afm getAfm(List<DatabaseMetaData.CatalogEntry> columns) throws DatabaseMetaData.DuplicateLdmObjectException,
-			DatabaseMetaData.LdmObjectNotFoundException {
+	private Afm getAfm(List<AfmColumn> columns, List<AfmFilter> filters) throws AfmColumn.DuplicateLdmObjectException,
+			AfmColumn.LdmObjectNotFoundException, SQLException {
 		Afm afm = new Afm();
-		for( DatabaseMetaData.CatalogEntry o: columns ) {
+		for( AfmColumn o: columns ) {
 			if(o.getType().equalsIgnoreCase("attributeDisplayForm")) {
 				afm.addAttribute(new AttributeItem(o.getLdmObject(), o.getIdentifier()));
 			} else if(o.getType().equalsIgnoreCase("metric")) {
 				afm.addMeasure(new MeasureItem( new SimpleMeasureDefinition(o.getLdmObject()),
 						o.getIdentifier()));
 			}
+		}
+		for( AfmFilter f: filters ) {
+			afm.addFilter(f.getFilterObj());
 		}
 		return afm;
 	}
@@ -80,14 +82,15 @@ public class Statement implements java.sql.Statement {
 		try {
 			SQLParser parser = new SQLParser();
 			SQLParser.ParsedSQL parsedSql = parser.parse(sql);
-			List<DatabaseMetaData.CatalogEntry> columns = this.metadata.resolveColumns(parsedSql);
-			Afm afm = getAfm(columns);
+			List<AfmColumn> columns = this.metadata.getCatalog().resolveAfmColumns(parsedSql);
+			List<AfmFilter> filters = this.metadata.getCatalog().resolveAfmFilters(parsedSql);
+			Afm afm = getAfm(columns, filters);
 			ExecutionResponse rs = this.gdAfm.executeAfm(this.workspace, new Execution(afm));
 			FutureResult<ExecutionResult> fr = this.gdAfm.getResult(rs);
 			ResultSet r = new ResultSetTable(this, fr.get(), columns);
 			return r;
-		} catch (JSQLParserException | DatabaseMetaData.LdmObjectNotFoundException
-				| DatabaseMetaData.DuplicateLdmObjectException e) {
+		} catch (JSQLParserException | AfmColumn.LdmObjectNotFoundException
+				| AfmColumn.DuplicateLdmObjectException e) {
 			throw new SQLException(e);
 		}
 	}

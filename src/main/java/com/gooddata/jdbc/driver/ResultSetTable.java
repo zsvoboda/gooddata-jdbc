@@ -23,7 +23,7 @@ public class ResultSetTable extends AbstractResultSet implements ResultSet {
 	public static final int TYPE = TYPE_SCROLL_INSENSITIVE;
 
 	private final ExecutionResult afmExecutionResult;
-	private final List<DatabaseMetaData.CatalogEntry> columns;
+	private final List<AfmColumn> columns;
 	private final Statement statement;
 
 	private int[] columnStatementPosition;
@@ -37,7 +37,7 @@ public class ResultSetTable extends AbstractResultSet implements ResultSet {
 	 * @param columns AFM columns
 	 */
 	public ResultSetTable(Statement statement, ExecutionResult result,
-						  List<DatabaseMetaData.CatalogEntry> columns) {
+						  List<AfmColumn> columns) {
 		this.afmExecutionResult = result;
 		this.columns = columns;
 		this.statement = statement;
@@ -45,7 +45,7 @@ public class ResultSetTable extends AbstractResultSet implements ResultSet {
 	}
 
 	/** Computes column index to AFM header and data structures */
-	private void computeColumnsStatementPositions(List<DatabaseMetaData.CatalogEntry> columns) {
+	private void computeColumnsStatementPositions(List<AfmColumn> columns) {
 		this.columnStatementPosition =  new int[columns.size()];
 		int metricPosition = 0;
 		int attributePosition = 0;
@@ -77,7 +77,7 @@ public class ResultSetTable extends AbstractResultSet implements ResultSet {
 		if( realIndex >= this.columns.size() )
 			throw new SQLException("Column index too high.");
 
-		DatabaseMetaData.CatalogEntry column = this.columns.get(realIndex);
+		AfmColumn column = this.columns.get(realIndex);
 		if(column.getType().equals("metric")) {
 			Data data = this.afmExecutionResult.getData().get(this.currentIndex);
 			if(data instanceof DataList) {

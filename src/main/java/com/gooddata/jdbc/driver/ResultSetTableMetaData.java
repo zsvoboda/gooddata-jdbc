@@ -16,9 +16,9 @@ public class ResultSetTableMetaData extends AbstractResultSetMetaData implements
 
 	private final static Logger LOGGER = Logger.getLogger(ResultSetTableMetaData.class.getName());
 
-	private final List<DatabaseMetaData.CatalogEntry> columns;
+	private final List<AfmColumn> columns;
 	
-	public ResultSetTableMetaData(List<DatabaseMetaData.CatalogEntry> columns) {
+	public ResultSetTableMetaData(List<AfmColumn> columns) {
 		this.columns = columns;
 	}
 
@@ -50,7 +50,7 @@ public class ResultSetTableMetaData extends AbstractResultSetMetaData implements
 	public int getPrecision(int column) throws SQLException {
 		if(column <= 0 || column > this.columns.size())
 			throw new SQLException(String.format("Column index %d column out of range.", column));
-		DatabaseMetaData.CatalogEntry c = columns.get(column - 1);
+		AfmColumn c = columns.get(column - 1);
 		return c.getPrecision();
 	}
 
@@ -58,7 +58,7 @@ public class ResultSetTableMetaData extends AbstractResultSetMetaData implements
 	public int getScale(int column) throws SQLException {
 		if(column <= 0 || column > this.columns.size())
 			throw new SQLException(String.format("Column index %d column out of range.", column));
-		DatabaseMetaData.CatalogEntry c = columns.get(column-1);
+		AfmColumn c = columns.get(column-1);
 		return c.getSize();
 	}
 
@@ -76,7 +76,7 @@ public class ResultSetTableMetaData extends AbstractResultSetMetaData implements
 	public int getColumnType(int column) throws SQLException {
 		if(column <= 0 || column > this.columns.size())
 			throw new SQLException(String.format("Column index %d column out of range.", column));
-		DatabaseMetaData.CatalogEntry c = columns.get(column-1);
+		AfmColumn c = columns.get(column-1);
 		return DataTypeParser.convertSQLDataTypeNameToJavaSQLType(c.getDataType());
 	}
 
@@ -84,7 +84,7 @@ public class ResultSetTableMetaData extends AbstractResultSetMetaData implements
 	public String getColumnTypeName(int column) throws SQLException {
 		if(column <= 0 || column > this.columns.size())
 			throw new SQLException(String.format("Column index %d column out of range.", column));
-		DatabaseMetaData.CatalogEntry c = columns.get(column-1);
+		AfmColumn c = columns.get(column-1);
 		return c.getDataType();
 	}
 
@@ -92,7 +92,7 @@ public class ResultSetTableMetaData extends AbstractResultSetMetaData implements
 	public String getColumnClassName(int column) throws SQLException {
 		if(column <= 0 || column > this.columns.size())
 			throw new SQLException(String.format("Column index %d column out of range.", column));
-		DatabaseMetaData.CatalogEntry c = columns.get(column-1);
+		AfmColumn c = columns.get(column-1);
 		return DataTypeParser.convertSQLDataTypeNameToJavaClassName(c.getDataType());
 	}
 
