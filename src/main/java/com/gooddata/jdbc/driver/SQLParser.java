@@ -1,25 +1,17 @@
 package com.gooddata.jdbc.driver;
 
-import com.gooddata.jdbc.util.DataTypeParser;
 import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.expression.*;
-import net.sf.jsqlparser.expression.operators.arithmetic.Addition;
-import net.sf.jsqlparser.expression.operators.arithmetic.Multiplication;
-import net.sf.jsqlparser.expression.operators.conditional.AndExpression;
 import net.sf.jsqlparser.expression.operators.conditional.OrExpression;
 import net.sf.jsqlparser.expression.operators.relational.*;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
-import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.select.*;
-import net.sf.jsqlparser.util.deparser.ExpressionDeParser;
-import org.apache.tools.ant.types.resources.Union;
 
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class SQLParser {
 
@@ -270,5 +262,104 @@ public class SQLParser {
         }
     }
 
+    public static class ParsedCreateMetricStatement {
+
+        public ParsedCreateMetricStatement(String name, String metricMaqlDefinition, Set<String> ldmObjectTitles,
+                                           Set<String> attributElementValues) {
+            this.metricMaqlDefinition = metricMaqlDefinition;
+            this.ldmObjectTitles = ldmObjectTitles;
+            this.attributElementValues = attributElementValues;
+            this.name = name;
+        }
+
+        public String getMetricMaqlDefinition() {
+            return metricMaqlDefinition;
+        }
+
+        public void setMetricMaqlDefinition(String metricMaqlDefinition) {
+            this.metricMaqlDefinition = metricMaqlDefinition;
+        }
+
+        public Set<String> getLdmObjectTitles() {
+            return ldmObjectTitles;
+        }
+
+        public void setLdmObjectTitles(Set<String> ldmObjectTitles) {
+            this.ldmObjectTitles = ldmObjectTitles;
+        }
+
+        public Set<String> getAttributElementValues() {
+            return attributElementValues;
+        }
+
+        public void setAttributElementValues(Set<String> attributElementValues) {
+            this.attributElementValues = attributElementValues;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        private String metricMaqlDefinition;
+        private Set<String> ldmObjectTitles;
+        private Set<String> attributElementValues;
+        private String name;
+    }
+
+    public ParsedCreateMetricStatement parseCreateMetric(String sql) throws JSQLParserException {
+        String sqlWithNoNewlines = sql.replaceAll("\n"," ");
+        Pattern p = Pattern.compile(
+                "^\\s?create\\s+metric\\s+\"(.*?)\"\\s+as\\s+(.*?)\\s?[;]?\\s?$",
+                Pattern.CASE_INSENSITIVE);
+        Matcher m = p.matcher(sql);
+        m.matches();
+        if (m.groupCount() != 2)
+            throw new JSQLParserException(String.format("Wrong CREATE METRIC syntax: '%s'", sql));
+        String metricName = m.group(1);
+        String metricMaql = m.group(2);
+
+        Set<String> factsMetricsOrAttributeTitles = new HashSet<>();
+        String s = metricMaql;
+        Pattern p1 = Pattern.compile("(\"[a-zA-Z ]+\")");
+        Matcher m1 = p1.matcher(s);
+        while (m1.find()) {
+            factsMetricsOrAttributeTitles.add(m1.group(1).replaceAll("\"",""));
+            s = s.substring(m1.start() + 1);
+            m1 = p1.matcher(s);
+        }
+
+        Set<String> attributeElementValues = new HashSet<>();
+        s = metricMaql;
+        Pattern p2 = Pattern.compile("(\'[a-zA-Z ]+\')");
+        Matcher m2 = p2.matcher(s);
+        while (m2.find()) {
+            attributeElementValues.add(m2.group(1).replaceAll("'",""));
+            s = s.substring(m2.start() + 1);
+            m2 = p2.matcher(s);
+        }
+
+        ParsedCreateMetricStatement metric = new ParsedCreateMetricStatement(metricName, metricMaql,
+                factsMetricsOrAttributeTitles, attributeElementValues);
+
+        return metric;
+    }
+
+    public String parseDropMetric(String sql) throws JSQLParserException {
+        String sqlWithNoNewlines = sql.replaceAll("\n"," ");
+        Pattern p = Pattern.compile(
+                "^\\s?drop\\s+metric\\s+\"(.*?)\"\\s?[;]?\\s?$",
+                Pattern.CASE_INSENSITIVE);
+        Matcher m = p.matcher(sql);
+        m.matches();
+        if (m.groupCount() != 1)
+            throw new JSQLParserException(String.format("Wrong DROP METRIC syntax: '%s'", sql));
+        String metricName = m.group(1);
+
+        return metricName;
+    }
 
 }

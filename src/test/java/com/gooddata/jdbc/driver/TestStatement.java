@@ -114,5 +114,11 @@ public class TestStatement {
         }
     }
 
+    @Test
+    public void testCREATE() throws SQLException {
+        this.statement.execute("CREATE METRIC \"test\" AS SELECT SUM(\"Revenue\")");
+        this.statement.execute("DROP METRIC \"Revenue\";");
+    }
+
 
 }

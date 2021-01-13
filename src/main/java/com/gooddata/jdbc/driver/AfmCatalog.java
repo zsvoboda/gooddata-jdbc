@@ -20,9 +20,14 @@ public class AfmCatalog {
     private final static Logger LOGGER = Logger.getLogger(AfmCatalog.class.getName());
 
     /**
-     * Catalog of LDM objects (attributes and metrics)
+     * Catalog of AFM objects (displayForms and metrics)
      */
     private final Map<String, AfmColumn> catalog = new HashMap<>();
+
+    /**
+     * Catalog of metrics objects (facts and attributes)
+     */
+    private final Map<String, AfmColumn> ldmCatalog = new HashMap<>();
 
     public AfmCatalog() {
     }
@@ -42,6 +47,7 @@ public class AfmCatalog {
                     new UriObjQualifier(metric.getUri()));
             e.setDataType(AfmColumn.DEFAULT_METRIC_DATATYPE);
             this.catalog.put(metric.getUri(), e);
+            this.ldmCatalog.put(metric.getUri(), e);
         }
 
         Collection<Entry> attributeEntries = gdMeta.find(workspace, Attribute.class);
@@ -54,6 +60,17 @@ public class AfmCatalog {
             //TODO getting default display form under the attribute title
             e.setDataType(AfmColumn.DEFAULT_ATTRIBUTE_DATATYPE);
             this.catalog.put(displayForm.getUri(), e);
+            this.ldmCatalog.put(a.getUri(), new AfmColumn(a.getUri(),
+                    a.getTitle(), a.getCategory(), a.getIdentifier(),
+                    new UriObjQualifier(a.getUri())));
+        }
+
+        Collection<Entry> factEntries = gdMeta.find(workspace, Fact.class);
+        for(Entry fact: factEntries) {
+            AfmColumn e = new AfmColumn(fact.getUri(),
+                    fact.getTitle(), fact.getCategory(), fact.getIdentifier(),
+                    new UriObjQualifier(fact.getUri()));
+            this.ldmCatalog.put(fact.getUri(), e);
         }
     }
 
@@ -84,6 +101,20 @@ public class AfmCatalog {
         return objects.get(0).cloneEntry();
     }
 
+    public AfmColumn findLdmColumnByTitle(String name) throws AfmColumn.DuplicateLdmObjectException,
+            AfmColumn.LdmObjectNotFoundException {
+        List<AfmColumn> objects = this.ldmCatalog.values().stream()
+                .filter(catalogEntry -> name.equalsIgnoreCase(catalogEntry.getTitle())).collect(Collectors.toList());
+        if(objects.size() > 1) {
+            throw new AfmColumn.DuplicateLdmObjectException(
+                    String.format("Column name '%s' can't be uniquely resolved. " +
+                            "There are multiple LDM objects with this title.", name));
+        } else if(objects.size() == 0) {
+            throw new AfmColumn.LdmObjectNotFoundException(
+                    String.format("Column name '%s' doesn't exist.", name));
+        }
+        return objects.get(0).cloneEntry();
+    }
 
     public  List<AfmColumn> resolveAfmColumns(SQLParser.ParsedSQL sql)
             throws AfmColumn.DuplicateLdmObjectException,
@@ -169,6 +200,24 @@ public class AfmCatalog {
             }
         }
         return afmFilters;
+    }
+
+
+    public void executeCreateMetric(SQLParser.ParsedCreateMetricStatement sql) throws SQLException,
+            AfmColumn.LdmObjectNotFoundException, AfmColumn.DuplicateLdmObjectException {
+        String maqlDefinition = sql.getMetricMaqlDefinition();
+        for(String metricFactAttribute: sql.getLdmObjectTitles()) {
+            AfmColumn ldmObj = findLdmColumnByTitle(metricFactAttribute);
+            maqlDefinition = maqlDefinition.replaceAll(metricFactAttribute, String.format("[%s]", ldmObj.getUri()));
+        }
+        // TODO replace attribute elements
+        System.out.println(String.format("Executing MAQL: '%s'",maqlDefinition));
+    }
+
+    public void executeDropMetric(String metricName) throws SQLException,
+        AfmColumn.LdmObjectNotFoundException, AfmColumn.DuplicateLdmObjectException {
+        AfmColumn ldmObj = findLdmColumnByTitle(metricName);
+        System.out.println(String.format("Dropping metric with uri: '%s'",ldmObj.getUri()));
     }
 
 }

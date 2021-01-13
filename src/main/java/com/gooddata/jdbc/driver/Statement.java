@@ -8,6 +8,7 @@ import com.gooddata.sdk.model.project.Project;
 import com.gooddata.sdk.service.FutureResult;
 import com.gooddata.sdk.service.GoodData;
 import com.gooddata.sdk.service.executeafm.ExecuteAfmService;
+import com.gooddata.sdk.service.md.MetadataService;
 import net.sf.jsqlparser.JSQLParserException;
 
 import java.sql.SQLException;
@@ -16,6 +17,8 @@ import java.sql.SQLWarning;
 import java.sql.ResultSet;
 import java.util.*;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class Statement implements java.sql.Statement {
 
@@ -103,7 +106,28 @@ public class Statement implements java.sql.Statement {
 	 */
 	@Override
 	public boolean execute(String sql) throws SQLException {
-		this.resultSet = this.executeQuery(sql);
+		if(sql.trim().toLowerCase().startsWith("create")) {
+			try {
+				SQLParser parser = new SQLParser();
+				SQLParser.ParsedCreateMetricStatement parsedCreate = parser.parseCreateMetric(sql);
+				this.metadata.getCatalog().executeCreateMetric(parsedCreate);
+			} catch (AfmColumn.LdmObjectNotFoundException | AfmColumn.DuplicateLdmObjectException |
+					JSQLParserException e) {
+				throw new SQLException(e);
+			}
+		} else if(sql.trim().toLowerCase().startsWith("drop")) {
+			try {
+				SQLParser parser = new SQLParser();
+				String parsedDropMetric = parser.parseDropMetric(sql);
+				this.metadata.getCatalog().executeDropMetric(parsedDropMetric);
+			} catch (AfmColumn.LdmObjectNotFoundException | AfmColumn.DuplicateLdmObjectException |
+					JSQLParserException e) {
+				throw new SQLException(e);
+			}
+		}
+		else {
+			this.resultSet = this.executeQuery(sql);
+		}
 		return true;
 	}
 
