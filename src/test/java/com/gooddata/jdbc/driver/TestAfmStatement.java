@@ -12,30 +12,31 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 
-public class TestStatement {
+public class TestAfmStatement {
 
-    private final static Logger LOGGER = Logger.getLogger(TestStatement.class.getName());
+    private final static Logger LOGGER = Logger.getLogger(TestAfmStatement.class.getName());
 
     // JDBC driver name and database URL
-    private static final String JDBC_DRIVER = "com.gooddata.jdbc.driver.Driver";
+    private static final String JDBC_DRIVER = "com.gooddata.jdbc.driver.AfmDriver";
     private static final String DB_URL = "jdbc:gd://%s/gdc/projects/%s";
 
     private static final String COLUMNS = "\"Quarter/Year (Date)\", Product, Revenue::INTEGER, \"# of Orders::INTEGER\", \"Product Category\"";
     private static final String COLUMNS2 = "\"# of Orders\"";
 
+    private final AfmConnection afmConnection;
     private final java.sql.Statement statement;
     private final ResultSet resultSet;
     private final ResultSet resultSet2;
     private final List<String> columnnList;
     private final List<String> columnnList2;
 
-    public TestStatement() throws SQLException, ClassNotFoundException {
+    public TestAfmStatement() throws SQLException, ClassNotFoundException {
         Class.forName(JDBC_DRIVER);
 
         Parameters p = new Parameters();
         String url = String.format(DB_URL, p.getHost(), p.getWorkspace());
-        java.sql.Connection connection = DriverManager.getConnection(url, p.getUsername(), p.getPassword());
-        this.statement = connection.createStatement();
+        this.afmConnection = (AfmConnection) DriverManager.getConnection(url, p.getUsername(), p.getPassword());
+        this.statement = afmConnection.createStatement();
         this.resultSet = this.statement.executeQuery("SELECT " + COLUMNS +
                 " WHERE \"Product Category\" = 'Home' AND REVENUE > 1000 AND \"# of Orders\" > 20");
         this.resultSet2 = this.statement.executeQuery("SELECT " + COLUMNS2);
@@ -112,9 +113,9 @@ public class TestStatement {
 
     @Test
     public void testCREATE() throws SQLException {
-        this.statement.execute("CREATE METRIC \"test\" AS SELECT SUM(\"Revenue\")");
-        this.statement.execute("DROP METRIC \"Revenue\";");
+        this.statement.execute("CREATE METRIC \"testNGMetric\" AS SELECT SUM(\"Revenue\")");
+        this.afmConnection.refreshCatalog();
+        this.statement.execute("DROP METRIC \"testNGMetric\";");
     }
-
 
 }

@@ -9,10 +9,10 @@ import java.sql.*;
 /**
  * Database metadata - converts between GoodData and JDBC metadata
  */
-public class DatabaseMetaData implements java.sql.DatabaseMetaData {
+public class AfmDatabaseMetaData implements java.sql.DatabaseMetaData {
 
     // JDBC connection
-    private final com.gooddata.jdbc.driver.Connection connection;
+    private final AfmConnection afmConnection;
     // GoodData workspace / project
     private final Project workspace;
     // GoodData user
@@ -25,15 +25,15 @@ public class DatabaseMetaData implements java.sql.DatabaseMetaData {
 
     /**
      * DatabaseMetadata constructor
-     * @param connection SQL connection
+     * @param afmConnection SQL connection
      * @param gd GoodData connection
      * @param workspace GoodData workspace
      * @param user username
      * @throws SQLException error
      */
-    public DatabaseMetaData(com.gooddata.jdbc.driver.Connection connection, GoodData gd,
-                            Project workspace, String user) throws SQLException {
-        this.connection = connection;
+    public AfmDatabaseMetaData(AfmConnection afmConnection, GoodData gd,
+                               Project workspace, String user) throws SQLException {
+        this.afmConnection = afmConnection;
         this.workspace = workspace;
         this.user = user;
         this.catalog.populate(gd, workspace);
@@ -148,7 +148,7 @@ public class DatabaseMetaData implements java.sql.DatabaseMetaData {
      */
     @Override
     public String getDatabaseProductVersion() {
-        return Driver.VERSION;
+        return AfmDriver.VERSION;
     }
 
     /**
@@ -164,7 +164,7 @@ public class DatabaseMetaData implements java.sql.DatabaseMetaData {
      */
     @Override
     public String getDriverVersion() {
-        return Driver.VERSION;
+        return AfmDriver.VERSION;
     }
 
     /**
@@ -172,7 +172,7 @@ public class DatabaseMetaData implements java.sql.DatabaseMetaData {
      */
     @Override
     public int getDriverMajorVersion() {
-        return Driver.MAJOR_VERSION;
+        return AfmDriver.MAJOR_VERSION;
     }
 
     /**
@@ -180,7 +180,7 @@ public class DatabaseMetaData implements java.sql.DatabaseMetaData {
      */
     @Override
     public int getDriverMinorVersion() {
-        return Driver.MINOR_VERSION;
+        return AfmDriver.MINOR_VERSION;
     }
 
     /**
@@ -1013,7 +1013,7 @@ public class DatabaseMetaData implements java.sql.DatabaseMetaData {
     @Override
     public ResultSet getProcedures(String catalog, String schemaPattern,
                                    String procedureNamePattern) {
-        return MetadataResultSets.emptyResultSet();
+        return AfmDatabaseMetadataResultSets.emptyResultSet();
     }
 
     /**
@@ -1032,7 +1032,7 @@ public class DatabaseMetaData implements java.sql.DatabaseMetaData {
     @Override
     public ResultSet getTables(String catalog, String schemaPattern,
                                String tableNamePattern, String[] types) {
-        return MetadataResultSets.tableResultSet(this.workspace);
+        return AfmDatabaseMetadataResultSets.tableResultSet(this.workspace);
     }
 
     /**
@@ -1040,7 +1040,7 @@ public class DatabaseMetaData implements java.sql.DatabaseMetaData {
      */
     @Override
     public ResultSet getSchemas() throws SQLException {
-        return MetadataResultSets.schemaResultSet(this.catalog);
+        return AfmDatabaseMetadataResultSets.schemaResultSet(this.catalog);
     }
 
 
@@ -1049,7 +1049,7 @@ public class DatabaseMetaData implements java.sql.DatabaseMetaData {
      */
     @Override
     public ResultSet getCatalogs() {
-        return MetadataResultSets.catalogResultSet();
+        return AfmDatabaseMetadataResultSets.catalogResultSet();
     }
 
     /**
@@ -1057,7 +1057,7 @@ public class DatabaseMetaData implements java.sql.DatabaseMetaData {
      */
     @Override
     public ResultSet getTableTypes() {
-        return MetadataResultSets.tableTypeResultSet();
+        return AfmDatabaseMetadataResultSets.tableTypeResultSet();
     }
 
     /**
@@ -1067,7 +1067,7 @@ public class DatabaseMetaData implements java.sql.DatabaseMetaData {
     public ResultSet getColumns(String catalog, String schemaPattern,
                                 String tableNamePattern,
                                 String columnNamePattern) {
-        return MetadataResultSets.columnResultSet(this.catalog, this.workspace);
+        return AfmDatabaseMetadataResultSets.columnResultSet(this.catalog, this.workspace);
     }
 
     /**
@@ -1112,7 +1112,7 @@ public class DatabaseMetaData implements java.sql.DatabaseMetaData {
     @Override
     public ResultSet getPrimaryKeys(String catalog, String schema, String table) {
         //throw new SQLFeatureNotSupportedException("Not supported yet.");
-        return MetadataResultSets.emptyResultSet();
+        return AfmDatabaseMetadataResultSets.emptyResultSet();
     }
 
     /**
@@ -1121,7 +1121,7 @@ public class DatabaseMetaData implements java.sql.DatabaseMetaData {
     @Override
     public ResultSet getImportedKeys(String catalog, String schema, String table) {
         //throw new SQLFeatureNotSupportedException("Not supported yet.");
-        return MetadataResultSets.emptyResultSet();
+        return AfmDatabaseMetadataResultSets.emptyResultSet();
     }
 
     /**
@@ -1161,7 +1161,7 @@ public class DatabaseMetaData implements java.sql.DatabaseMetaData {
                                   String table, boolean unique,
                                   boolean approximate) {
         //throw new SQLFeatureNotSupportedException("Not supported yet.");
-        return MetadataResultSets.emptyResultSet();
+        return AfmDatabaseMetadataResultSets.emptyResultSet();
     }
 
     /**
@@ -1275,7 +1275,7 @@ public class DatabaseMetaData implements java.sql.DatabaseMetaData {
      */
     @Override
     public Connection getConnection() {
-        return this.connection;
+        return this.afmConnection;
     }
 
     /**
@@ -1362,7 +1362,7 @@ public class DatabaseMetaData implements java.sql.DatabaseMetaData {
      */
     @Override
     public int getDatabaseMajorVersion() {
-        return Driver.MAJOR_VERSION;
+        return AfmDriver.MAJOR_VERSION;
     }
 
     /**
@@ -1370,7 +1370,7 @@ public class DatabaseMetaData implements java.sql.DatabaseMetaData {
      */
     @Override
     public int getDatabaseMinorVersion() {
-        return Driver.MINOR_VERSION;
+        return AfmDriver.MINOR_VERSION;
     }
 
     /**
@@ -1378,7 +1378,7 @@ public class DatabaseMetaData implements java.sql.DatabaseMetaData {
      */
     @Override
     public int getJDBCMajorVersion() {
-        return Driver.MAJOR_VERSION;
+        return AfmDriver.MAJOR_VERSION;
     }
 
     /**
@@ -1386,7 +1386,7 @@ public class DatabaseMetaData implements java.sql.DatabaseMetaData {
      */
     @Override
     public int getJDBCMinorVersion() {
-        return Driver.MINOR_VERSION;
+        return AfmDriver.MINOR_VERSION;
     }
 
     /**
@@ -1426,7 +1426,7 @@ public class DatabaseMetaData implements java.sql.DatabaseMetaData {
      */
     @Override
     public ResultSet getSchemas(String catalog, String schemaPattern) {
-        return MetadataResultSets.emptyResultSet();
+        return AfmDatabaseMetadataResultSets.emptyResultSet();
     }
 
     /**
@@ -1460,7 +1460,7 @@ public class DatabaseMetaData implements java.sql.DatabaseMetaData {
     @Override
     public ResultSet getFunctions(String catalog, String schemaPattern, String functionNamePattern) {
         //throw new SQLFeatureNotSupportedException("Not supported yet");
-        return MetadataResultSets.emptyResultSet();
+        return AfmDatabaseMetadataResultSets.emptyResultSet();
     }
 
     /**

@@ -8,17 +8,17 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.logging.Logger;
 
-public class TestDriver {
+public class TestAfmDriver {
 
-    private final static Logger LOGGER = Logger.getLogger(TestDriver.class.getName());
+    private final static Logger LOGGER = Logger.getLogger(TestAfmDriver.class.getName());
 
     // JDBC driver name and database URL
-    static final String JDBC_DRIVER = "com.gooddata.jdbc.driver.Driver";
+    static final String JDBC_DRIVER = "com.gooddata.jdbc.driver.AfmDriver";
     static final String DB_URL = "jdbc:gd://%s/gdc/projects/%s";
 
     private final Driver driver;
 
-    public TestDriver() throws SQLException, ClassNotFoundException {
+    public TestAfmDriver() throws SQLException, ClassNotFoundException {
         Class.forName(JDBC_DRIVER);
         Parameters p = new Parameters();
         this.driver = DriverManager.getDriver(String.format(DB_URL, p.getHost(), p.getWorkspace()));
@@ -26,7 +26,7 @@ public class TestDriver {
 
     @Test
     public void testVersion() {
-        assert ("0.5".equals(com.gooddata.jdbc.driver.Driver.VERSION));
+        assert ("0.5".equals(AfmDriver.VERSION));
         assert (this.driver.getMajorVersion() == 0);
         assert (this.driver.getMinorVersion() == 5);
     }

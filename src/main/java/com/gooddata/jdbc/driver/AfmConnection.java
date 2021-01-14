@@ -15,16 +15,17 @@ import java.util.regex.Pattern;
 /**
  * JDBC driver connection
  */
-public class Connection implements java.sql.Connection {
+public class AfmConnection implements java.sql.Connection {
 
-    private final static Logger LOGGER = Logger.getLogger(Connection.class.getName());
+    private final static Logger LOGGER = Logger.getLogger(AfmConnection.class.getName());
 
     private final GoodData gd;
-    private final DatabaseMetaData databaseMetaData;
+    private final AfmDatabaseMetaData afmDatabaseMetaData;
 
     private boolean isClosed = false;
     private boolean autoCommit = false;
     private Properties clientInfo = new Properties();
+    private Project workspace;
 
     /**
      * Constructor
@@ -34,8 +35,8 @@ public class Connection implements java.sql.Connection {
      * @throws SQLException SQL problem
      * @throws IOException  other problem
      */
-    public Connection(final String url,
-                      final Properties properties) throws SQLException, IOException {
+    public AfmConnection(final String url,
+                         final Properties properties) throws SQLException, IOException {
 
         String login = properties.getProperty("user");
         String password = properties.getProperty("password");
@@ -47,8 +48,16 @@ public class Connection implements java.sql.Connection {
         String pid = m.group(2);
         String host = m.group(1);
         this.gd = new GoodData(host, login, password);
-        Project workspace = gd.getProjectService().getProjectById(pid);
-        this.databaseMetaData = new DatabaseMetaData(this, this.gd, workspace, login);
+        this.workspace = gd.getProjectService().getProjectById(pid);
+        this.afmDatabaseMetaData = new AfmDatabaseMetaData(this, this.gd, workspace, login);
+    }
+
+    /**
+     * Refreshes the AFM catalog
+     * @throws SQLException connectivity issues
+     */
+    public void refreshCatalog() throws SQLException {
+        this.afmDatabaseMetaData.getCatalog().populate(this.gd, this.workspace);
     }
 
     /**
@@ -56,7 +65,7 @@ public class Connection implements java.sql.Connection {
      */
     @Override
     public java.sql.Statement createStatement() {
-        return new Statement(this, this.gd, this.databaseMetaData);
+        return new AfmStatement(this, this.gd, this.afmDatabaseMetaData);
     }
 
     /**
@@ -137,7 +146,7 @@ public class Connection implements java.sql.Connection {
      */
     @Override
     public java.sql.DatabaseMetaData getMetaData() {
-        return databaseMetaData;
+        return afmDatabaseMetaData;
     }
 
     /**
@@ -436,7 +445,7 @@ public class Connection implements java.sql.Connection {
      */
     @Override
     public String getSchema() {
-        return this.databaseMetaData.getWorkspaceId();
+        return this.afmDatabaseMetaData.getWorkspaceId();
     }
 
     /**

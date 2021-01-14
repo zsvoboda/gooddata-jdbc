@@ -25,13 +25,13 @@ import java.util.logging.Logger;
 /**
  * JDBC statement
  */
-public class Statement implements java.sql.Statement {
+public class AfmStatement implements java.sql.Statement {
 
-	private final static Logger LOGGER = Logger.getLogger(Statement.class.getName());
+	private final static Logger LOGGER = Logger.getLogger(AfmStatement.class.getName());
 
 	private final Project workspace;
-	private final Connection connection;
-	private final DatabaseMetaData metadata;
+	private final AfmConnection afmConnection;
+	private final AfmDatabaseMetaData metadata;
 	private final ExecuteAfmService gdAfm;
 	private final MetadataService gdMeta;
 
@@ -48,8 +48,8 @@ public class Statement implements java.sql.Statement {
 	 * @param gd GoodData connection class
 	 * @param metadata database metadata
 	 */
-	public Statement(Connection con, GoodData gd, DatabaseMetaData metadata) {
-		this.connection = con;
+	public AfmStatement(AfmConnection con, GoodData gd, AfmDatabaseMetaData metadata) {
+		this.afmConnection = con;
 		this.metadata = metadata;
 		this.workspace = metadata.getWorkspace();
 		this.gdAfm = gd.getExecuteAfmService();
@@ -161,7 +161,7 @@ public class Statement implements java.sql.Statement {
 	 */
 	public void executeDropMetric(String metricName) throws
 			Catalog.CatalogEntryNotFoundException, Catalog.DuplicateCatalogEntryException {
-		CatalogEntry ldmObj = this.metadata.getCatalog().findLdmColumnByTitle(metricName);
+		CatalogEntry ldmObj = this.metadata.getCatalog().findAfmColumnByTitle(metricName);
 		this.gdMeta.removeObjByUri(ldmObj.getUri());
 	}
 
@@ -409,8 +409,8 @@ public class Statement implements java.sql.Statement {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public Connection getConnection() {
-		return this.connection;
+	public AfmConnection getConnection() {
+		return this.afmConnection;
 	}
 
 	/**

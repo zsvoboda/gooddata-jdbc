@@ -15,7 +15,7 @@ import java.util.stream.IntStream;
 /**
  * Database metadata ResultSet
  */
-public class MetadataResultSets {
+public class AfmDatabaseMetadataResultSets {
 
     /**
      * Catalog ResultSet

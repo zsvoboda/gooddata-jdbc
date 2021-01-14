@@ -13,9 +13,9 @@ import java.util.logging.Logger;
 /**
  * GoodData JDBC driver
  */
-public class Driver implements java.sql.Driver {
+public class AfmDriver implements java.sql.Driver {
 
-	private final static Logger LOGGER = Logger.getLogger(Driver.class.getName());
+	private final static Logger LOGGER = Logger.getLogger(AfmDriver.class.getName());
 
 	public final static int MAJOR_VERSION = 0;
 	public final static int MINOR_VERSION = 5;
@@ -39,7 +39,7 @@ public class Driver implements java.sql.Driver {
 		 try {
 		 		setupLogging();
 	        	LOGGER.info("GooodData JDBC Driver started");
-	            DriverManager.registerDriver(new Driver());
+	            DriverManager.registerDriver(new AfmDriver());
 	        } catch (IOException | SQLException e) {
 	            throw new RuntimeException(e);
 	        }
@@ -48,7 +48,7 @@ public class Driver implements java.sql.Driver {
 	/**
 	 * Default constructor
 	 */
-    public Driver() {}
+    public AfmDriver() {}
 
 	/**
 	 * {@inheritDoc}
@@ -58,7 +58,7 @@ public class Driver implements java.sql.Driver {
 		if (this.acceptsURL(url)) {
 			try {
 
-				return new Connection(url, info);
+				return new AfmConnection(url, info);
 			} catch (IOException e) {
 				throw new SQLException(e);
 			}

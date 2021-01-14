@@ -14,7 +14,7 @@ public class TestDatabaseMetadata {
     private final static Logger LOGGER = Logger.getLogger(TestDatabaseMetadata.class.getName());
 
     // JDBC driver name and database URL
-    private static final String JDBC_DRIVER = "com.gooddata.jdbc.driver.Driver";
+    private static final String JDBC_DRIVER = "com.gooddata.jdbc.driver.AfmDriver";
     private static final String DB_URL = "jdbc:gd://%s/gdc/projects/%s";
 
     private final java.sql.Connection connection;
