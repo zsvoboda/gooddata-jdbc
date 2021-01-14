@@ -7,10 +7,12 @@ import com.gooddata.sdk.model.executeafm.afm.MeasureItem;
 import com.gooddata.sdk.model.executeafm.afm.SimpleMeasureDefinition;
 import com.gooddata.sdk.model.executeafm.response.ExecutionResponse;
 import com.gooddata.sdk.model.executeafm.result.ExecutionResult;
+import com.gooddata.sdk.model.md.Metric;
 import com.gooddata.sdk.model.project.Project;
 import com.gooddata.sdk.service.FutureResult;
 import com.gooddata.sdk.service.GoodData;
 import com.gooddata.sdk.service.executeafm.ExecuteAfmService;
+import com.gooddata.sdk.service.md.MetadataService;
 import net.sf.jsqlparser.JSQLParserException;
 
 import java.sql.ResultSet;
@@ -31,6 +33,7 @@ public class Statement implements java.sql.Statement {
 	private final Connection connection;
 	private final DatabaseMetaData metadata;
 	private final ExecuteAfmService gdAfm;
+	private final MetadataService gdMeta;
 
     private boolean isClosed = false;
 	private ResultSet resultSet;
@@ -50,6 +53,7 @@ public class Statement implements java.sql.Statement {
 		this.metadata = metadata;
 		this.workspace = metadata.getWorkspace();
 		this.gdAfm = gd.getExecuteAfmService();
+		this.gdMeta = gd.getMetadataService();
 	}
 
 	/**
@@ -141,7 +145,12 @@ public class Statement implements java.sql.Statement {
 			maqlDefinition = maqlDefinition.replaceAll(metricFactAttribute, String.format("[%s]", ldmObj.getUri()));
 		}
 		// TODO replace attribute elements
-		System.out.printf("Executing MAQL: '%s'%n",maqlDefinition);
+
+		// TODO format
+		Metric m = new Metric(sql.getName(),
+				sql.getMetricMaqlDefinition(),
+				"###,###.00");
+		this.gdMeta.createObj(this.workspace, m);
 	}
 
 	/**
@@ -153,7 +162,7 @@ public class Statement implements java.sql.Statement {
 	public void executeDropMetric(String metricName) throws
 			Catalog.CatalogEntryNotFoundException, Catalog.DuplicateCatalogEntryException {
 		CatalogEntry ldmObj = this.metadata.getCatalog().findLdmColumnByTitle(metricName);
-		System.out.printf("Dropping metric with uri: '%s'%n",ldmObj.getUri());
+		this.gdMeta.removeObjByUri(ldmObj.getUri());
 	}
 
 	/**
