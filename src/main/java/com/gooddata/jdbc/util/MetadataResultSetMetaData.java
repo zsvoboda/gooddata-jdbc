@@ -10,7 +10,7 @@ public class MetadataResultSetMetaData extends AbstractResultSetMetaData {
     public final static String UNIVERSAL_METADATA_SCHEMA_NAME = "GDMETADATA";
     public final static String UNIVERSAL_METADATA_TABLE_NAME = "GDSYSTEM";
 
-    private List<MetadataResultSet.MetaDataColumn> data;
+    private final List<MetadataResultSet.MetaDataColumn> data;
 
     public MetadataResultSetMetaData(List<MetadataResultSet.MetaDataColumn> data) {
         this.data = data;

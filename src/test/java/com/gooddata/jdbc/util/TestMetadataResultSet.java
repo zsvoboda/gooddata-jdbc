@@ -1,12 +1,7 @@
 package com.gooddata.jdbc.util;
 
-import com.gooddata.jdbc.Parameters;
-import com.gooddata.jdbc.driver.DatabaseMetaData;
 import org.testng.annotations.Test;
 
-import java.math.BigDecimal;
-import java.sql.Driver;
-import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.List;

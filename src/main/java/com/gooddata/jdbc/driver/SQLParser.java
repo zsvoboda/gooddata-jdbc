@@ -8,15 +8,26 @@ import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.select.*;
 
+import java.sql.SQLException;
+import java.sql.Types;
 import java.util.*;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * SQL parser
+ */
 public class SQLParser {
 
+    /**
+     * Parsed SQL result
+     */
     public static class ParsedSQL {
 
+        /**
+         * WHERE filter expression
+         */
         public static class FilterExpression {
 
             public static final int OPERATOR_EQUAL = 1;
@@ -26,6 +37,12 @@ public class SQLParser {
             public static final int OPERATOR_LOWER = 5;
             public static final int OPERATOR_LOWER_OR_EQUAL = 6;
 
+            /**
+             * Constructor
+             * @param operator SQL WHERE operator
+             * @param column SQL column
+             * @param values WHERE value
+             */
             public FilterExpression(int operator, String column, List<String> values) {
                 this.operator = operator;
                 this.column = column;
@@ -68,6 +85,12 @@ public class SQLParser {
         private final List<String> tables;
         private final List<FilterExpression> filters;
 
+        /**
+         * Parsed SQL structure - main result from parsing
+         * @param columns SQL columns
+         * @param tables SQL tables
+         * @param filters SQL filters
+         */
         public ParsedSQL(List<String> columns, List<String> tables, List<FilterExpression> filters) {
             this.columns = columns;
             this.tables = tables;
@@ -88,26 +111,12 @@ public class SQLParser {
 
     }
 
-
-    public static Expression evaluateExpression(Expression e) {
-
-        List<Expression> r = new ArrayList<>();
-
-        ExpressionVisitor ev = new ExpressionVisitorAdapter() {
-
-            @Override
-            public void visit(LongValue longValue) {
-                super.visit(longValue);
-                r.add(longValue);
-            }
-
-        };
-        if (e != null)
-            e.accept(ev);
-        return r.get(0);
-
-    }
-
+    /**
+     * Main parser method for SELECT queries
+     * @param query SQL query
+     * @return parsed SQL query
+     * @throws JSQLParserException wrong syntax
+     */
     public ParsedSQL parse(String query) throws JSQLParserException {
         ParsedSQL.LOGGER.fine(String.format("Parsing query '%s'", query));
         net.sf.jsqlparser.statement.Statement st = CCJSqlParserUtil.parse(query);
@@ -165,7 +174,7 @@ public class SQLParser {
                             ParsedSQL.FilterExpression f = new ParsedSQL.FilterExpression(
                                     ParsedSQL.FilterExpression.OPERATOR_EQUAL,
                                     columnName,
-                                    Arrays.asList(value));
+                                    Collections.singletonList(value));
                             filters.add(f);
                             super.visit(expr);
                         }
@@ -178,7 +187,7 @@ public class SQLParser {
                             ParsedSQL.FilterExpression f = new ParsedSQL.FilterExpression(
                                     ParsedSQL.FilterExpression.OPERATOR_GREATER,
                                     columnName,
-                                    Arrays.asList(value));
+                                    Collections.singletonList(value));
                             filters.add(f);
                             super.visit(expr);
                         }
@@ -199,7 +208,7 @@ public class SQLParser {
                             ParsedSQL.FilterExpression f = new ParsedSQL.FilterExpression(
                                     ParsedSQL.FilterExpression.OPERATOR_GREATER_OR_EQUAL,
                                     columnName,
-                                    Arrays.asList(value));
+                                    Collections.singletonList(value));
                             filters.add(f);
                             super.visit(expr);
                         }
@@ -213,7 +222,7 @@ public class SQLParser {
                             ParsedSQL.FilterExpression f = new ParsedSQL.FilterExpression(
                                     ParsedSQL.FilterExpression.OPERATOR_LOWER,
                                     columnName,
-                                    Arrays.asList(value));
+                                    Collections.singletonList(value));
                             filters.add(f);
                             super.visit(expr);
                         }
@@ -227,7 +236,7 @@ public class SQLParser {
                             ParsedSQL.FilterExpression f = new ParsedSQL.FilterExpression(
                                     ParsedSQL.FilterExpression.OPERATOR_LOWER_OR_EQUAL,
                                     columnName,
-                                    Arrays.asList(value));
+                                    Collections.singletonList(value));
                             filters.add(f);
                             super.visit(expr);
                         }
@@ -241,7 +250,7 @@ public class SQLParser {
                             ParsedSQL.FilterExpression f = new ParsedSQL.FilterExpression(
                                     ParsedSQL.FilterExpression.OPERATOR_NOT_EQUAL,
                                     columnName,
-                                    Arrays.asList(value));
+                                    Collections.singletonList(value));
                             filters.add(f);
                             super.visit(expr);
                         }
@@ -262,8 +271,18 @@ public class SQLParser {
         }
     }
 
+    /**
+     * Parsed CREATE METRIC statement
+     */
     public static class ParsedCreateMetricStatement {
 
+        /**
+         * Constructor
+         * @param name  MAQL metric name
+         * @param metricMaqlDefinition MAQL metric definition
+         * @param ldmObjectTitles titles of LDM objects that the CREATE METRIC statement uses
+         * @param attributElementValues attribute element values that the CREATE METRIC statement uses
+         */
         public ParsedCreateMetricStatement(String name, String metricMaqlDefinition, Set<String> ldmObjectTitles,
                                            Set<String> attributElementValues) {
             this.metricMaqlDefinition = metricMaqlDefinition;
@@ -310,14 +329,20 @@ public class SQLParser {
         private String name;
     }
 
+    /**
+     * Parses CREATE METRIC statement
+     * @param sql CREATE METRIC statement text
+     * @return parsed CREATE METRIC statement
+     * @throws JSQLParserException syntax errors
+     */
     public ParsedCreateMetricStatement parseCreateMetric(String sql) throws JSQLParserException {
         String sqlWithNoNewlines = sql.replaceAll("\n"," ");
         Pattern p = Pattern.compile(
                 "^\\s?create\\s+metric\\s+\"(.*?)\"\\s+as\\s+(.*?)\\s?[;]?\\s?$",
                 Pattern.CASE_INSENSITIVE);
-        Matcher m = p.matcher(sql);
-        m.matches();
-        if (m.groupCount() != 2)
+        Matcher m = p.matcher(sqlWithNoNewlines);
+        boolean b = m.matches();
+        if (b && m.groupCount() != 2)
             throw new JSQLParserException(String.format("Wrong CREATE METRIC syntax: '%s'", sql));
         String metricName = m.group(1);
         String metricMaql = m.group(2);
@@ -334,7 +359,7 @@ public class SQLParser {
 
         Set<String> attributeElementValues = new HashSet<>();
         s = metricMaql;
-        Pattern p2 = Pattern.compile("(\'[a-zA-Z ]+\')");
+        Pattern p2 = Pattern.compile("('[a-zA-Z ]+')");
         Matcher m2 = p2.matcher(s);
         while (m2.find()) {
             attributeElementValues.add(m2.group(1).replaceAll("'",""));
@@ -342,24 +367,164 @@ public class SQLParser {
             m2 = p2.matcher(s);
         }
 
-        ParsedCreateMetricStatement metric = new ParsedCreateMetricStatement(metricName, metricMaql,
+        return new ParsedCreateMetricStatement(metricName, metricMaql,
                 factsMetricsOrAttributeTitles, attributeElementValues);
-
-        return metric;
     }
 
+    /**
+     * Parse DROP METRIC statement
+     * @param sql DROP METRIC statement text
+     * @return dropped metric URI
+     * @throws JSQLParserException syntax error
+     */
     public String parseDropMetric(String sql) throws JSQLParserException {
         String sqlWithNoNewlines = sql.replaceAll("\n"," ");
         Pattern p = Pattern.compile(
                 "^\\s?drop\\s+metric\\s+\"(.*?)\"\\s?[;]?\\s?$",
                 Pattern.CASE_INSENSITIVE);
-        Matcher m = p.matcher(sql);
-        m.matches();
-        if (m.groupCount() != 1)
+        Matcher m = p.matcher(sqlWithNoNewlines);
+        boolean b = m.matches();
+        if (b && m.groupCount() != 1)
             throw new JSQLParserException(String.format("Wrong DROP METRIC syntax: '%s'", sql));
-        String metricName = m.group(1);
-
-        return metricName;
+        return m.group(1);
     }
+
+    /**
+     * Conversion between datatype name to SQL type int
+     * @param sqlTypeName datatype name
+     * @return java.sql datatype representation
+     */
+    public static int convertSQLDataTypeNameToJavaSQLType(String sqlTypeName)  {
+        if(sqlTypeName.equalsIgnoreCase("VARCHAR"))
+            return Types.VARCHAR;
+        if(sqlTypeName.equalsIgnoreCase("NUMERIC"))
+            return Types.NUMERIC;
+        if(sqlTypeName.equalsIgnoreCase("DECIMAL"))
+            return Types.DECIMAL;
+        if(sqlTypeName.equalsIgnoreCase("DOUBLE"))
+            return Types.DOUBLE;
+        if(sqlTypeName.equalsIgnoreCase("FLOAT"))
+            return Types.FLOAT;
+        if(sqlTypeName.equalsIgnoreCase("INTEGER"))
+            return Types.INTEGER;
+        if(sqlTypeName.equalsIgnoreCase("CHAR"))
+            return Types.CHAR;
+        if(sqlTypeName.equalsIgnoreCase("DATE"))
+            return Types.DATE;
+        if(sqlTypeName.equalsIgnoreCase("TIME"))
+            return Types.TIME;
+        if(sqlTypeName.equalsIgnoreCase("DATETIME") || sqlTypeName.equalsIgnoreCase("TIMESTAMP"))
+            return Types.TIMESTAMP;
+        throw new RuntimeException(String.format("Data type '%s' is not supported.", sqlTypeName));
+    }
+
+    /**
+     * Conversion between datatype name to Java datatype classname
+     * @param sqlTypeName datatype name
+     * @return Java datatype classname
+     */
+    public static String convertSQLDataTypeNameToJavaClassName(String sqlTypeName)  {
+        if(sqlTypeName.equalsIgnoreCase("VARCHAR"))
+            return "java.lang.String";
+        if(sqlTypeName.equalsIgnoreCase("NUMERIC"))
+            return "java.math.BigDecimal";
+        if(sqlTypeName.equalsIgnoreCase("DECIMAL"))
+            return "java.math.BigDecimal";
+        if(sqlTypeName.equalsIgnoreCase("DOUBLE"))
+            return "java.lang.Double";
+        if(sqlTypeName.equalsIgnoreCase("FLOAT"))
+            return "java.lang.Float";
+        if(sqlTypeName.equalsIgnoreCase("INTEGER"))
+            return "java.lang.Integer";
+        if(sqlTypeName.equalsIgnoreCase("CHAR"))
+            return "java.lang.String";
+        if(sqlTypeName.equalsIgnoreCase("DATE"))
+            return "java.sql.Date";
+        if(sqlTypeName.equalsIgnoreCase("TIME"))
+            return "java.sql.Time";
+        if(sqlTypeName.equalsIgnoreCase("DATETIME") || sqlTypeName.equalsIgnoreCase("TIMESTAMP"))
+            return "java.sql.Timestamp";
+        throw new RuntimeException(String.format("Data type '%s' is not supported.", sqlTypeName));
+    }
+
+    /**
+     * Parsed SQL datatype e.g. VARCHAR(255) or DECIMAL(13,2)
+     */
+    public static class ParsedSQLDataType {
+
+        /**
+         * Constructor
+         * @param name datatype name
+         * @param size datatype size
+         * @param precision datatype precision
+         */
+        public ParsedSQLDataType(String name, int size, int precision) {
+            this.name = name;
+            this.size = size;
+            this.precision = precision;
+        }
+
+        public ParsedSQLDataType(String name) {
+            this.name = name;
+        }
+
+        public ParsedSQLDataType(String name, int size) {
+            this.name = name;
+            this.size = size;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        public int getSize() {
+            return size;
+        }
+
+        public void setSize(int size) {
+            this.size = size;
+        }
+
+        public int getPrecision() {
+            return precision;
+        }
+
+        public void setPrecision(int precision) {
+            this.precision = precision;
+        }
+
+        private String name;
+        private int size;
+        private int precision;
+    }
+
+    /**
+     * Parses SQL datatype e.g. VARCHAR(255) or DECIMAL(13,2)
+     * @param dataType datatype text
+     * @return parsed datatype
+     * @throws SQLException syntax problems
+     */
+    public static ParsedSQLDataType parseSqlDatatype(String dataType) throws SQLException {
+        String dataTypeName;
+        int size = 0;
+        int precision = 0;
+        Pattern p1 = Pattern.compile("^\\s?([a-zA-Z]+)\\s?(\\(\\s?([0-9]+)\\s?(\\s?,\\s?([0-9]+)\\s?)?\\s?\\))?\\s?$");
+        Matcher m1 = p1.matcher(dataType);
+        m1.matches();
+        int cnt = m1.groupCount();
+        dataTypeName = m1.group(1);
+        String sizeTxt = m1.group(3);
+        if(sizeTxt!=null)
+            size = Integer.parseInt(sizeTxt);
+        String precisionTxt = m1.group(5);
+        if(precisionTxt!=null)
+            precision = Integer.parseInt(precisionTxt);
+        return new ParsedSQLDataType(dataTypeName, size, precision);
+    }
+
 
 }

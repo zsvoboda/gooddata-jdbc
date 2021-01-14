@@ -1,27 +1,36 @@
 package com.gooddata.jdbc.driver;
 
-import com.gooddata.jdbc.util.DataTypeParser;
-import com.gooddata.jdbc.util.MetadataResultSet;
 import com.gooddata.sdk.model.project.Project;
 import com.gooddata.sdk.service.GoodData;
 
-import java.sql.*;
 import java.sql.Connection;
-import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
+import java.sql.*;
 
+/**
+ * Database metadata - converts between GoodData and JDBC metadata
+ */
 public class DatabaseMetaData implements java.sql.DatabaseMetaData {
 
+    // JDBC connection
     private final com.gooddata.jdbc.driver.Connection connection;
+    // GoodData workspace / project
     private final Project workspace;
+    // GoodData user
     private final String user;
 
     /**
      * Catalog of LDM objects (attributes and metrics)
      */
-    private final AfmCatalog  catalog = new AfmCatalog();
+    private final Catalog catalog = new Catalog();
 
+    /**
+     * DatabaseMetadata constructor
+     * @param connection SQL connection
+     * @param gd GoodData connection
+     * @param workspace GoodData workspace
+     * @param user username
+     * @throws SQLException error
+     */
     public DatabaseMetaData(com.gooddata.jdbc.driver.Connection connection, GoodData gd,
                             Project workspace, String user) throws SQLException {
         this.connection = connection;
@@ -30,186 +39,12 @@ public class DatabaseMetaData implements java.sql.DatabaseMetaData {
         this.catalog.populate(gd, workspace);
     }
 
-    public AfmCatalog getCatalog() {
+    /**
+     * Gets the GoodData objects catalog
+     * @return GoodData objects catalog
+     */
+    public Catalog getCatalog() {
         return catalog;
-    }
-
-    private MetadataResultSet populateCatalogResultSet() {
-        return new MetadataResultSet(
-                Collections.singletonList(
-                        new MetadataResultSet.MetaDataColumn("TABLE_CAT",
-                                Collections.singletonList(""))
-                )
-        );
-    }
-
-    private MetadataResultSet populateTableTypeResultSet() {
-        return new MetadataResultSet(
-                Collections.singletonList(
-                        new MetadataResultSet.MetaDataColumn("TABLE_TYPE",
-                                Arrays.asList("GLOBAL TEMPORARY", "LOCAL TEMPORARY",
-                                        "SYSTEM TABLE", "TABLE", "VIEW"))
-                ));
-    }
-
-    private MetadataResultSet populateEmptyResultSet() throws SQLException {
-        List<String> empty = new ArrayList<>();
-        List<MetadataResultSet.MetaDataColumn> data = Arrays.asList(
-                new MetadataResultSet.MetaDataColumn("1",
-                        empty),
-                new MetadataResultSet.MetaDataColumn("2",
-                        empty),
-                new MetadataResultSet.MetaDataColumn("3",
-                        empty),
-                new MetadataResultSet.MetaDataColumn("4",
-                        empty),
-                new MetadataResultSet.MetaDataColumn("5",
-                        empty),
-                new MetadataResultSet.MetaDataColumn("6",
-                        empty),
-                new MetadataResultSet.MetaDataColumn("7",
-                        empty),
-                new MetadataResultSet.MetaDataColumn("8",
-                        empty),
-                new MetadataResultSet.MetaDataColumn("9",
-                        empty),
-                new MetadataResultSet.MetaDataColumn("10",
-                        empty)
-        );
-        return new MetadataResultSet(data);
-    }
-
-    private MetadataResultSet populateSchemaResultSet() throws SQLException {
-        List<String> uniqueSchemas = this.catalog.getAllSchemas();
-        List<String> catalogs = uniqueSchemas.stream()
-                .map(e -> "").collect(Collectors.toList());
-        List<MetadataResultSet.MetaDataColumn> data = Arrays.asList(
-                new MetadataResultSet.MetaDataColumn("TABLE_SCHEM",
-                        uniqueSchemas),
-                new MetadataResultSet.MetaDataColumn("TABLE_CATALOG",
-                        catalogs)
-        );
-        return new MetadataResultSet(data);
-    }
-
-    private MetadataResultSet populateColumnResultSet() throws SQLException {
-
-        List<String> columns = this.catalog.entries().stream()
-                .map(i->i.getTitle()).collect(Collectors.toList());
-        List<String> nil = columns.stream()
-                        .map(e -> (String)null)
-                        .collect(Collectors.toList());
-        List<String> empty = columns.stream()
-                .map(e -> "")
-                .collect(Collectors.toList());
-        List<String> ordinal = IntStream.range(1, columns.size()+1)
-                .boxed().map(e -> Integer.toString(e)).collect(Collectors.toList());
-
-        List<MetadataResultSet.MetaDataColumn> data = Arrays.asList(
-                new MetadataResultSet.MetaDataColumn("TABLE_CAT",
-                        columns.stream()
-                                .map(e -> "")
-                                .collect(Collectors.toList())),
-                new MetadataResultSet.MetaDataColumn("TABLE_SCHEM",
-                        columns.stream()
-                                .map(e -> this.workspace.getId())
-                                .collect(Collectors.toList())),
-                new MetadataResultSet.MetaDataColumn("TABLE_NAME",
-                        columns.stream()
-                                .map(e -> ResultSetTableMetaData.UNIVERSAL_TABLE_NAME)
-                                .collect(Collectors.toList())),
-                new MetadataResultSet.MetaDataColumn("COLUMN_NAME",
-                        columns),
-                new MetadataResultSet.MetaDataColumn("DATA_TYPE", "INTEGER",
-                        this.catalog.entries().stream()
-                                .map(e -> Integer.toString(
-                                        DataTypeParser.convertSQLDataTypeNameToJavaSQLType(e.getDataType())))
-                                .collect(Collectors.toList())),
-                new MetadataResultSet.MetaDataColumn("TYPE_NAME",
-                        this.catalog.entries().stream()
-                                .map(e -> e.getDataType())
-                                .collect(Collectors.toList())),
-                new MetadataResultSet.MetaDataColumn("COLUMN_SIZE",  "INTEGER",
-                        this.catalog.entries().stream()
-                                .map(e -> Integer.toString(e.getSize()))
-                                .collect(Collectors.toList())),
-                new MetadataResultSet.MetaDataColumn("BUFFER_LENGTH", "INTEGER",
-                        this.catalog.entries().stream()
-                        .map(e -> Integer.toString(e.getSize()))
-                        .collect(Collectors.toList())),
-                new MetadataResultSet.MetaDataColumn("DECIMAL_DIGITS", "INTEGER",
-                        this.catalog.entries().stream()
-                                .map(e -> Integer.toString(e.getPrecision()))
-                                .collect(Collectors.toList())),
-                new MetadataResultSet.MetaDataColumn("NUM_PREC_RADIX", "INTEGER",
-                        this.catalog.entries().stream()
-                                .map(e -> e.getType().equalsIgnoreCase("metric")
-                                        ? "10" : (String)null)
-                                .collect(Collectors.toList())),
-                new MetadataResultSet.MetaDataColumn("NULLABLE", "INTEGER",
-                        columns.stream()
-                                .map(e -> "1")
-                                .collect(Collectors.toList())),
-                new MetadataResultSet.MetaDataColumn("REMARKS", nil) ,
-                new MetadataResultSet.MetaDataColumn("COLUMN_DEF", empty),
-                new MetadataResultSet.MetaDataColumn("SQL_DATA_TYPE",  "INTEGER",
-                        this.catalog.entries().stream()
-                                .map(e -> Integer.toString(
-                                        DataTypeParser.convertSQLDataTypeNameToJavaSQLType(e.getDataType())))
-                                .collect(Collectors.toList())),
-                new MetadataResultSet.MetaDataColumn("SQL_DATETIME_SUB",  "INTEGER", nil),
-                new MetadataResultSet.MetaDataColumn("CHAR_OCTET_LENGTH", "INTEGER",
-                        this.catalog.entries().stream()
-                        .map(e -> e.getType().equals("metric") ?
-                                (String)null
-                                : Integer.toString(e.getSize()))
-                        .collect(Collectors.toList())),
-                new MetadataResultSet.MetaDataColumn("ORDINAL_POSITION",  "INTEGER", ordinal),
-                new MetadataResultSet.MetaDataColumn("IS_NULLABLE",
-                        columns.stream()
-                                .map(e -> "YES")
-                                .collect(Collectors.toList())),
-                new MetadataResultSet.MetaDataColumn("SCOPE_CATALOG", nil),
-                new MetadataResultSet.MetaDataColumn("SCOPE_SCHEMA", nil),
-                new MetadataResultSet.MetaDataColumn("SCOPE_TABLE", nil),
-                new MetadataResultSet.MetaDataColumn("SOURCE_DATA_TYPE", nil),
-                new MetadataResultSet.MetaDataColumn("IS_AUTOINCREMENT",
-                        columns.stream()
-                                .map(e -> "NO")
-                                .collect(Collectors.toList())),
-                new MetadataResultSet.MetaDataColumn("IS_GENERATEDCOLUMN",
-                        columns.stream()
-                                .map(e -> "NO")
-                                .collect(Collectors.toList()))
-        );
-        return new MetadataResultSet(data);
-    }
-
-    private MetadataResultSet populateTableResultSet() throws SQLException {
-        List<String> empty = Collections.nCopies(1, (String) null);
-        List<MetadataResultSet.MetaDataColumn> data = Arrays.asList(
-                new MetadataResultSet.MetaDataColumn("TABLE_CAT",
-                        Arrays.asList("")),
-                new MetadataResultSet.MetaDataColumn("TABLE_SCHEM",
-                        Arrays.asList(this.workspace.getId())),
-                new MetadataResultSet.MetaDataColumn("TABLE_NAME",
-                        Arrays.asList(ResultSetTableMetaData.UNIVERSAL_TABLE_NAME)),
-                new MetadataResultSet.MetaDataColumn("TABLE_TYPE",
-                        Arrays.asList("TABLE")),
-                new MetadataResultSet.MetaDataColumn("REMARKS", empty)
-                        ,
-                new MetadataResultSet.MetaDataColumn("TYPE_CAT",
-                        empty),
-                new MetadataResultSet.MetaDataColumn("TYPE_SCHEM",
-                        empty),
-                new MetadataResultSet.MetaDataColumn("TYPE_NAME",
-                        empty),
-                new MetadataResultSet.MetaDataColumn("SELF_REFERENCING_COL_NAME",
-                        empty),
-                new MetadataResultSet.MetaDataColumn("REF_GENERATION",
-                        empty)
-        );
-        return new MetadataResultSet(data);
     }
 
     public String getUser() {
@@ -228,682 +63,1081 @@ public class DatabaseMetaData implements java.sql.DatabaseMetaData {
         return this.workspace.getUri();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean allProceduresAreCallable()  {
+    public boolean allProceduresAreCallable() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean allTablesAreSelectable()  {
+    public boolean allTablesAreSelectable() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public String getURL() throws SQLException {
         throw new SQLFeatureNotSupportedException("DatabaseMetaData.getURL is not implemented yet");
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public String getUserName()  {
+    public String getUserName() {
         return this.user;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean isReadOnly()  {
+    public boolean isReadOnly() {
         return true;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean nullsAreSortedHigh()  {
+    public boolean nullsAreSortedHigh() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean nullsAreSortedLow()  {
+    public boolean nullsAreSortedLow() {
         return true;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean nullsAreSortedAtStart()  {
+    public boolean nullsAreSortedAtStart() {
         return true;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean nullsAreSortedAtEnd()  {
+    public boolean nullsAreSortedAtEnd() {
         return true;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public String getDatabaseProductName()  {
+    public String getDatabaseProductName() {
         return "GoodData";
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public String getDatabaseProductVersion()  {
+    public String getDatabaseProductVersion() {
         return Driver.VERSION;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public String getDriverName()  {
+    public String getDriverName() {
         return "gooddata-jdbc";
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public String getDriverVersion()  {
+    public String getDriverVersion() {
         return Driver.VERSION;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public int getDriverMajorVersion() {
         return Driver.MAJOR_VERSION;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public int getDriverMinorVersion() {
         return Driver.MINOR_VERSION;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean usesLocalFiles()  {
+    public boolean usesLocalFiles() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean usesLocalFilePerTable()  {
+    public boolean usesLocalFilePerTable() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean supportsMixedCaseIdentifiers()  {
+    public boolean supportsMixedCaseIdentifiers() {
         return true;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean storesUpperCaseIdentifiers()  {
+    public boolean storesUpperCaseIdentifiers() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean storesLowerCaseIdentifiers()  {
+    public boolean storesLowerCaseIdentifiers() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean storesMixedCaseIdentifiers()  {
+    public boolean storesMixedCaseIdentifiers() {
         return true;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean supportsMixedCaseQuotedIdentifiers()  {
+    public boolean supportsMixedCaseQuotedIdentifiers() {
         return true;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean storesUpperCaseQuotedIdentifiers()  {
+    public boolean storesUpperCaseQuotedIdentifiers() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean storesLowerCaseQuotedIdentifiers()  {
+    public boolean storesLowerCaseQuotedIdentifiers() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean storesMixedCaseQuotedIdentifiers()  {
+    public boolean storesMixedCaseQuotedIdentifiers() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public String getIdentifierQuoteString()  {
+    public String getIdentifierQuoteString() {
         return "\"";
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public String getSQLKeywords() throws SQLException {
         throw new SQLFeatureNotSupportedException("DatabaseMetaData.getSQLKeywords is not implemented yet");
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public String getNumericFunctions() throws SQLException {
         throw new SQLFeatureNotSupportedException("DatabaseMetaData.getNumericFunctions is not implemented yet");
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public String getStringFunctions()  throws SQLException {
+    public String getStringFunctions() throws SQLException {
         throw new SQLFeatureNotSupportedException("DatabaseMetaData.getStringFunctions is not implemented yet");
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public String getSystemFunctions()  throws SQLException {
+    public String getSystemFunctions() throws SQLException {
         throw new SQLFeatureNotSupportedException("DatabaseMetaData.getSystemFunctions is not implemented yet");
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public String getTimeDateFunctions()  throws SQLException {
+    public String getTimeDateFunctions() throws SQLException {
         throw new SQLFeatureNotSupportedException("DatabaseMetaData.getTimeDateFunctions is not implemented yet");
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public String getSearchStringEscape()  {
+    public String getSearchStringEscape() {
         return "\\";
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public String getExtraNameCharacters()  throws SQLException {
+    public String getExtraNameCharacters() throws SQLException {
         throw new SQLFeatureNotSupportedException("DatabaseMetaData.getExtraNameCharacters is not implemented yet");
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean supportsAlterTableWithAddColumn()  {
+    public boolean supportsAlterTableWithAddColumn() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean supportsAlterTableWithDropColumn()  {
+    public boolean supportsAlterTableWithDropColumn() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean supportsColumnAliasing()  {
+    public boolean supportsColumnAliasing() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean nullPlusNonNullIsNull()  {
+    public boolean nullPlusNonNullIsNull() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean supportsConvert()  {
+    public boolean supportsConvert() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean supportsConvert(int fromType, int toType)  {
+    public boolean supportsConvert(int fromType, int toType) {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean supportsTableCorrelationNames()  {
+    public boolean supportsTableCorrelationNames() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean supportsDifferentTableCorrelationNames()  {
+    public boolean supportsDifferentTableCorrelationNames() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean supportsExpressionsInOrderBy()  {
+    public boolean supportsExpressionsInOrderBy() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean supportsOrderByUnrelated()  {
+    public boolean supportsOrderByUnrelated() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean supportsGroupBy()  {
+    public boolean supportsGroupBy() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean supportsGroupByUnrelated()  {
+    public boolean supportsGroupByUnrelated() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean supportsGroupByBeyondSelect()  {
+    public boolean supportsGroupByBeyondSelect() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean supportsLikeEscapeClause()  {
+    public boolean supportsLikeEscapeClause() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean supportsMultipleResultSets()  {
+    public boolean supportsMultipleResultSets() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean supportsMultipleTransactions()  {
+    public boolean supportsMultipleTransactions() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean supportsNonNullableColumns()  {
+    public boolean supportsNonNullableColumns() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean supportsMinimumSQLGrammar()  {
+    public boolean supportsMinimumSQLGrammar() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean supportsCoreSQLGrammar()  {
+    public boolean supportsCoreSQLGrammar() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean supportsExtendedSQLGrammar()  {
+    public boolean supportsExtendedSQLGrammar() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean supportsANSI92EntryLevelSQL()  {
+    public boolean supportsANSI92EntryLevelSQL() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean supportsANSI92IntermediateSQL()  {
+    public boolean supportsANSI92IntermediateSQL() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean supportsANSI92FullSQL()  {
+    public boolean supportsANSI92FullSQL() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean supportsIntegrityEnhancementFacility()  {
+    public boolean supportsIntegrityEnhancementFacility() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean supportsOuterJoins()  {
+    public boolean supportsOuterJoins() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean supportsFullOuterJoins()  {
+    public boolean supportsFullOuterJoins() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean supportsLimitedOuterJoins()  {
+    public boolean supportsLimitedOuterJoins() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public String getSchemaTerm()  throws SQLException {
+    public String getSchemaTerm() {
         return "schema";
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public String getProcedureTerm()  throws SQLException {
+    public String getProcedureTerm() {
         return "procedure";
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public String getCatalogTerm()  throws SQLException {
+    public String getCatalogTerm() {
         return "catalog";
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean isCatalogAtStart()  {
+    public boolean isCatalogAtStart() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public String getCatalogSeparator()  throws SQLException {
+    public String getCatalogSeparator() throws SQLException {
         throw new SQLFeatureNotSupportedException("DatabaseMetaData.getCatalogSeparator is not implemented yet");
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean supportsSchemasInDataManipulation()  {
+    public boolean supportsSchemasInDataManipulation() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean supportsSchemasInProcedureCalls()  {
+    public boolean supportsSchemasInProcedureCalls() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean supportsSchemasInTableDefinitions()  {
+    public boolean supportsSchemasInTableDefinitions() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean supportsSchemasInIndexDefinitions()  {
+    public boolean supportsSchemasInIndexDefinitions() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean supportsSchemasInPrivilegeDefinitions()  {
+    public boolean supportsSchemasInPrivilegeDefinitions() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean supportsCatalogsInDataManipulation()  {
+    public boolean supportsCatalogsInDataManipulation() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean supportsCatalogsInProcedureCalls()  {
+    public boolean supportsCatalogsInProcedureCalls() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean supportsCatalogsInTableDefinitions()  {
+    public boolean supportsCatalogsInTableDefinitions() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean supportsCatalogsInIndexDefinitions()  {
+    public boolean supportsCatalogsInIndexDefinitions() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean supportsCatalogsInPrivilegeDefinitions()  {
+    public boolean supportsCatalogsInPrivilegeDefinitions() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean supportsPositionedDelete()  {
+    public boolean supportsPositionedDelete() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean supportsPositionedUpdate()  {
+    public boolean supportsPositionedUpdate() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean supportsSelectForUpdate()  {
+    public boolean supportsSelectForUpdate() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean supportsStoredProcedures()  {
+    public boolean supportsStoredProcedures() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean supportsSubqueriesInComparisons()  {
+    public boolean supportsSubqueriesInComparisons() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean supportsSubqueriesInExists()  {
+    public boolean supportsSubqueriesInExists() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean supportsSubqueriesInIns()  {
+    public boolean supportsSubqueriesInIns() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean supportsSubqueriesInQuantifieds()  {
+    public boolean supportsSubqueriesInQuantifieds() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean supportsCorrelatedSubqueries()  {
+    public boolean supportsCorrelatedSubqueries() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean supportsUnion()  {
+    public boolean supportsUnion() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean supportsUnionAll()  {
+    public boolean supportsUnionAll() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean supportsOpenCursorsAcrossCommit()  {
+    public boolean supportsOpenCursorsAcrossCommit() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean supportsOpenCursorsAcrossRollback()  {
+    public boolean supportsOpenCursorsAcrossRollback() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean supportsOpenStatementsAcrossCommit()  {
+    public boolean supportsOpenStatementsAcrossCommit() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean supportsOpenStatementsAcrossRollback()  {
+    public boolean supportsOpenStatementsAcrossRollback() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public int getMaxBinaryLiteralLength()  throws SQLException {
+    public int getMaxBinaryLiteralLength() {
         return 1024;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public int getMaxCharLiteralLength()  throws SQLException {
+    public int getMaxCharLiteralLength() {
         return 1024;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public int getMaxColumnNameLength()  throws SQLException {
+    public int getMaxColumnNameLength() {
         return 64;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public int getMaxColumnsInGroupBy()  throws SQLException {
+    public int getMaxColumnsInGroupBy() {
         return 16;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public int getMaxColumnsInIndex()  throws SQLException {
+    public int getMaxColumnsInIndex() {
         return 16;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public int getMaxColumnsInOrderBy()  throws SQLException {
+    public int getMaxColumnsInOrderBy() {
         return 16;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public int getMaxColumnsInSelect()  throws SQLException {
+    public int getMaxColumnsInSelect() {
         return 32;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public int getMaxColumnsInTable()  throws SQLException {
+    public int getMaxColumnsInTable() {
         return 256;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public int getMaxConnections()  throws SQLException {
+    public int getMaxConnections() {
         return 16;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public int getMaxCursorNameLength()  throws SQLException {
+    public int getMaxCursorNameLength() {
         return 64;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public int getMaxIndexLength()  throws SQLException {
+    public int getMaxIndexLength() {
         return 64;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public int getMaxSchemaNameLength()  throws SQLException {
+    public int getMaxSchemaNameLength() {
         return 64;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public int getMaxProcedureNameLength()  throws SQLException {
+    public int getMaxProcedureNameLength() {
         return 64;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public int getMaxCatalogNameLength()  throws SQLException {
+    public int getMaxCatalogNameLength() {
         return 64;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public int getMaxRowSize()  throws SQLException {
+    public int getMaxRowSize() {
         return 16384;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean doesMaxRowSizeIncludeBlobs()  {
+    public boolean doesMaxRowSizeIncludeBlobs() {
         return true;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public int getMaxStatementLength()  throws SQLException {
+    public int getMaxStatementLength() {
         return 16384;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public int getMaxStatements()  throws SQLException {
+    public int getMaxStatements() {
         return 64;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public int getMaxTableNameLength()  throws SQLException {
+    public int getMaxTableNameLength() {
         return 64;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public int getMaxTablesInSelect()  throws SQLException {
+    public int getMaxTablesInSelect() {
         return 16;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public int getMaxUserNameLength()  throws SQLException {
+    public int getMaxUserNameLength() {
         return 64;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public int getDefaultTransactionIsolation()  throws SQLException {
+    public int getDefaultTransactionIsolation() throws SQLException {
         throw new SQLFeatureNotSupportedException("DatabaseMetaData.getDefaultTransactionIsolation is not implemented yet");
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean supportsTransactions()  {
+    public boolean supportsTransactions() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean supportsTransactionIsolationLevel(int level)  {
+    public boolean supportsTransactionIsolationLevel(int level) {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean supportsDataDefinitionAndDataManipulationTransactions()  {
+    public boolean supportsDataDefinitionAndDataManipulationTransactions() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean supportsDataManipulationTransactionsOnly()  {
+    public boolean supportsDataManipulationTransactionsOnly() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean dataDefinitionCausesTransactionCommit()  {
+    public boolean dataDefinitionCausesTransactionCommit() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean dataDefinitionIgnoredInTransactions()  {
+    public boolean dataDefinitionIgnoredInTransactions() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public ResultSet getProcedures(String catalog, String schemaPattern,
-                                   String procedureNamePattern)    throws SQLException {
-        return this.populateEmptyResultSet();
+                                   String procedureNamePattern) {
+        return MetadataResultSets.emptyResultSet();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public ResultSet getProcedureColumns(String catalog, String schemaPattern,
                                          String procedureNamePattern,
-                                         String columnNamePattern)    throws SQLException {
+                                         String columnNamePattern) throws SQLException {
         throw new SQLFeatureNotSupportedException("DatabaseMetaData.getProcedureColumns is not implemented yet");
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public ResultSet getTables(String catalog, String schemaPattern,
-                               String tableNamePattern, String[] types) throws SQLException {
+                               String tableNamePattern, String[] types) {
         //TODO filter the resultset
-        return this.populateTableResultSet();
+        return MetadataResultSets.tableResultSet(this.workspace);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public ResultSet getSchemas()  throws SQLException {
-        return this.populateSchemaResultSet();
+    public ResultSet getSchemas() throws SQLException {
+        return MetadataResultSets.schemaResultSet(this.catalog);
     }
 
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public ResultSet getCatalogs()  throws SQLException {
-        return this.populateCatalogResultSet();
+    public ResultSet getCatalogs() {
+        return MetadataResultSets.catalogResultSet();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public ResultSet getTableTypes()  throws SQLException {
-        return this.populateTableTypeResultSet();
+    public ResultSet getTableTypes() {
+        return MetadataResultSets.tableTypeResultSet();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public ResultSet getColumns(String catalog, String schemaPattern,
                                 String tableNamePattern,
-                                String columnNamePattern)  throws SQLException {
+                                String columnNamePattern) {
         //TODO filter the resultset
-        return this.populateColumnResultSet();
+        return MetadataResultSets.columnResultSet(this.catalog, this.workspace);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public ResultSet getColumnPrivileges(String catalog, String schema, String table,
                                          String columnNamePattern) throws SQLException {
         throw new SQLFeatureNotSupportedException("DatabaseMetaData.getColumnPrivileges is not implemented yet");
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public ResultSet getTablePrivileges(String catalog, String schemaPattern,
-                                        String tableNamePattern)  throws SQLException {
+                                        String tableNamePattern) throws SQLException {
         throw new SQLFeatureNotSupportedException("DatabaseMetaData.getTablePrivileges is not implemented yet");
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public ResultSet getBestRowIdentifier(String catalog, String schema, String table,
                                           int scope, boolean nullable) throws SQLException {
         throw new SQLFeatureNotSupportedException("DatabaseMetaData.getBestRowIdentifier is not implemented yet");
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public ResultSet getVersionColumns(String catalog, String schema,
                                        String table) throws SQLException {
         throw new SQLFeatureNotSupportedException("DatabaseMetaData.getVersionColumns is not implemented yet");
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public ResultSet getPrimaryKeys(String catalog, String schema, String table) throws SQLException {
+    public ResultSet getPrimaryKeys(String catalog, String schema, String table) {
         //throw new SQLFeatureNotSupportedException("Not supported yet.");
-        return this.populateEmptyResultSet();
+        return MetadataResultSets.emptyResultSet();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public ResultSet getImportedKeys(String catalog, String schema, String table) throws SQLException {
+    public ResultSet getImportedKeys(String catalog, String schema, String table) {
         //throw new SQLFeatureNotSupportedException("Not supported yet.");
-        return this.populateEmptyResultSet();
+        return MetadataResultSets.emptyResultSet();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public ResultSet getExportedKeys(String catalog, String schema, String table) throws SQLException {
         throw new SQLFeatureNotSupportedException("DatabaseMetaData.getExportedKeys is not implemented yet");
         //return this.emptyResultSet;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public ResultSet getCrossReference(String parentCatalog, String parentSchema,
                                        String parentTable, String foreignCatalog,
@@ -912,112 +1146,175 @@ public class DatabaseMetaData implements java.sql.DatabaseMetaData {
         //return this.emptyResultSet;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public ResultSet getTypeInfo() throws SQLException {
         throw new SQLFeatureNotSupportedException("DatabaseMetaData.getTypeInfo is not implemented yet");
         //return this.emptyResultSet;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public ResultSet getIndexInfo(String catalog, String schema,
                                   String table, boolean unique,
-                                  boolean approximate) throws SQLException {
+                                  boolean approximate) {
         //throw new SQLFeatureNotSupportedException("Not supported yet.");
-        return this.populateEmptyResultSet();
+        return MetadataResultSets.emptyResultSet();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean supportsResultSetType(int type)  {
+    public boolean supportsResultSetType(int type) {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean supportsResultSetConcurrency(int type, int concurrency)  {
+    public boolean supportsResultSetConcurrency(int type, int concurrency) {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean ownUpdatesAreVisible(int type)  {
+    public boolean ownUpdatesAreVisible(int type) {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean ownDeletesAreVisible(int type)  {
+    public boolean ownDeletesAreVisible(int type) {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean ownInsertsAreVisible(int type)  {
+    public boolean ownInsertsAreVisible(int type) {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean othersUpdatesAreVisible(int type)  {
+    public boolean othersUpdatesAreVisible(int type) {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean othersDeletesAreVisible(int type)  {
+    public boolean othersDeletesAreVisible(int type) {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean othersInsertsAreVisible(int type)  {
+    public boolean othersInsertsAreVisible(int type) {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean updatesAreDetected(int type)  {
+    public boolean updatesAreDetected(int type) {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean deletesAreDetected(int type)  {
+    public boolean deletesAreDetected(int type) {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean insertsAreDetected(int type)  {
+    public boolean insertsAreDetected(int type) {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean supportsBatchUpdates()  {
+    public boolean supportsBatchUpdates() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public ResultSet getUDTs(String catalog, String schemaPattern,
-                             String typeNamePattern, int[] types)  throws SQLException {
+                             String typeNamePattern, int[] types) throws SQLException {
         throw new SQLFeatureNotSupportedException("DatabaseMetaData.getUDTs is not implemented yet");
         //return this.emptyResultSet;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public Connection getConnection()  {
+    public Connection getConnection() {
         return this.connection;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean supportsSavepoints()  {
+    public boolean supportsSavepoints() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean supportsNamedParameters()  {
+    public boolean supportsNamedParameters() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean supportsMultipleOpenResults()  {
+    public boolean supportsMultipleOpenResults() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean supportsGetGeneratedKeys()  {
+    public boolean supportsGetGeneratedKeys() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public ResultSet getSuperTypes(String catalog, String schemaPattern,
                                    String typeNamePattern) throws SQLException {
@@ -1025,6 +1322,9 @@ public class DatabaseMetaData implements java.sql.DatabaseMetaData {
         //return this.emptyResultSet;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public ResultSet getSuperTables(String catalog, String schemaPattern,
                                     String tableNamePattern) throws SQLException {
@@ -1032,6 +1332,9 @@ public class DatabaseMetaData implements java.sql.DatabaseMetaData {
         //return this.emptyResultSet;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public ResultSet getAttributes(String catalog, String schemaPattern,
                                    String typeNamePattern,
@@ -1040,85 +1343,132 @@ public class DatabaseMetaData implements java.sql.DatabaseMetaData {
         //return this.emptyResultSet;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean supportsResultSetHoldability(int holdability)  {
+    public boolean supportsResultSetHoldability(int holdability) {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public int getResultSetHoldability()  {
+    public int getResultSetHoldability() {
         return 0;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public int getDatabaseMajorVersion()  {
+    public int getDatabaseMajorVersion() {
         return Driver.MAJOR_VERSION;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public int getDatabaseMinorVersion()  {
+    public int getDatabaseMinorVersion() {
         return Driver.MINOR_VERSION;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public int getJDBCMajorVersion()  {
+    public int getJDBCMajorVersion() {
         return Driver.MAJOR_VERSION;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public int getJDBCMinorVersion()  {
+    public int getJDBCMinorVersion() {
         return Driver.MINOR_VERSION;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public int getSQLStateType()  {
+    public int getSQLStateType() {
         return sqlStateSQL;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean locatorsUpdateCopy()  {
+    public boolean locatorsUpdateCopy() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean supportsStatementPooling()  {
+    public boolean supportsStatementPooling() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public RowIdLifetime getRowIdLifetime() throws SQLException {
         throw new SQLFeatureNotSupportedException("DatabaseMetaData.getRowIdLifetime is not implemented yet");
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public ResultSet getSchemas(String catalog, String schemaPattern) throws SQLException {
+    public ResultSet getSchemas(String catalog, String schemaPattern) {
         //TODO filter the resultset
-        return this.populateEmptyResultSet();
+        return MetadataResultSets.emptyResultSet();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean supportsStoredFunctionsUsingCallSyntax()  {
+    public boolean supportsStoredFunctionsUsingCallSyntax() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean autoCommitFailureClosesAllResultSets()  {
+    public boolean autoCommitFailureClosesAllResultSets() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public ResultSet getClientInfoProperties()  throws SQLException{
+    public ResultSet getClientInfoProperties() throws SQLException {
         throw new SQLFeatureNotSupportedException("DatabaseMetaData.getClientInfoProperties is not implemented yet");
         //return this.emptyResultSet;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public ResultSet getFunctions(String catalog, String schemaPattern, String functionNamePattern)
-            throws SQLException {
+    public ResultSet getFunctions(String catalog, String schemaPattern, String functionNamePattern) {
         //throw new SQLFeatureNotSupportedException("Not supported yet");
-        return this.populateEmptyResultSet();
+        return MetadataResultSets.emptyResultSet();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public ResultSet getFunctionColumns(String catalog, String schemaPattern,
                                         String functionNamePattern,
@@ -1126,23 +1476,35 @@ public class DatabaseMetaData implements java.sql.DatabaseMetaData {
         throw new SQLFeatureNotSupportedException("DatabaseMetaData.getFunctionColumns is not implemented yet");
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public ResultSet getPseudoColumns(String catalog, String schemaPattern,
                                       String tableNamePattern,
-                                      String columnNamePattern)  throws SQLException {
+                                      String columnNamePattern) throws SQLException {
         throw new SQLFeatureNotSupportedException("DatabaseMetaData.getPseudoColumns is not implemented yet");
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean generatedKeyAlwaysReturned()  {
+    public boolean generatedKeyAlwaysReturned() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public <T> T unwrap(Class<T> iface) throws SQLException {
         throw new SQLFeatureNotSupportedException("DatabaseMetaData.unwrap is not implemented yet");
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean isWrapperFor(Class<?> iface) throws SQLException {
         throw new SQLFeatureNotSupportedException("DatabaseMetaData.isWrapperFor is not implemented yet");

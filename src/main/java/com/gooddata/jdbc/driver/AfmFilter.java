@@ -1,31 +1,36 @@
 package com.gooddata.jdbc.driver;
 
-import com.gooddata.jdbc.util.DataTypeParser;
-import com.gooddata.sdk.model.executeafm.ObjQualifier;
 import com.gooddata.sdk.model.executeafm.afm.filter.CompatibilityFilter;
 
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Logger;
 
+/**
+ * Represents AFM filter
+ */
 public class AfmFilter {
 
     private final static Logger LOGGER = Logger.getLogger(AfmFilter.class.getName());
 
-    public AfmFilter(AfmColumn column, int operator, List<Object> values, CompatibilityFilter filterObj) {
+    /**
+     * Constructor
+     * @param column filter column
+     * @param operator filter operator
+     * @param values filter values
+     * @param filterObj new filter object
+     */
+    public AfmFilter(CatalogEntry column, int operator, List<Object> values, CompatibilityFilter filterObj) {
         this.column = column;
         this.operator = operator;
         this.values = values;
         this.filterObj = filterObj;
     }
 
-    public AfmColumn getColumn() {
+    public CatalogEntry getColumn() {
         return column;
     }
 
-    public void setColumn(AfmColumn column) {
+    public void setColumn(CatalogEntry column) {
         this.column = column;
     }
 
@@ -53,7 +58,7 @@ public class AfmFilter {
         this.filterObj = filterObj;
     }
 
-    private AfmColumn column;
+    private CatalogEntry column;
     private int operator;
     private List<Object> values;
     private CompatibilityFilter filterObj;

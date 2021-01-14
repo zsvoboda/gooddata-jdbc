@@ -1,24 +1,30 @@
 package com.gooddata.jdbc.util;
 
-import com.gooddata.jdbc.driver.Driver;
-import com.gooddata.jdbc.driver.ResultSetTableMetaData;
-
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.util.Arrays;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
+/**
+ * Logs invocation of delegate object's methods
+ */
 public class LoggingInvocationHandler implements InvocationHandler {
 
     private final static Logger LOGGER = Logger.getLogger(LoggingInvocationHandler.class.getName());
 
     private final Object delegate;
 
+    /**
+     * Constructor
+     * @param delegate delegated objects
+     */
     public LoggingInvocationHandler(final Object delegate) {
         this.delegate = delegate;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
         String argsText = "";

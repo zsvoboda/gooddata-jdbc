@@ -1,6 +1,5 @@
 package com.gooddata.jdbc;
 
-import com.gooddata.jdbc.driver.Driver;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 

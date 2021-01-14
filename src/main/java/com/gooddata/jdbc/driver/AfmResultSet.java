@@ -1,33 +1,34 @@
 package com.gooddata.jdbc.driver;
 
 import com.gooddata.jdbc.util.AbstractResultSet;
-import com.gooddata.sdk.model.executeafm.result.*;
+import com.gooddata.sdk.model.executeafm.result.Data;
+import com.gooddata.sdk.model.executeafm.result.DataList;
+import com.gooddata.sdk.model.executeafm.result.DataValue;
+import com.gooddata.sdk.model.executeafm.result.ExecutionResult;
 
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
-import java.sql.*;
-import java.util.*;
+import java.util.List;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 /**
- * ResultSet table
+ * ResultSet table wraps AFM execute call result in JDBC ResultSet object
  */
-public class ResultSetTable extends AbstractResultSet implements ResultSet {
+public class AfmResultSet extends AbstractResultSet implements ResultSet {
 
-	private final static Logger LOGGER = Logger.getLogger(ResultSetTable.class.getName());
+	private final static Logger LOGGER = Logger.getLogger(AfmResultSet.class.getName());
 
-	public static final int HOLDABILITY = CLOSE_CURSORS_AT_COMMIT;
-	public static final int FETCH_DIRECTION =  FETCH_FORWARD;
-	public static final int CONCURRENCY = CONCUR_READ_ONLY;
-	public static final int TYPE = TYPE_SCROLL_INSENSITIVE;
-
+	// AFM execution result
 	private final ExecutionResult afmExecutionResult;
-	private final List<AfmColumn> columns;
+	// AFM columns
+	private final List<CatalogEntry> columns;
+	// JDBC statement
 	private final Statement statement;
 
+	// Mapping between the column positions in AFM and in SELECT
 	private int[] columnStatementPosition;
-
 	private int currentIndex = -1;
 
 	/**
@@ -36,16 +37,19 @@ public class ResultSetTable extends AbstractResultSet implements ResultSet {
 	 * @param result GD AFM execution result
 	 * @param columns AFM columns
 	 */
-	public ResultSetTable(Statement statement, ExecutionResult result,
-						  List<AfmColumn> columns) {
+	public AfmResultSet(Statement statement, ExecutionResult result,
+						List<CatalogEntry> columns) {
 		this.afmExecutionResult = result;
 		this.columns = columns;
 		this.statement = statement;
 		this.computeColumnsStatementPositions(columns);
 	}
 
-	/** Computes column index to AFM header and data structures */
-	private void computeColumnsStatementPositions(List<AfmColumn> columns) {
+	/**
+	 *  Computes column index to AFM header and data structures
+	 * @param columns SQL columns
+	 * */
+	private void computeColumnsStatementPositions(List<CatalogEntry> columns) {
 		this.columnStatementPosition =  new int[columns.size()];
 		int metricPosition = 0;
 		int attributePosition = 0;
@@ -59,13 +63,16 @@ public class ResultSetTable extends AbstractResultSet implements ResultSet {
 		}
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
-	public java.sql.ResultSetMetaData getMetaData() throws SQLException {
-		return new ResultSetTableMetaData(this.columns);
+	public java.sql.ResultSetMetaData getMetaData() {
+		return new AfmResultSetMetaData(this.columns);
 	}
 
 	/**
-	 * Get textual value
+	 * Get textual value - extracts text value from AFM execution result
 	 * @param columnIndex 1 based index
 	 * @return textual value
 	 * @throws SQLException in case of issues
@@ -77,7 +84,7 @@ public class ResultSetTable extends AbstractResultSet implements ResultSet {
 		if( realIndex >= this.columns.size() )
 			throw new SQLException("Column index too high.");
 
-		AfmColumn column = this.columns.get(realIndex);
+		CatalogEntry column = this.columns.get(realIndex);
 		if(column.getType().equals("metric")) {
 			Data data = this.afmExecutionResult.getData().get(this.currentIndex);
 			if(data instanceof DataList) {
@@ -106,65 +113,98 @@ public class ResultSetTable extends AbstractResultSet implements ResultSet {
 	 */
 	@Override
 	public int findColumn(String columnLabel) throws SQLException {
-		int index = this.columns.stream().map(c->c.getTitle()).collect(Collectors.toList()).indexOf(columnLabel);
+		int index = this.columns.stream().map(CatalogEntry::getTitle).collect(Collectors.toList()).indexOf(columnLabel);
 		if(index >= 0)
 			return index + 1;
 		else
 			throw new SQLException(String.format("Column '%s' doesn't exist.", columnLabel));
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
-	public Statement getStatement() throws SQLException {
+	public Statement getStatement() {
 		return this.statement;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public boolean isBeforeFirst() {
 		return this.currentIndex == -1;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public boolean isAfterLast() {
 		return this.currentIndex >= this.afmExecutionResult.getData().size();
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public boolean isFirst()  {
 		return this.currentIndex == 0;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
-	public boolean isLast() throws SQLException {
+	public boolean isLast() {
 		return this.currentIndex == this.afmExecutionResult.getData().size() - 1;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public void beforeFirst() {
 		this.currentIndex = -1;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public void afterLast() {
 		this.currentIndex = this.afmExecutionResult.getData().size();
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public boolean first() {
 		this.currentIndex = 0;
 		return true;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public boolean last() {
 		this.currentIndex = this.afmExecutionResult.getData().size() - 1;
 		return true;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public int getRow() {
 		return this.currentIndex + 1;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public boolean absolute(int row) {
 		if(row > 0 && row <= this.afmExecutionResult.getData().size()) {
@@ -174,10 +214,12 @@ public class ResultSetTable extends AbstractResultSet implements ResultSet {
 		return false;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public boolean relative(int rowsIncrement) {
 		return absolute(this.currentIndex + 1 + rowsIncrement);
 	}
-
 
 }
