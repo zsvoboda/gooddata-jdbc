@@ -161,8 +161,6 @@ public class SQLParser {
                     if (fromTables != null)
                         fromTables.accept(fv);
 
-                    // TODO WHERE expressions
-
                     Expression where = plainSelect.getWhere();
                     ExpressionVisitor ev = new ExpressionVisitorAdapter() {
 

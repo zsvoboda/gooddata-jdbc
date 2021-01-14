@@ -1032,7 +1032,6 @@ public class DatabaseMetaData implements java.sql.DatabaseMetaData {
     @Override
     public ResultSet getTables(String catalog, String schemaPattern,
                                String tableNamePattern, String[] types) {
-        //TODO filter the resultset
         return MetadataResultSets.tableResultSet(this.workspace);
     }
 
@@ -1068,7 +1067,6 @@ public class DatabaseMetaData implements java.sql.DatabaseMetaData {
     public ResultSet getColumns(String catalog, String schemaPattern,
                                 String tableNamePattern,
                                 String columnNamePattern) {
-        //TODO filter the resultset
         return MetadataResultSets.columnResultSet(this.catalog, this.workspace);
     }
 
@@ -1428,7 +1426,6 @@ public class DatabaseMetaData implements java.sql.DatabaseMetaData {
      */
     @Override
     public ResultSet getSchemas(String catalog, String schemaPattern) {
-        //TODO filter the resultset
         return MetadataResultSets.emptyResultSet();
     }
 
