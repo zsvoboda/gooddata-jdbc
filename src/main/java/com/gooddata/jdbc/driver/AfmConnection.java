@@ -25,7 +25,7 @@ public class AfmConnection implements java.sql.Connection {
     private boolean isClosed = false;
     private boolean autoCommit = false;
     private Properties clientInfo = new Properties();
-    private Project workspace;
+    private final Project workspace;
 
     /**
      * Constructor
@@ -49,7 +49,8 @@ public class AfmConnection implements java.sql.Connection {
         String host = m.group(1);
         this.gd = new GoodData(host, login, password);
         this.workspace = gd.getProjectService().getProjectById(pid);
-        this.afmDatabaseMetaData = new AfmDatabaseMetaData(this, this.gd, workspace, login);
+        this.afmDatabaseMetaData = new AfmDatabaseMetaData(
+                this, this.gd, workspace, login);
     }
 
     /**
@@ -146,7 +147,7 @@ public class AfmConnection implements java.sql.Connection {
      */
     @Override
     public java.sql.DatabaseMetaData getMetaData() {
-        return afmDatabaseMetaData;
+        return this.afmDatabaseMetaData;
     }
 
     /**
