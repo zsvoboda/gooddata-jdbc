@@ -8,9 +8,9 @@ import java.util.List;
 
 public class TestMetadataResultSet {
 
-    private MetadataResultSet mrs;
+    private final MetadataResultSet mrs;
 
-    public TestMetadataResultSet() throws SQLException, ClassNotFoundException {
+    public TestMetadataResultSet() {
         List<MetadataResultSet.MetaDataColumn> data = Arrays.asList(
                 new MetadataResultSet.MetaDataColumn("TABLE_SCHEM",
                         Arrays.asList("1","2")),

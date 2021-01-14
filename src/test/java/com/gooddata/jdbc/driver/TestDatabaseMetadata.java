@@ -3,7 +3,6 @@ package com.gooddata.jdbc.driver;
 import com.gooddata.jdbc.Parameters;
 import org.testng.annotations.Test;
 
-import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -18,20 +17,18 @@ public class TestDatabaseMetadata {
     private static final String JDBC_DRIVER = "com.gooddata.jdbc.driver.Driver";
     private static final String DB_URL = "jdbc:gd://%s/gdc/projects/%s";
 
-    private Driver driver;
-    private java.sql.Connection connection;
+    private final java.sql.Connection connection;
 
     public TestDatabaseMetadata() throws SQLException, ClassNotFoundException {
         Class.forName(JDBC_DRIVER);
         Parameters p = new Parameters();
         String url = String.format(DB_URL, p.getHost(), p.getWorkspace());
-        this.driver = DriverManager.getDriver(url);
         this.connection = DriverManager.getConnection(url, p.getUsername(), p.getPassword());
     }
 
     private void printResultSet(ResultSet r) throws SQLException {
         int colCnt = r.getMetaData().getColumnCount();
-        StringBuffer header = new StringBuffer("");
+        StringBuffer header = new StringBuffer();
         for(int i=1; i<= colCnt; i++) {
             header.append(r.getMetaData().getColumnName(i));
             if(i<colCnt)
@@ -39,7 +36,7 @@ public class TestDatabaseMetadata {
         }
         System.out.println(header);
         while(r.next()) {
-            StringBuffer row = new StringBuffer("");
+            StringBuffer row = new StringBuffer();
             for(int i=1; i<=colCnt; i++) {
                 row.append(r.getObject(i));
                 if(i<colCnt)

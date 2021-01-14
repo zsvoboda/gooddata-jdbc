@@ -16,7 +16,7 @@ public class TestDriver {
     static final String JDBC_DRIVER = "com.gooddata.jdbc.driver.Driver";
     static final String DB_URL = "jdbc:gd://%s/gdc/projects/%s";
 
-    private Driver driver;
+    private final Driver driver;
 
     public TestDriver() throws SQLException, ClassNotFoundException {
         Class.forName(JDBC_DRIVER);

@@ -9,7 +9,7 @@ public class TestSQLParser {
 
     private final static Logger LOGGER = Logger.getLogger(TestSQLParser.class.getName());
 
-    private SQLParser parser = new SQLParser();
+    private final SQLParser parser = new SQLParser();
 
     @Test
     public void testParse() throws JSQLParserException {
