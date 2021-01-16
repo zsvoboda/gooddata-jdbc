@@ -1,7 +1,10 @@
 package com.gooddata.jdbc.driver;
 
 import net.sf.jsqlparser.JSQLParserException;
-import net.sf.jsqlparser.expression.*;
+import net.sf.jsqlparser.expression.Expression;
+import net.sf.jsqlparser.expression.ExpressionVisitor;
+import net.sf.jsqlparser.expression.ExpressionVisitorAdapter;
+import net.sf.jsqlparser.expression.NotExpression;
 import net.sf.jsqlparser.expression.operators.conditional.OrExpression;
 import net.sf.jsqlparser.expression.operators.relational.*;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
@@ -346,7 +349,7 @@ public class SQLParser {
      * @param metricName name of the metric
      * @param metricMaql metric MAQL
      * @return parser MAQL metric structure
-     * @throws JSQLParserException
+     * @throws JSQLParserException in case of a parser error
      */
     public ParsedCreateMetricStatement parseMaql(String metricName, String metricMaql) throws JSQLParserException {
         Set<String> factsMetricsOrAttributeTitles = new HashSet<>();
@@ -395,42 +398,22 @@ public class SQLParser {
     }
 
     /**
-     * Parses CREATE METRIC statement
+     * Parses CREATE METRIC statement or ALTER METRIC statement
      * @param sql CREATE METRIC statement text
      * @return parsed CREATE METRIC statement
      * @throws JSQLParserException syntax errors
      */
-    public ParsedCreateMetricStatement parseCreateMetric(String sql) throws JSQLParserException {
+    public ParsedCreateMetricStatement parseCreateOrAlterMetric(String sql) throws JSQLParserException {
         String sqlWithNoNewlines = sql.replaceAll("\n"," ");
         Pattern p = Pattern.compile(
-                "^\\s?create\\s+metric\\s+\"(.*?)\"\\s+as\\s+(.*?)\\s?[;]?\\s?$",
+                "^\\s?(create|alter)\\s+metric\\s+\"(.*?)\"\\s+as\\s+(.*?)\\s?[;]?\\s?$",
                 Pattern.CASE_INSENSITIVE);
         Matcher m = p.matcher(sqlWithNoNewlines);
         boolean b = m.matches();
-        if (b && m.groupCount() != 2)
+        if (b && m.groupCount() != 3)
             throw new JSQLParserException(String.format("Wrong CREATE METRIC syntax: '%s'", sql));
-        String metricName = m.group(1);
-        String metricMaql = m.group(2);
-        return parseMaql(metricName, metricMaql);
-    }
-
-    /**
-     * Parses ALTER METRIC statement
-     * @param sql ALTER METRIC statement text
-     * @return parsed ALTER METRIC statement
-     * @throws JSQLParserException syntax errors
-     */
-    public ParsedCreateMetricStatement parseAlterMetric(String sql) throws JSQLParserException {
-        String sqlWithNoNewlines = sql.replaceAll("\n"," ");
-        Pattern p = Pattern.compile(
-                "^\\s?alter\\s+metric\\s+\"(.*?)\"\\s+as\\s+(.*?)\\s?[;]?\\s?$",
-                Pattern.CASE_INSENSITIVE);
-        Matcher m = p.matcher(sqlWithNoNewlines);
-        boolean b = m.matches();
-        if (b && m.groupCount() != 2)
-            throw new JSQLParserException(String.format("Wrong CREATE METRIC syntax: '%s'", sql));
-        String metricName = m.group(1);
-        String metricMaql = m.group(2);
+        String metricName = m.group(2);
+        String metricMaql = m.group(3);
         return parseMaql(metricName, metricMaql);
     }
 
@@ -569,15 +552,14 @@ public class SQLParser {
      * Parses SQL datatype e.g. VARCHAR(255) or DECIMAL(13,2)
      * @param dataType datatype text
      * @return parsed datatype
-     * @throws SQLException syntax problems
      */
-    public static ParsedSQLDataType parseSqlDatatype(String dataType) throws SQLException {
+    public static ParsedSQLDataType parseSqlDatatype(String dataType) {
         String dataTypeName;
         int size = 0;
         int precision = 0;
         Pattern p1 = Pattern.compile("^\\s?([a-zA-Z]+)\\s?(\\(\\s?([0-9]+)\\s?(\\s?,\\s?([0-9]+)\\s?)?\\s?\\))?\\s?$");
         Matcher m1 = p1.matcher(dataType);
-        m1.matches();
+        boolean b = m1.matches();
         int cnt = m1.groupCount();
         dataTypeName = m1.group(1);
         String sizeTxt = m1.group(3);

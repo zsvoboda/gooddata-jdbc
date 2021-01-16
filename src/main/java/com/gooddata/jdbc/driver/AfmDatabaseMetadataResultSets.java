@@ -1,6 +1,5 @@
 package com.gooddata.jdbc.driver;
 
-import com.gooddata.jdbc.util.DataTypeParser;
 import com.gooddata.jdbc.util.MetadataResultSet;
 import com.gooddata.sdk.model.project.Project;
 

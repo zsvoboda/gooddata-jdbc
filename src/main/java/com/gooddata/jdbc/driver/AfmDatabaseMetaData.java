@@ -4,7 +4,6 @@ import com.gooddata.sdk.model.project.Project;
 import com.gooddata.sdk.service.GoodData;
 import org.springframework.web.client.RestTemplate;
 
-import java.sql.Connection;
 import java.sql.*;
 
 /**

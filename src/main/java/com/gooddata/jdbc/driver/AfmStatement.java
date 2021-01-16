@@ -1,15 +1,12 @@
 package com.gooddata.jdbc.driver;
 
 import com.gooddata.sdk.model.executeafm.Execution;
-import com.gooddata.sdk.model.executeafm.ObjQualifier;
-import com.gooddata.sdk.model.executeafm.UriObjQualifier;
 import com.gooddata.sdk.model.executeafm.afm.Afm;
 import com.gooddata.sdk.model.executeafm.afm.AttributeItem;
 import com.gooddata.sdk.model.executeafm.afm.MeasureItem;
 import com.gooddata.sdk.model.executeafm.afm.SimpleMeasureDefinition;
 import com.gooddata.sdk.model.executeafm.response.ExecutionResponse;
 import com.gooddata.sdk.model.executeafm.result.ExecutionResult;
-import com.gooddata.sdk.model.md.Entry;
 import com.gooddata.sdk.model.md.Metric;
 import com.gooddata.sdk.model.project.Project;
 import com.gooddata.sdk.service.FutureResult;
@@ -22,7 +19,10 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.sql.SQLWarning;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.logging.Logger;
 
 /**
@@ -112,9 +112,11 @@ public class AfmStatement implements java.sql.Statement {
 		if(sql.trim().toLowerCase().startsWith("create")) {
 			try {
 				SQLParser parser = new SQLParser();
-				SQLParser.ParsedCreateMetricStatement parsedCreate = parser.parseCreateMetric(sql);
+				SQLParser.ParsedCreateMetricStatement parsedCreate
+						= parser.parseCreateOrAlterMetric(sql);
 				this.executeCreateMetric(parsedCreate);
-			} catch (Catalog.CatalogEntryNotFoundException | Catalog.DuplicateCatalogEntryException
+			} catch (Catalog.CatalogEntryNotFoundException |
+					Catalog.DuplicateCatalogEntryException
 					| JSQLParserException e) {
 				throw new SQLException(e);
 			}
@@ -163,7 +165,7 @@ public class AfmStatement implements java.sql.Statement {
 			CatalogEntry ldmObj = this.metadata.getCatalog().findAfmColumnByTitle(attributeName);
 			String replaceWhat = String.format("'%s'", value);
 			Map<String, String> lookup = this.metadata.getCatalog().lookupAttributeElements(ldmObj.getUri(),
-					Arrays.asList(value));
+					Collections.singletonList(value));
 			if(lookup == null || lookup.size() == 0)
 				throw new Catalog.CatalogEntryNotFoundException(
 						"The value '%s' can't mapped to any element URI.");

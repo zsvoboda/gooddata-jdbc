@@ -98,7 +98,7 @@ public class AfmResultSetMetaData extends AbstractResultSetMetaData implements R
 	 * {@inheritDoc}
 	 */
 	@Override
-	public String getCatalogName(int column) throws SQLException {
+	public String getCatalogName(int column) {
 		return UNIVERSAL_CATALOG_NAME;
 	}
 

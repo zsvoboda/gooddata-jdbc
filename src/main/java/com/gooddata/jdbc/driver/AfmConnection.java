@@ -3,7 +3,6 @@ package com.gooddata.jdbc.driver;
 import com.gooddata.sdk.model.project.Project;
 import com.gooddata.sdk.service.GoodData;
 import com.gooddata.sdk.service.GoodDataEndpoint;
-import com.gooddata.sdk.service.GoodDataRestProvider;
 import com.gooddata.sdk.service.GoodDataSettings;
 import com.gooddata.sdk.service.httpcomponents.LoginPasswordGoodDataRestProvider;
 import org.springframework.web.client.RestTemplate;

@@ -25,8 +25,17 @@ public class TestSQLParser {
 
     @Test
     public void testParseCreateMetric() throws JSQLParserException {
-        SQLParser.ParsedCreateMetricStatement metric = parser.parseCreateMetric(
+        SQLParser.ParsedCreateMetricStatement metric = parser.parseCreateOrAlterMetric(
                 "CREATE METRIC \"test\" AS SELECT SUM(\"Revenue\") BY \"Product Category\" " +
+                        "WHERE \"Product Category\" IN ('Home', 'Electronics')");
+        assert("test".equals(metric.getName()));
+        assert("SELECT SUM(\"Revenue\") BY \"Product Category\" WHERE \"Product Category\" IN ('Home', 'Electronics')".equals(metric.getMetricMaqlDefinition()));
+        assert(metric.getLdmObjectTitles().size() == 3);
+        assert(metric.getLdmObjectTitles().contains("Product Category"));
+        assert(metric.getLdmObjectTitles().contains("Revenue"));
+
+        metric = parser.parseCreateOrAlterMetric(
+                "ALTER METRIC \"test\" AS SELECT SUM(\"Revenue\") BY \"Product Category\" " +
                         "WHERE \"Product Category\" IN ('Home', 'Electronics')");
         assert("test".equals(metric.getName()));
         assert("SELECT SUM(\"Revenue\") BY \"Product Category\" WHERE \"Product Category\" IN ('Home', 'Electronics')".equals(metric.getMetricMaqlDefinition()));

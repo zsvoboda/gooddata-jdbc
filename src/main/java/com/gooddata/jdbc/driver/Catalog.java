@@ -13,7 +13,6 @@ import com.gooddata.sdk.model.md.*;
 import com.gooddata.sdk.model.project.Project;
 import com.gooddata.sdk.service.GoodData;
 import com.gooddata.sdk.service.md.MetadataService;
-import org.json.simple.JSONArray;
 import org.springframework.http.*;
 import org.springframework.web.client.RestTemplate;
 
@@ -361,11 +360,12 @@ public class Catalog {
             for (String value : values) {
                 valuesArray.add(value);
             }
-            HttpEntity<JsonNode> request = new HttpEntity<JsonNode>(requestObj, headers);
+            HttpEntity<JsonNode> request = new HttpEntity<>(requestObj, headers);
             String url = String.format("%s/labels", this.workspace.getMetadataUri());
             ResponseEntity<JsonNode> response = this.gdRestTemplate.postForEntity(url, request, JsonNode.class);
             if (response.getStatusCode() == HttpStatus.OK) {
-                ArrayNode results = (ArrayNode) response.getBody().get("elementLabelUri").get(0).get("result");
+                ArrayNode results = (ArrayNode) response.getBody()
+                        .get("elementLabelUri").get(0).get("result");
                 for (JsonNode result : results) {
                     ArrayNode elementLabels = (ArrayNode) result.get("elementLabels");
                     for(JsonNode row: elementLabels) {
