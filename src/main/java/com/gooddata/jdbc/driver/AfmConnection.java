@@ -1,5 +1,6 @@
 package com.gooddata.jdbc.driver;
 
+import com.gooddata.jdbc.util.LoggingInvocationHandler;
 import com.gooddata.sdk.model.project.Project;
 import com.gooddata.sdk.service.GoodData;
 import com.gooddata.sdk.service.GoodDataEndpoint;
@@ -8,6 +9,7 @@ import com.gooddata.sdk.service.httpcomponents.LoginPasswordGoodDataRestProvider
 import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
+import java.lang.reflect.Proxy;
 import java.sql.*;
 import java.util.Map;
 import java.util.Properties;
@@ -30,6 +32,8 @@ public class AfmConnection implements java.sql.Connection {
     private boolean autoCommit = false;
     private Properties clientInfo = new Properties();
     private final Project workspace;
+
+    private String schema = null;
 
     /**
      * Constructor
@@ -78,7 +82,14 @@ public class AfmConnection implements java.sql.Connection {
      */
     @Override
     public java.sql.Statement createStatement() {
-        return new AfmStatement(this, this.gd, this.afmDatabaseMetaData);
+        AfmStatement s =  new AfmStatement(this, this.gd, this.afmDatabaseMetaData);
+        /*
+        return (AfmStatement) Proxy.newProxyInstance(
+                s.getClass().getClassLoader(),
+                new Class[] { s.getClass() },
+                new LoggingInvocationHandler(s));
+         */
+        return s;
     }
 
     /**
@@ -466,7 +477,7 @@ public class AfmConnection implements java.sql.Connection {
      */
     @Override
     public void setSchema(String schema) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Connection.setSchema is not supported yet.");
+        this.schema = schema;
     }
 
     /**

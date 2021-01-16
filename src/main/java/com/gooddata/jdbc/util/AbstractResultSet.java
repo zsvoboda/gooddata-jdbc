@@ -146,7 +146,7 @@ public abstract class AbstractResultSet implements java.sql.ResultSet {
      */
     @Override
     public boolean wasNull() throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not implemented yet.");
+        return false;
     }
 
     /**

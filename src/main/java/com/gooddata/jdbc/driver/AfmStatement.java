@@ -1,5 +1,6 @@
 package com.gooddata.jdbc.driver;
 
+import com.gooddata.jdbc.util.LoggingInvocationHandler;
 import com.gooddata.sdk.model.executeafm.Execution;
 import com.gooddata.sdk.model.executeafm.afm.Afm;
 import com.gooddata.sdk.model.executeafm.afm.AttributeItem;
@@ -15,6 +16,7 @@ import com.gooddata.sdk.service.executeafm.ExecuteAfmService;
 import com.gooddata.sdk.service.md.MetadataService;
 import net.sf.jsqlparser.JSQLParserException;
 
+import java.lang.reflect.Proxy;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
@@ -36,7 +38,7 @@ public class AfmStatement implements java.sql.Statement {
 	private final MetadataService gdMeta;
 
     private boolean isClosed = false;
-	private ResultSet resultSet;
+	private AfmResultSet resultSet;
     private int maxRows = 0;
 
     private int fetchSize = 0;
@@ -94,7 +96,14 @@ public class AfmStatement implements java.sql.Statement {
 			Afm afm = getAfm(columns, filters);
 			ExecutionResponse rs = this.gdAfm.executeAfm(this.workspace, new Execution(afm));
 			FutureResult<ExecutionResult> fr = this.gdAfm.getResult(rs);
-			return new AfmResultSet(this, fr.get(), columns);
+			AfmResultSet s = new AfmResultSet(this, fr.get(), columns);
+			/*
+			return (AfmResultSet) Proxy.newProxyInstance(
+					s.getClass().getClassLoader(),
+					new Class[] { s.getClass() },
+					new LoggingInvocationHandler(s));
+			 */
+			return s;
 		} catch (JSQLParserException | Catalog.CatalogEntryNotFoundException
 				| Catalog.DuplicateCatalogEntryException e) {
 			throw new SQLException(e);
@@ -112,6 +121,7 @@ public class AfmStatement implements java.sql.Statement {
 				SQLParser.ParsedCreateMetricStatement parsedCreate
 						= parser.parseCreateOrAlterMetric(sql);
 				this.executeCreateMetric(parsedCreate);
+				return false;
 			} catch (Catalog.CatalogEntryNotFoundException |
 					Catalog.DuplicateCatalogEntryException
 					| JSQLParserException e) {
@@ -123,6 +133,7 @@ public class AfmStatement implements java.sql.Statement {
 				SQLParser.ParsedCreateMetricStatement parsedCreate
 						= parser.parseCreateOrAlterMetric(sql);
 				this.executeAlterMetric(parsedCreate);
+				return false;
 			} catch (Catalog.CatalogEntryNotFoundException |
 					Catalog.DuplicateCatalogEntryException
 					| JSQLParserException e) {
@@ -134,15 +145,16 @@ public class AfmStatement implements java.sql.Statement {
 				SQLParser parser = new SQLParser();
 				String parsedDropMetric = parser.parseDropMetric(sql);
 				this.executeDropMetric(parsedDropMetric);
+				return false;
 			} catch (Catalog.CatalogEntryNotFoundException | Catalog.DuplicateCatalogEntryException
 					| JSQLParserException e) {
 				throw new SQLException(e);
 			}
 		}
 		else {
-			this.resultSet = this.executeQuery(sql);
+			this.resultSet = (AfmResultSet) this.executeQuery(sql);
+			return true;
 		}
-		return false;
 	}
 
 
@@ -353,7 +365,7 @@ public class AfmStatement implements java.sql.Statement {
 	 */
 	@Override
 	public int getUpdateCount() {
-		return -1;
+			return -1;
 	}
 
 	/**

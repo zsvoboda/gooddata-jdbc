@@ -45,6 +45,10 @@ public class AfmResultSet extends AbstractResultSet implements ResultSet {
 		this.computeColumnsStatementPositions(columns);
 	}
 
+	public int getRowCount() {
+		return this.afmExecutionResult.getData().size();
+	}
+
 	/**
 	 *  Computes column index to AFM header and data structures
 	 * @param columns SQL columns
@@ -78,7 +82,7 @@ public class AfmResultSet extends AbstractResultSet implements ResultSet {
 	 * @throws SQLException in case of issues
 	 */
 	public String getTextValue(int columnIndex) throws SQLException {
-		if(this.currentIndex < 0 || this.currentIndex >= this.afmExecutionResult.getData().size())
+		if(this.currentIndex < 0 || this.currentIndex >= this.getRowCount())
 			throw new SQLException("Cursor is out of range.");
 		int realIndex = columnIndex - 1;
 		if( realIndex >= this.columns.size() )
@@ -141,7 +145,7 @@ public class AfmResultSet extends AbstractResultSet implements ResultSet {
 	 */
 	@Override
 	public boolean isAfterLast() {
-		return this.currentIndex >= this.afmExecutionResult.getData().size();
+		return this.currentIndex >= this.getRowCount();
 	}
 
 	/**
@@ -157,7 +161,7 @@ public class AfmResultSet extends AbstractResultSet implements ResultSet {
 	 */
 	@Override
 	public boolean isLast() {
-		return this.currentIndex == this.afmExecutionResult.getData().size() - 1;
+		return this.currentIndex == this.getRowCount() - 1;
 	}
 
 	/**
@@ -173,7 +177,7 @@ public class AfmResultSet extends AbstractResultSet implements ResultSet {
 	 */
 	@Override
 	public void afterLast() {
-		this.currentIndex = this.afmExecutionResult.getData().size();
+		this.currentIndex = this.getRowCount();
 	}
 
 	/**
@@ -190,7 +194,7 @@ public class AfmResultSet extends AbstractResultSet implements ResultSet {
 	 */
 	@Override
 	public boolean last() {
-		this.currentIndex = this.afmExecutionResult.getData().size() - 1;
+		this.currentIndex = this.getRowCount() - 1;
 		return true;
 	}
 
@@ -207,7 +211,7 @@ public class AfmResultSet extends AbstractResultSet implements ResultSet {
 	 */
 	@Override
 	public boolean absolute(int row) {
-		if(row > 0 && row <= this.afmExecutionResult.getData().size()) {
+		if(row > 0 && row <= this.getRowCount()) {
 			this.currentIndex = row - 1;
 			return true;
 		}
