@@ -120,7 +120,19 @@ public class AfmStatement implements java.sql.Statement {
 					| JSQLParserException e) {
 				throw new SQLException(e);
 			}
-		} else if(sql.trim().toLowerCase().startsWith("drop")) {
+		} else if(sql.trim().toLowerCase().startsWith("alter")) {
+			try {
+				SQLParser parser = new SQLParser();
+				SQLParser.ParsedCreateMetricStatement parsedCreate
+						= parser.parseCreateOrAlterMetric(sql);
+				this.executeAlterMetric(parsedCreate);
+			} catch (Catalog.CatalogEntryNotFoundException |
+					Catalog.DuplicateCatalogEntryException
+					| JSQLParserException e) {
+				throw new SQLException(e);
+			}
+		}
+		else if(sql.trim().toLowerCase().startsWith("drop")) {
 			try {
 				SQLParser parser = new SQLParser();
 				String parsedDropMetric = parser.parseDropMetric(sql);
