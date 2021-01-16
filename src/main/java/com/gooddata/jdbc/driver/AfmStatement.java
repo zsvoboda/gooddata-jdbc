@@ -1,12 +1,15 @@
 package com.gooddata.jdbc.driver;
 
 import com.gooddata.sdk.model.executeafm.Execution;
+import com.gooddata.sdk.model.executeafm.ObjQualifier;
+import com.gooddata.sdk.model.executeafm.UriObjQualifier;
 import com.gooddata.sdk.model.executeafm.afm.Afm;
 import com.gooddata.sdk.model.executeafm.afm.AttributeItem;
 import com.gooddata.sdk.model.executeafm.afm.MeasureItem;
 import com.gooddata.sdk.model.executeafm.afm.SimpleMeasureDefinition;
 import com.gooddata.sdk.model.executeafm.response.ExecutionResponse;
 import com.gooddata.sdk.model.executeafm.result.ExecutionResult;
+import com.gooddata.sdk.model.md.Entry;
 import com.gooddata.sdk.model.md.Metric;
 import com.gooddata.sdk.model.project.Project;
 import com.gooddata.sdk.service.FutureResult;
@@ -19,7 +22,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.sql.SQLWarning;
-import java.util.List;
+import java.util.*;
 import java.util.logging.Logger;
 
 /**
@@ -138,6 +141,57 @@ public class AfmStatement implements java.sql.Statement {
 	 * @throws Catalog.DuplicateCatalogEntryException issues with resolving referenced objects
 	 */
 	public void executeCreateMetric(SQLParser.ParsedCreateMetricStatement sql) throws
+			Catalog.CatalogEntryNotFoundException, Catalog.DuplicateCatalogEntryException, SQLException {
+		String maqlDefinition = sql.getMetricMaqlDefinition();
+		for(String metricFactAttribute: sql.getLdmObjectTitles()) {
+			//lookup attribute in LDM
+			CatalogEntry ldmObj = this.metadata.getCatalog().findLdmColumnByTitle(metricFactAttribute);
+			String replaceWhat = String.format("\"%s\"", metricFactAttribute);
+			maqlDefinition = maqlDefinition.replaceAll(
+					replaceWhat,
+					String.format("[%s]", ldmObj.getUri()));
+		}
+		// TODO replace attribute elements
+
+		Map<String,String> elementToAttribute = sql.getAttributeElementToAttributeNameLookup();
+		for(String value: sql.getAttributeElementValues()) {
+			String attributeName = elementToAttribute.get(value);
+			if(attributeName == null)
+					throw new Catalog.CatalogEntryNotFoundException(
+							"The value '%s' can't be associated with any attribute.");
+			//lookup display form in AFM
+			CatalogEntry ldmObj = this.metadata.getCatalog().findAfmColumnByTitle(attributeName);
+			String replaceWhat = String.format("'%s'", value);
+			Map<String, String> lookup = this.metadata.getCatalog().lookupAttributeElements(ldmObj.getUri(),
+					Arrays.asList(value));
+			if(lookup == null || lookup.size() == 0)
+				throw new Catalog.CatalogEntryNotFoundException(
+						"The value '%s' can't mapped to any element URI.");
+			String elementUri = lookup.get(value);
+			if(elementUri == null || elementUri.length() == 0)
+				throw new Catalog.CatalogEntryNotFoundException(
+						"The value '%s' doesn't exist.");
+			String replaceWith = String.format("[%s]", elementUri);
+			maqlDefinition = maqlDefinition.replaceAll(
+					replaceWhat,
+					replaceWith);
+		}
+
+		// TODO format
+		Metric m = new Metric(sql.getName(),
+				maqlDefinition,
+				"###,###.00");
+		Metric newMetric = this.gdMeta.createObj(this.workspace, m);
+		this.metadata.getCatalog().addMetric(newMetric);
+	}
+
+	/**
+	 * Execute ALTER METRIC statement
+	 * @param sql ALTER METRIC statement
+	 * @throws Catalog.CatalogEntryNotFoundException issues with resolving referenced objects
+	 * @throws Catalog.DuplicateCatalogEntryException issues with resolving referenced objects
+	 */
+	public void executeAlterMetric(SQLParser.ParsedCreateMetricStatement sql) throws
 			Catalog.CatalogEntryNotFoundException, Catalog.DuplicateCatalogEntryException {
 		String maqlDefinition = sql.getMetricMaqlDefinition();
 		for(String metricFactAttribute: sql.getLdmObjectTitles()) {
@@ -146,12 +200,17 @@ public class AfmStatement implements java.sql.Statement {
 		}
 		// TODO replace attribute elements
 
-		// TODO format
+		// TODO lookup
+		CatalogEntry afmMetric = this.metadata.getCatalog()
+				.findAfmColumnByTitle(sql.getName());
+
 		Metric m = new Metric(sql.getName(),
 				sql.getMetricMaqlDefinition(),
 				"###,###.00");
-		this.gdMeta.createObj(this.workspace, m);
+		m.setIdentifier(afmMetric.getIdentifier());
+		this.gdMeta.updateObj(m);
 	}
+
 
 	/**
 	 * Execute DROP METRIC statement

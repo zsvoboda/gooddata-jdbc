@@ -113,8 +113,9 @@ public class TestAfmStatement {
 
     @Test
     public void testCREATE() throws SQLException {
-        this.statement.execute("CREATE METRIC \"testNGMetric\" AS SELECT SUM(\"Revenue\")");
-        this.afmConnection.refreshCatalog();
+
+        this.statement.execute("CREATE METRIC \"testNGMetric\" AS SELECT SUM(\"Revenue\") " +
+                "WHERE \"Product Category\" IN ('Home')");
         this.statement.execute("DROP METRIC \"testNGMetric\";");
     }
 

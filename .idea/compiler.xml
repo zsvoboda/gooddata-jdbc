@@ -10,6 +10,10 @@
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
+      <module name="gooddata-java" target="8" />
+      <module name="gooddata-java (1)" target="8" />
+      <module name="gooddata-java-model" target="8" />
+      <module name="gooddata-java-parent" target="8" />
       <module name="gooddata-jdbc" target="9" />
     </bytecodeTargetLevel>
   </component>

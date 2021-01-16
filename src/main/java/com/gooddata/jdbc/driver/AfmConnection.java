@@ -2,6 +2,11 @@ package com.gooddata.jdbc.driver;
 
 import com.gooddata.sdk.model.project.Project;
 import com.gooddata.sdk.service.GoodData;
+import com.gooddata.sdk.service.GoodDataEndpoint;
+import com.gooddata.sdk.service.GoodDataRestProvider;
+import com.gooddata.sdk.service.GoodDataSettings;
+import com.gooddata.sdk.service.httpcomponents.LoginPasswordGoodDataRestProvider;
+import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
 import java.sql.*;
@@ -49,8 +54,16 @@ public class AfmConnection implements java.sql.Connection {
         String host = m.group(1);
         this.gd = new GoodData(host, login, password);
         this.workspace = gd.getProjectService().getProjectById(pid);
+
+        LoginPasswordGoodDataRestProvider lp = new LoginPasswordGoodDataRestProvider(
+                new GoodDataEndpoint(host, GoodDataEndpoint.PORT, GoodDataEndpoint.PROTOCOL),
+                new GoodDataSettings(),
+                login,
+                password);
+        RestTemplate gdRestTemplate = lp.getRestTemplate();
         this.afmDatabaseMetaData = new AfmDatabaseMetaData(
-                this, this.gd, workspace, login);
+                this, this.gd, workspace, login, gdRestTemplate);
+
     }
 
     /**

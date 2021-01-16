@@ -24,17 +24,12 @@ public class TestSQLParser {
     }
 
     @Test
-    public void testParseExpression() throws JSQLParserException {
-        SQLParser.ParsedSQL parsedSQL = parser.parse("SELECT REVENUE WHERE REVENUE > (3+4)*(4+5)");
-    }
-
-    @Test
     public void testParseCreateMetric() throws JSQLParserException {
         SQLParser.ParsedCreateMetricStatement metric = parser.parseCreateMetric(
                 "CREATE METRIC \"test\" AS SELECT SUM(\"Revenue\") BY \"Product Category\" " +
-                        "WHERE \"Product Category\" IN ('Home', 'Appliances')");
+                        "WHERE \"Product Category\" IN ('Home', 'Electronics')");
         assert("test".equals(metric.getName()));
-        assert("SELECT SUM(\"Revenue\") BY \"Product Category\" WHERE \"Product Category\" IN ('Home', 'Appliances')".equals(metric.getMetricMaqlDefinition()));
+        assert("SELECT SUM(\"Revenue\") BY \"Product Category\" WHERE \"Product Category\" IN ('Home', 'Electronics')".equals(metric.getMetricMaqlDefinition()));
         assert(metric.getLdmObjectTitles().size() == 3);
         assert(metric.getLdmObjectTitles().contains("Product Category"));
         assert(metric.getLdmObjectTitles().contains("Revenue"));

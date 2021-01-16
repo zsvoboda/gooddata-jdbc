@@ -6,6 +6,9 @@ import org.testng.annotations.Test;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 import java.util.logging.Logger;
 
 
@@ -49,17 +52,25 @@ public class TestDatabaseMetadata {
 
     @Test
     public void testFindColumnIndex() throws SQLException {
-        java.sql.DatabaseMetaData dm = this.connection.getMetaData();
-        System.out.println("\nTABLE TYPES\n");
-        printResultSet(dm.getTableTypes());
-        System.out.println("\nCATALOGS\n");
-        printResultSet(dm.getCatalogs());
-        System.out.println("\nSCHEMAS\n");
-        printResultSet(dm.getSchemas());
-        System.out.println("\nTABLES\n");
-        printResultSet(dm.getTables("","","", null));
-        System.out.println("\nCOLUMNS\n");
-        printResultSet(dm.getColumns("","","",""));
+
+    }
+
+    @Test
+    public void testAttributeElementsLookup() throws Catalog.CatalogEntryNotFoundException, SQLException {
+        AfmDatabaseMetaData dm = (AfmDatabaseMetaData)this.connection.getMetaData();
+        List<String> values = Arrays.asList("Home","Electronics");
+        Map<String,String> m = dm.getCatalog().lookupAttributeElements(
+                "/gdc/md/w2x7a9awsioch4l9lbzgjcn99hbkm61e/obj/272",
+                values);
+        for(String value: values) {
+            assert(m.containsKey(value));
+        }
+        m = dm.getCatalog().lookupAttributeElements(
+                "/gdc/md/w2x7a9awsioch4l9lbzgjcn99hbkm61e/obj/272",
+                Arrays.asList("NONEXISTENT1","NONEXISTENT2"));
+        m = dm.getCatalog().lookupAttributeElements(
+                "/gdc/md/w2x7a9awsioch4l9lbzgjcn99hbkm61e/obj/272",
+                Arrays.asList("NONEXISTENT1"));
     }
 
 

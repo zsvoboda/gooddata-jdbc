@@ -84,11 +84,6 @@
     <dependencies>
         <dependency>
             <groupId>com.gooddata</groupId>
-            <artifactId>gooddata-http-client</artifactId>
-            <version>1.0.0</version>
-        </dependency>
-        <dependency>
-            <groupId>com.gooddata</groupId>
             <artifactId>gooddata-java</artifactId>
             <version>3.4.0+api3</version>
         </dependency>

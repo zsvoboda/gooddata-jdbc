@@ -2,6 +2,7 @@ package com.gooddata.jdbc.driver;
 
 import com.gooddata.sdk.model.project.Project;
 import com.gooddata.sdk.service.GoodData;
+import org.springframework.web.client.RestTemplate;
 
 import java.sql.Connection;
 import java.sql.*;
@@ -21,7 +22,7 @@ public class AfmDatabaseMetaData implements java.sql.DatabaseMetaData {
     /**
      * Catalog of LDM objects (attributes and metrics)
      */
-    private final Catalog catalog = new Catalog();
+    private final Catalog catalog;
 
     /**
      * DatabaseMetadata constructor
@@ -29,13 +30,15 @@ public class AfmDatabaseMetaData implements java.sql.DatabaseMetaData {
      * @param gd GoodData connection
      * @param workspace GoodData workspace
      * @param user username
+     * @param gdRestTemplate GD Spring RestTemplate for direct GD invocation
      * @throws SQLException error
      */
     public AfmDatabaseMetaData(AfmConnection afmConnection, GoodData gd,
-                               Project workspace, String user) throws SQLException {
+                               Project workspace, String user, RestTemplate gdRestTemplate) throws SQLException {
         this.afmConnection = afmConnection;
         this.workspace = workspace;
         this.user = user;
+        this.catalog = new Catalog(gdRestTemplate, this.workspace);
         this.catalog.populate(gd, workspace);
     }
 
