@@ -19,10 +19,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.sql.SQLWarning;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.logging.Logger;
 
 /**
@@ -145,55 +142,24 @@ public class AfmStatement implements java.sql.Statement {
 		else {
 			this.resultSet = this.executeQuery(sql);
 		}
-		return true;
+		return false;
 	}
+
+
 
 	/**
 	 * Execute CREATE METRIC statement
-	 * @param sql CREATE METRIC statement
+	 * @param parsedMaqlCreate CREATE METRIC statement
 	 * @throws Catalog.CatalogEntryNotFoundException issues with resolving referenced objects
 	 * @throws Catalog.DuplicateCatalogEntryException issues with resolving referenced objects
 	 */
-	public void executeCreateMetric(SQLParser.ParsedCreateMetricStatement sql) throws
+	public void executeCreateMetric(SQLParser.ParsedCreateMetricStatement parsedMaqlCreate) throws
 			Catalog.CatalogEntryNotFoundException, Catalog.DuplicateCatalogEntryException, SQLException {
-		String maqlDefinition = sql.getMetricMaqlDefinition();
-		for(String metricFactAttribute: sql.getLdmObjectTitles()) {
-			//lookup attribute in LDM
-			CatalogEntry ldmObj = this.metadata.getCatalog().findLdmColumnByTitle(metricFactAttribute);
-			String replaceWhat = String.format("\"%s\"", metricFactAttribute);
-			maqlDefinition = maqlDefinition.replaceAll(
-					replaceWhat,
-					String.format("[%s]", ldmObj.getUri()));
-		}
-		// TODO replace attribute elements
 
-		Map<String,String> elementToAttribute = sql.getAttributeElementToAttributeNameLookup();
-		for(String value: sql.getAttributeElementValues()) {
-			String attributeName = elementToAttribute.get(value);
-			if(attributeName == null)
-					throw new Catalog.CatalogEntryNotFoundException(
-							"The value '%s' can't be associated with any attribute.");
-			//lookup display form in AFM
-			CatalogEntry ldmObj = this.metadata.getCatalog().findAfmColumnByTitle(attributeName);
-			String replaceWhat = String.format("'%s'", value);
-			Map<String, String> lookup = this.metadata.getGoodDataRestConnection()
-					.lookupAttributeElements(ldmObj.getUri(),
-					Collections.singletonList(value));
-			if(lookup == null || lookup.size() == 0)
-				throw new Catalog.CatalogEntryNotFoundException(
-						"The value '%s' can't mapped to any element URI.");
-			String elementUri = lookup.get(value);
-			if(elementUri == null || elementUri.length() == 0)
-				throw new Catalog.CatalogEntryNotFoundException(
-						"The value '%s' doesn't exist.");
-			String replaceWith = String.format("[%s]", elementUri);
-			maqlDefinition = maqlDefinition.replaceAll(
-					replaceWhat,
-					replaceWith);
-		}
-
+		String maqlDefinition = this.metadata.getGoodDataRestConnection()
+				.replaceMaqlTitlesWithUris(parsedMaqlCreate, this.metadata.getCatalog());
 		// TODO format
-		Metric m = new Metric(sql.getName(),
+		Metric m = new Metric(parsedMaqlCreate.getName(),
 				maqlDefinition,
 				"###,###.00");
 		Metric newMetric = this.gdMeta.createObj(this.workspace, m);
@@ -202,28 +168,19 @@ public class AfmStatement implements java.sql.Statement {
 
 	/**
 	 * Execute ALTER METRIC statement
-	 * @param sql ALTER METRIC statement
+	 * @param parsedMaqlCreate ALTER METRIC statement
 	 * @throws Catalog.CatalogEntryNotFoundException issues with resolving referenced objects
 	 * @throws Catalog.DuplicateCatalogEntryException issues with resolving referenced objects
 	 */
-	public void executeAlterMetric(SQLParser.ParsedCreateMetricStatement sql) throws
-			Catalog.CatalogEntryNotFoundException, Catalog.DuplicateCatalogEntryException {
-		String maqlDefinition = sql.getMetricMaqlDefinition();
-		for(String metricFactAttribute: sql.getLdmObjectTitles()) {
-			CatalogEntry ldmObj = this.metadata.getCatalog().findLdmColumnByTitle(metricFactAttribute);
-			maqlDefinition = maqlDefinition.replaceAll(metricFactAttribute, String.format("[%s]", ldmObj.getUri()));
-		}
-		// TODO replace attribute elements
+	public void executeAlterMetric(SQLParser.ParsedCreateMetricStatement parsedMaqlCreate) throws
+			Catalog.CatalogEntryNotFoundException, Catalog.DuplicateCatalogEntryException,
+			SQLException {
+		String maqlDefinition = this.metadata.getGoodDataRestConnection()
+				.replaceMaqlTitlesWithUris(parsedMaqlCreate, this.metadata.getCatalog());
 
-		// TODO lookup
-		CatalogEntry afmMetric = this.metadata.getCatalog()
-				.findAfmColumnByTitle(sql.getName());
-
-		Metric m = new Metric(sql.getName(),
-				sql.getMetricMaqlDefinition(),
-				"###,###.00");
-		m.setIdentifier(afmMetric.getIdentifier());
-		this.gdMeta.updateObj(m);
+		CatalogEntry entry = this.metadata.getCatalog().findAfmColumnByTitle(parsedMaqlCreate.getName());
+		Metric m = this.gdMeta.getObjByUri(entry.getUri(), Metric.class);
+		this.metadata.getGoodDataRestConnection().updateMetric(m, maqlDefinition);
 	}
 
 
