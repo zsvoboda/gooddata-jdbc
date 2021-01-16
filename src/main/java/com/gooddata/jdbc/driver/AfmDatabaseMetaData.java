@@ -1,5 +1,6 @@
 package com.gooddata.jdbc.driver;
 
+import com.gooddata.jdbc.rest.GoodDataRestConnection;
 import com.gooddata.sdk.model.project.Project;
 import com.gooddata.sdk.service.GoodData;
 import org.springframework.web.client.RestTemplate;
@@ -17,6 +18,8 @@ public class AfmDatabaseMetaData implements java.sql.DatabaseMetaData {
     private final Project workspace;
     // GoodData user
     private final String user;
+    // GoodData REST connection
+    private final GoodDataRestConnection gdRestConnection;
 
     /**
      * Catalog of LDM objects (attributes and metrics)
@@ -37,7 +40,8 @@ public class AfmDatabaseMetaData implements java.sql.DatabaseMetaData {
         this.afmConnection = afmConnection;
         this.workspace = workspace;
         this.user = user;
-        this.catalog = new Catalog(gdRestTemplate, this.workspace);
+        this.gdRestConnection = new GoodDataRestConnection(gdRestTemplate, this.workspace);
+        this.catalog = new Catalog();
         this.catalog.populate(gd, workspace);
     }
 
@@ -47,6 +51,10 @@ public class AfmDatabaseMetaData implements java.sql.DatabaseMetaData {
      */
     public Catalog getCatalog() {
         return catalog;
+    }
+
+    public GoodDataRestConnection getGoodDataRestConnection() {
+        return this.gdRestConnection;
     }
 
     public String getUser() {

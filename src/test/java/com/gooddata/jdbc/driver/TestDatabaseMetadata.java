@@ -59,16 +59,16 @@ public class TestDatabaseMetadata {
     public void testAttributeElementsLookup() throws Catalog.CatalogEntryNotFoundException, SQLException {
         AfmDatabaseMetaData dm = (AfmDatabaseMetaData)this.connection.getMetaData();
         List<String> values = Arrays.asList("Home","Electronics");
-        Map<String,String> m = dm.getCatalog().lookupAttributeElements(
+        Map<String,String> m = dm.getGoodDataRestConnection().lookupAttributeElements(
                 "/gdc/md/w2x7a9awsioch4l9lbzgjcn99hbkm61e/obj/272",
                 values);
         for(String value: values) {
             assert(m.containsKey(value));
         }
-        m = dm.getCatalog().lookupAttributeElements(
+        m = dm.getGoodDataRestConnection().lookupAttributeElements(
                 "/gdc/md/w2x7a9awsioch4l9lbzgjcn99hbkm61e/obj/272",
                 Arrays.asList("NONEXISTENT1","NONEXISTENT2"));
-        m = dm.getCatalog().lookupAttributeElements(
+        m = dm.getGoodDataRestConnection().lookupAttributeElements(
                 "/gdc/md/w2x7a9awsioch4l9lbzgjcn99hbkm61e/obj/272",
                 Arrays.asList("NONEXISTENT1"));
     }

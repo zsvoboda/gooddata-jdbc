@@ -48,10 +48,8 @@ public class Catalog {
         }
     }
 
-
     private final static Logger LOGGER = Logger.getLogger(Catalog.class.getName());
-    private static final String contentTemplate = "{\"elementLabelToUri\":[{\"mode\": " +
-            "\"EXACT\",\"labelUri\":\"\",\"patterns\":[]}]}";
+
     /**
      * AFM objects (displayForms, and metrics)
      */
@@ -60,24 +58,11 @@ public class Catalog {
      * LDM objects (facts, metrics and attributes)
      */
     private final Map<String, CatalogEntry> ldmObjects = new HashMap<>();
-    /**
-     * Spring RestTemplate for direct GD invocation
-     */
-    private final RestTemplate gdRestTemplate;
-    /**
-     * GD workspace
-     */
-    private final Project workspace;
 
     /**
      * Constructor
-     *
-     * @param gdRestTemplate GD Spring RestTemplate for direct GD invocation
-     * @param workspace      GD workspace
      */
-    public Catalog(RestTemplate gdRestTemplate, Project workspace) {
-        this.gdRestTemplate = gdRestTemplate;
-        this.workspace = workspace;
+    public Catalog() {
     }
 
     public void addAttribute(Attribute a) throws SQLException {
@@ -337,51 +322,5 @@ public class Catalog {
         return afmFilters;
     }
 
-    /**
-     * Lookups AttributeDisplayForm URIs for values
-     *
-     * @param displayFormUri AttributeDisplayForm uri
-     * @param values         values
-     */
-    public Map<String, String> lookupAttributeElements(String displayFormUri, List<String> values)
-            throws CatalogEntryNotFoundException {
-        try {
-
-            Map<String, String> elementUris = new HashMap<>();
-
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-
-            ObjectMapper mapper = new ObjectMapper();
-            JsonNode requestObj = mapper.readTree(contentTemplate);
-            ObjectNode rootNode = (ObjectNode) requestObj.get("elementLabelToUri").get(0);
-            rootNode.put("labelUri", displayFormUri);
-            ArrayNode valuesArray = (ArrayNode) requestObj.get("elementLabelToUri").get(0).get("patterns");
-            for (String value : values) {
-                valuesArray.add(value);
-            }
-            HttpEntity<JsonNode> request = new HttpEntity<>(requestObj, headers);
-            String url = String.format("%s/labels", this.workspace.getMetadataUri());
-            ResponseEntity<JsonNode> response = this.gdRestTemplate.postForEntity(url, request, JsonNode.class);
-            if (response.getStatusCode() == HttpStatus.OK) {
-                ArrayNode results = (ArrayNode) response.getBody()
-                        .get("elementLabelUri").get(0).get("result");
-                for (JsonNode result : results) {
-                    ArrayNode elementLabels = (ArrayNode) result.get("elementLabels");
-                    for(JsonNode row: elementLabels) {
-                        elementUris.put(row.get("elementLabel").textValue(),
-                                row.get("uri").textValue());
-                    }
-                }
-                return elementUris;
-            }
-            else {
-                throw new CatalogEntryNotFoundException(
-                        String.format("AttributeElements lookup failed for uri '%s'", displayFormUri));
-            }
-        } catch (JsonProcessingException e) {
-            throw new CatalogEntryNotFoundException(e);
-        }
-    }
 }
 

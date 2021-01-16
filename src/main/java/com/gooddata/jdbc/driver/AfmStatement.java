@@ -176,7 +176,8 @@ public class AfmStatement implements java.sql.Statement {
 			//lookup display form in AFM
 			CatalogEntry ldmObj = this.metadata.getCatalog().findAfmColumnByTitle(attributeName);
 			String replaceWhat = String.format("'%s'", value);
-			Map<String, String> lookup = this.metadata.getCatalog().lookupAttributeElements(ldmObj.getUri(),
+			Map<String, String> lookup = this.metadata.getGoodDataRestConnection()
+					.lookupAttributeElements(ldmObj.getUri(),
 					Collections.singletonList(value));
 			if(lookup == null || lookup.size() == 0)
 				throw new Catalog.CatalogEntryNotFoundException(
