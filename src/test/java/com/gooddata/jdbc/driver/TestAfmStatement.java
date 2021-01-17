@@ -126,10 +126,8 @@ public class TestAfmStatement {
     public void testPaging() throws SQLException {
 
         Statement s = this.afmConnection.createStatement();
-        AfmResultSet rs = (AfmResultSet)s.executeQuery("SELECT \"Date (Date)\", Product, \"Product Category\", \"Customer Name\", " +
+        ResultSet rs = s.executeQuery("SELECT \"Date (Date)\", Product, \"Product Category\", \"Customer Name\", " +
                 "\"Customer Region\", \"Customer State\", \"Order Status\", Revenue, \"# of Orders\"");
-        int rowCount = rs.getRowCount();
-        System.out.println(String.format("Row count: %d", rowCount));
         int i=0;
         while(rs.next()) {
             i++;
