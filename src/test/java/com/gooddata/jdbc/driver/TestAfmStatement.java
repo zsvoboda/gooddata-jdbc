@@ -38,7 +38,7 @@ public class TestAfmStatement {
         this.afmConnection = (AfmConnection) DriverManager.getConnection(url, p.getUsername(), p.getPassword());
         this.statement = afmConnection.createStatement();
         this.resultSet = this.statement.executeQuery("SELECT " + COLUMNS +
-                " WHERE \"Product Category\" = 'Home' AND REVENUE > 1 AND \"# of Orders\" > 1");
+                " WHERE \"Product Category\" = 'Home' AND \"# of Orders\" BETWEEN 3 AND 5 ");
         this.resultSet2 = this.statement.executeQuery("SELECT " + COLUMNS2);
         this.columnnList = Arrays.stream(COLUMNS.split(", "))
                 .map(i->i.replaceAll("\"","")

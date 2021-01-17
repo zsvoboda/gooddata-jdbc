@@ -278,6 +278,22 @@ public class SQLParser {
                             super.visit(expr);
                         }
 
+                        @Override
+                        public void visit(Between expr) {
+                            String columnName = expr.getLeftExpression().toString()
+                                    .replaceAll("\"","");
+
+                            ParsedSQL.FilterExpression f = new ParsedSQL.FilterExpression(
+                                    expr.isNot() ? ParsedSQL.FilterExpression.OPERATOR_NOT_BETWEEN:
+                                            ParsedSQL.FilterExpression.OPERATOR_BETWEEN,
+                                    columnName,
+                                    Arrays.asList(
+                                            expr.getBetweenExpressionStart().toString(),
+                                            expr.getBetweenExpressionEnd().toString()));
+                            filters.add(f);
+                            super.visit(expr);
+                        }
+
 
                     };
                     if (where != null)

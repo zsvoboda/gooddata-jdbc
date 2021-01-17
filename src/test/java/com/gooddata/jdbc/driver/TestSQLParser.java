@@ -25,6 +25,8 @@ public class TestSQLParser {
         parsedSQL = parser.parseQuery("SELECT c1,c2 FROM t1 WHERE c1 IN ('v1','v2','v3')");
         parsedSQL = parser.parseQuery("SELECT \"Product Category\",\"# of Orders\" " +
                 "WHERE \"Product Category\" NOT IN ('Outdoor', 'Clothing')");
+        parsedSQL = parser.parseQuery("SELECT \"Product Category\",\"# of Orders\" " +
+                "WHERE \"Product Category\" NOT IN ('Outdoor', 'Clothing') AND \"Revenue\" NOT BETWEEN 1000 AND 10000");
 
     }
 

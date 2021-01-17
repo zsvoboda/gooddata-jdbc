@@ -8,6 +8,7 @@ import com.gooddata.sdk.model.md.*;
 import com.gooddata.sdk.model.project.Project;
 import com.gooddata.sdk.service.GoodData;
 import com.gooddata.sdk.service.md.MetadataService;
+import org.apache.commons.lang3.ArrayUtils;
 
 import java.math.BigDecimal;
 import java.sql.SQLException;
@@ -274,6 +275,24 @@ public class Catalog {
                 "Unsupported filter operator '%d'", parserOperator));
     }
 
+    private int[] ATTRIBUTE_FILTER_OPERATORS = new int[] {
+            SQLParser.ParsedSQL.FilterExpression.OPERATOR_EQUAL,
+            SQLParser.ParsedSQL.FilterExpression.OPERATOR_NOT_EQUAL,
+            SQLParser.ParsedSQL.FilterExpression.OPERATOR_IN,
+            SQLParser.ParsedSQL.FilterExpression.OPERATOR_NOT_IN
+    };
+    private int[] METRIC_FILTER_OPERATORS = new int[] {
+            SQLParser.ParsedSQL.FilterExpression.OPERATOR_EQUAL,
+            SQLParser.ParsedSQL.FilterExpression.OPERATOR_NOT_EQUAL,
+            SQLParser.ParsedSQL.FilterExpression.OPERATOR_GREATER,
+            SQLParser.ParsedSQL.FilterExpression.OPERATOR_GREATER_OR_EQUAL,
+            SQLParser.ParsedSQL.FilterExpression.OPERATOR_LOWER,
+            SQLParser.ParsedSQL.FilterExpression.OPERATOR_LOWER_OR_EQUAL,
+            SQLParser.ParsedSQL.FilterExpression.OPERATOR_BETWEEN,
+            SQLParser.ParsedSQL.FilterExpression.OPERATOR_NOT_BETWEEN
+    };
+
+
     /**
      * Resolve the parsed SQL filters to AFM filters
      *
@@ -292,16 +311,38 @@ public class Catalog {
         for (SQLParser.ParsedSQL.FilterExpression sqlFilter : sqlFilters) {
             String sqlFilterColumnName = sqlFilter.getColumn();
             CatalogEntry catalogEntry = findAfmColumnByTitle(sqlFilterColumnName);
+
             if (catalogEntry.getType().equalsIgnoreCase("metric")) {
-                BigDecimal value = DataTypeParser.parseBigDecimal(sqlFilter.getValues().get(0));
-                MeasureValueFilterCondition c = new ComparisonCondition(
-                        getAfmComparisonOperatorFromParserOperator(sqlFilter.getOperator()),
-                        value
-                );
-                CompatibilityFilter f = new MeasureValueFilter(catalogEntry.getGdObject(), c);
-                afmFilters.add(new AfmFilter(catalogEntry, sqlFilter.getOperator(),
-                        Collections.singletonList(value), f));
+                if(!ArrayUtils.contains(METRIC_FILTER_OPERATORS, sqlFilter.getOperator()))
+                        throw new SQLException("Only =,<>,>=,<=,>,<,BETWEEN, and NOT BETWEEN " +
+                                "operators are supported for metrics.");
+                if (sqlFilter.getOperator() == SQLParser.ParsedSQL.FilterExpression.OPERATOR_BETWEEN ||
+                        sqlFilter.getOperator() == SQLParser.ParsedSQL.FilterExpression.OPERATOR_NOT_BETWEEN) {
+                    BigDecimal valueStart = DataTypeParser.parseBigDecimal(sqlFilter.getValues().get(0));
+                    BigDecimal valueEnd = DataTypeParser.parseBigDecimal(sqlFilter.getValues().get(1));
+                    RangeCondition c = new RangeCondition(
+                            sqlFilter.getOperator() == SQLParser.ParsedSQL.FilterExpression.OPERATOR_BETWEEN
+                                    ? RangeConditionOperator.BETWEEN
+                                    : RangeConditionOperator.NOT_BETWEEN
+                            , valueStart, valueEnd);
+                    List<Object> values = Arrays.asList(valueStart, valueEnd);
+                    CompatibilityFilter f = new MeasureValueFilter(catalogEntry.getGdObject(), c);
+                    afmFilters.add(new AfmFilter(catalogEntry, sqlFilter.getOperator(), values, f));
+                } else {
+                    BigDecimal value = DataTypeParser.parseBigDecimal(sqlFilter.getValues().get(0));
+                    MeasureValueFilterCondition c = new ComparisonCondition(
+                            getAfmComparisonOperatorFromParserOperator(sqlFilter.getOperator()),
+                            value
+                    );
+                    CompatibilityFilter f = new MeasureValueFilter(catalogEntry.getGdObject(), c);
+                    List<Object> values = Collections.singletonList(value);
+                    afmFilters.add(new AfmFilter(catalogEntry, sqlFilter.getOperator(), values, f));
+                }
+
             } else {
+                if(!ArrayUtils.contains(ATTRIBUTE_FILTER_OPERATORS, sqlFilter.getOperator()))
+                    throw new SQLException("Only =,<>,IN, and NOT IN " +
+                            "operators are supported for attributes.");
                 CompatibilityFilter f;
                 List<String> values = sqlFilter.getValues();
                 ValueAttributeFilterElements e = new ValueAttributeFilterElements(values);
