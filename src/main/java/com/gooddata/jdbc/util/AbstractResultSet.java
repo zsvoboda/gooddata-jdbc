@@ -69,61 +69,65 @@ public abstract class AbstractResultSet implements java.sql.ResultSet {
      */
     @Override
     public Object getObject(int columnIndex, Map<String, Class<?>> map) throws SQLException {
-        return getObject(columnIndex);
+        LOGGER.fine(String.format(
+                "AbstractResultSet::getObject columnLabel='%d' map='%s'",columnIndex, map));
+        Object d = getObject(columnIndex);
+        LOGGER.fine(String.format(
+                "AbstractResultSet::getObject returning '%s'",d));
+        return d;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public Date getDate(int columnIndex, Calendar cal) {
-        // TODO Auto-generated method stub
-        return null;
+    public Date getDate(int columnIndex, Calendar cal) throws SQLException {
+        LOGGER.fine(String.format(
+                "AbstractResultSet::getDate columnLabel='%d' calendar='%s'",columnIndex, cal));
+        Date d = getDate(columnIndex);
+        LOGGER.fine(String.format(
+                "AbstractResultSet::getDate returning '%s'",d));
+        return d;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public Date getDate(String columnLabel, Calendar cal) {
-        // TODO Auto-generated method stub
-        return null;
+    public Date getDate(String columnLabel, Calendar cal) throws SQLException {
+        return this.getDate(this.findColumn(columnLabel), cal);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public Time getTime(int columnIndex, Calendar cal) {
-        // TODO Auto-generated method stub
-        return null;
+    public Time getTime(int columnIndex, Calendar cal) throws SQLException {
+        return new Time(getDate(columnIndex, cal).getTime());
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public Time getTime(String columnLabel, Calendar cal) {
-        // TODO Auto-generated method stub
-        return null;
+    public Time getTime(String columnLabel, Calendar cal) throws SQLException {
+        return this.getTime(this.findColumn(columnLabel), cal);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public Timestamp getTimestamp(int columnIndex, Calendar cal) {
-        // TODO Auto-generated method stub
-        return null;
+    public Timestamp getTimestamp(int columnIndex, Calendar cal) throws SQLException {
+        return new Timestamp(this.getDate(columnIndex, cal).getTime());
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public Timestamp getTimestamp(String columnLabel, Calendar cal) {
-        // TODO Auto-generated method stub
-        return null;
+    public Timestamp getTimestamp(String columnLabel, Calendar cal) throws SQLException {
+        return this.getTimestamp(this.findColumn(columnLabel), cal);
     }
 
     /**
@@ -154,7 +158,12 @@ public abstract class AbstractResultSet implements java.sql.ResultSet {
      */
     @Override
     public String getString(int columnIndex) throws SQLException {
-        return getTextValue(columnIndex);
+        LOGGER.fine(String.format(
+                "AbstractResultSet::getString columnLabel='%d'",columnIndex));
+        String d = getTextValue(columnIndex);
+        LOGGER.fine(String.format(
+                "AbstractResultSet::getString returning '%s'",d));
+        return d;
     }
 
     /**
@@ -162,7 +171,12 @@ public abstract class AbstractResultSet implements java.sql.ResultSet {
      */
     @Override
     public <T> T getObject(int columnIndex, Class<T> type) throws SQLException {
-        return (T) getObject(columnIndex);
+        LOGGER.fine(String.format(
+                "AbstractResultSet::getObject columnLabel='%d' type='%s'",columnIndex, type));
+        T d = (T) getObject(columnIndex);
+        LOGGER.fine(String.format(
+                "AbstractResultSet::getObject returning '%s'",d));
+        return d;
     }
 
     /**
@@ -170,23 +184,38 @@ public abstract class AbstractResultSet implements java.sql.ResultSet {
      */
     @Override
     public boolean getBoolean(int columnIndex) throws SQLException {
-        return DataTypeParser.parseBoolean(getTextValue(columnIndex));
+        LOGGER.fine(String.format(
+                "AbstractResultSet::getBoolean columnLabel='%d'",columnIndex));
+        boolean d = DataTypeParser.parseBoolean(getTextValue(columnIndex));
+        LOGGER.fine(String.format(
+                "AbstractResultSet::getBoolean returning '%s'",d));
+        return d;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public byte getByte(int columnIndex) {
-        return 0;
+    public byte getByte(int columnIndex) throws SQLException {
+        LOGGER.fine(String.format(
+                "AbstractResultSet::getByte columnLabel='%d'",columnIndex));
+        byte d = (byte)DataTypeParser.parseInt(getTextValue(columnIndex));
+        LOGGER.fine(String.format(
+                "AbstractResultSet::getByte returning '%d'",d));
+        return d;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public short getShort(int columnIndex) {
-        return 0;
+    public short getShort(int columnIndex) throws SQLException {
+        LOGGER.fine(String.format(
+                "AbstractResultSet::getShort columnLabel='%d'",columnIndex));
+        short d = (short)DataTypeParser.parseInt(getTextValue(columnIndex));
+        LOGGER.fine(String.format(
+                "AbstractResultSet::getShort returning '%d'",d));
+        return d;
     }
 
     /**
@@ -194,7 +223,12 @@ public abstract class AbstractResultSet implements java.sql.ResultSet {
      */
     @Override
     public int getInt(int columnIndex) throws SQLException {
-        return DataTypeParser.parseInt(getTextValue(columnIndex));
+        LOGGER.fine(String.format(
+                "AbstractResultSet::getInt columnLabel='%d'",columnIndex));
+        int d = DataTypeParser.parseInt(getTextValue(columnIndex));
+        LOGGER.fine(String.format(
+                "AbstractResultSet::getInt returning '%d'",d));
+        return d;
     }
 
     /**
@@ -202,7 +236,12 @@ public abstract class AbstractResultSet implements java.sql.ResultSet {
      */
     @Override
     public long getLong(int columnIndex) throws SQLException {
-        return DataTypeParser.parseLong(getTextValue(columnIndex));
+        LOGGER.fine(String.format(
+                "AbstractResultSet::getLong columnLabel='%d'",columnIndex));
+        long d = DataTypeParser.parseLong(getTextValue(columnIndex));
+        LOGGER.fine(String.format(
+                "AbstractResultSet::getLong returning '%d'",d));
+        return d;
     }
 
     /**
@@ -210,7 +249,12 @@ public abstract class AbstractResultSet implements java.sql.ResultSet {
      */
     @Override
     public float getFloat(int columnIndex) throws SQLException {
-        return DataTypeParser.parseFloat(getTextValue(columnIndex));
+        LOGGER.fine(String.format(
+                "AbstractResultSet::getFloat columnLabel='%d'",columnIndex));
+        float d = DataTypeParser.parseFloat(getTextValue(columnIndex));
+        LOGGER.fine(String.format(
+                "AbstractResultSet::getFloat returning '%g'",d));
+        return d;
     }
 
     /**
@@ -218,7 +262,12 @@ public abstract class AbstractResultSet implements java.sql.ResultSet {
      */
     @Override
     public double getDouble(int columnIndex) throws SQLException {
-        return DataTypeParser.parseDouble(getTextValue(columnIndex));
+        LOGGER.fine(String.format(
+                "AbstractResultSet::getDouble columnLabel='%d'",columnIndex));
+        double d = DataTypeParser.parseDouble(getTextValue(columnIndex));
+        LOGGER.fine(String.format(
+                "AbstractResultSet::getDouble returning '%g'",d));
+        return d;
     }
 
     /**
@@ -226,7 +275,12 @@ public abstract class AbstractResultSet implements java.sql.ResultSet {
      */
     @Override
     public BigDecimal getBigDecimal(int columnIndex, int scale) throws SQLException {
-        return DataTypeParser.parseBigDecimal(getTextValue(columnIndex), scale);
+        LOGGER.fine(String.format(
+                "AbstractResultSet::getBigDecimal columnLabel='%d' scale='%d'",columnIndex, scale));
+        BigDecimal d = DataTypeParser.parseBigDecimal(getTextValue(columnIndex), scale);
+        LOGGER.fine(String.format(
+                "AbstractResultSet::getBigDecimal returning '%g'",d));
+        return d;
     }
 
     /**
@@ -234,7 +288,12 @@ public abstract class AbstractResultSet implements java.sql.ResultSet {
      */
     @Override
     public BigDecimal getBigDecimal(int columnIndex) throws SQLException {
-        return DataTypeParser.parseBigDecimal(getTextValue(columnIndex));
+        LOGGER.fine(String.format(
+                "AbstractResultSet::getBigDecimal columnLabel='%d'",columnIndex));
+        BigDecimal d = DataTypeParser.parseBigDecimal(getTextValue(columnIndex));
+        LOGGER.fine(String.format(
+                "AbstractResultSet::getBigDecimal returning '%g'",d));
+        return d;
     }
 
     /**
@@ -250,7 +309,12 @@ public abstract class AbstractResultSet implements java.sql.ResultSet {
      */
     @Override
     public Date getDate(int columnIndex) throws SQLException {
-        return DataTypeParser.parseDate(getTextValue(columnIndex));
+        LOGGER.fine(String.format(
+                "AbstractResultSet::getDate columnLabel='%d'",columnIndex));
+        Date d = DataTypeParser.parseDate(getTextValue(columnIndex));
+        LOGGER.fine(String.format(
+                "AbstractResultSet::getDate returning '%tD'",d));
+        return d;
     }
 
     /**
@@ -258,7 +322,7 @@ public abstract class AbstractResultSet implements java.sql.ResultSet {
      */
     @Override
     public Time getTime(int columnIndex) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        return new Time(this.getDate(columnIndex).getTime());
     }
 
     /**
@@ -266,7 +330,7 @@ public abstract class AbstractResultSet implements java.sql.ResultSet {
      */
     @Override
     public Timestamp getTimestamp(int columnIndex) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        return new Timestamp(this.getDate(columnIndex).getTime());
     }
 
     /**
@@ -274,9 +338,14 @@ public abstract class AbstractResultSet implements java.sql.ResultSet {
      */
     @Override
     public Object getObject(int columnIndex) throws SQLException {
+        LOGGER.fine(String.format(
+                "AbstractResultSet::getObject columnLabel='%d'",columnIndex));
         ResultSetMetaData m = this.getMetaData();
-        return DataTypeParser.parseObject(getTextValue(columnIndex),
+        Object d = DataTypeParser.parseObject(getTextValue(columnIndex),
                 m.getColumnType(columnIndex), m.getPrecision(columnIndex));
+        LOGGER.fine(String.format(
+                "AbstractResultSet::getObject returning '%s'",d));
+        return d;
     }
 
     /**
@@ -300,7 +369,6 @@ public abstract class AbstractResultSet implements java.sql.ResultSet {
      */
     @Override
     public BigDecimal getBigDecimal(String columnLabel) throws SQLException {
-
         return getBigDecimal(this.findColumn(columnLabel));
     }
 

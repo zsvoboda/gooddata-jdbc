@@ -97,12 +97,13 @@ public class AfmStatement implements java.sql.Statement {
 			ExecutionResponse rs = this.gdAfm.executeAfm(this.workspace, new Execution(afm));
 			FutureResult<ExecutionResult> fr = this.gdAfm.getResult(rs);
 			AfmResultSet s = new AfmResultSet(this, fr.get(), columns);
+
 			/*
-			return (AfmResultSet) Proxy.newProxyInstance(
+			return (java.sql.ResultSet)Proxy.newProxyInstance(
 					s.getClass().getClassLoader(),
-					new Class[] { s.getClass() },
+					new Class[] { java.sql.ResultSet.class },
 					new LoggingInvocationHandler(s));
-			 */
+			*/
 			return s;
 		} catch (JSQLParserException | Catalog.CatalogEntryNotFoundException
 				| Catalog.DuplicateCatalogEntryException e) {

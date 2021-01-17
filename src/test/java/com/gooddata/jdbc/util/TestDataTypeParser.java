@@ -4,12 +4,13 @@ import com.gooddata.jdbc.driver.SQLParser;
 import org.testng.annotations.Test;
 
 import java.math.BigDecimal;
+import java.sql.Date;
 import java.sql.SQLException;
 
 public class TestDataTypeParser {
 
     @Test
-    public void testParseBool() throws SQLException {
+    public void testParse() throws SQLException {
         assert(DataTypeParser.parseBoolean("T"));
         assert(DataTypeParser.parseBoolean("t"));
         assert(DataTypeParser.parseBoolean("tRue"));
@@ -43,7 +44,7 @@ public class TestDataTypeParser {
     }
 
     @Test
-    public void testParseDatatype() throws SQLException {
+    public void testParseDatatype()  {
         assert(SQLParser.parseSqlDatatype("DATETIME").getName().equalsIgnoreCase("DATETIME"));
         assert(SQLParser.parseSqlDatatype("VARCHAR(32)").getName().equalsIgnoreCase("VARCHAR"));
         assert(SQLParser.parseSqlDatatype("Varchar(32)").getName().equalsIgnoreCase("VARCHAR"));
@@ -61,6 +62,13 @@ public class TestDataTypeParser {
         assert(SQLParser.parseSqlDatatype("DECIMAL ( 13,2) ").getPrecision() == 2);
         assert(SQLParser.parseSqlDatatype("DECIMAL ( 13 , 2 ) ").getPrecision() == 2);
         assert(SQLParser.parseSqlDatatype("DECIMAL ( 13 , 2) ").getPrecision() == 2);
+    }
+
+    @Test
+    public void testParseObject() throws SQLException {
+        assert(DataTypeParser.parseDate("08/25/2020").getTime() == 1598306400000L );
+        Date d = (Date)DataTypeParser.parseObject("08/25/2020");
+        assert(d.getTime() == 1598306400000L );
     }
 
 }
