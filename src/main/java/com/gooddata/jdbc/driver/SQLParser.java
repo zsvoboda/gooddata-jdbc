@@ -17,6 +17,7 @@ import java.util.*;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * SQL parser
@@ -39,6 +40,10 @@ public class SQLParser {
             public static final int OPERATOR_GREATER_OR_EQUAL = 4;
             public static final int OPERATOR_LOWER = 5;
             public static final int OPERATOR_LOWER_OR_EQUAL = 6;
+            public static final int OPERATOR_IN = 7;
+            public static final int OPERATOR_NOT_IN = 8;
+            public static final int OPERATOR_BETWEEN = 9;
+            public static final int OPERATOR_NOT_BETWEEN = 10;
 
             /**
              * Constructor
@@ -120,7 +125,7 @@ public class SQLParser {
      * @return parsed SQL query
      * @throws JSQLParserException wrong syntax
      */
-    public ParsedSQL parse(String query) throws JSQLParserException {
+    public ParsedSQL parseQuery(String query) throws JSQLParserException {
         ParsedSQL.LOGGER.fine(String.format("Parsing query '%s'", query));
         net.sf.jsqlparser.statement.Statement st = CCJSqlParserUtil.parse(query);
         if (st instanceof Select) {
@@ -255,6 +260,24 @@ public class SQLParser {
                             filters.add(f);
                             super.visit(expr);
                         }
+
+                        @Override
+                        public void visit(InExpression expr) {
+                            String columnName = expr.getLeftExpression().toString()
+                                    .replaceAll("\"","");
+                            ExpressionList expressionValues = expr.getRightItemsList(ExpressionList.class);
+                            List<String> values = expressionValues.getExpressions().stream()
+                                    .map(e->e.toString().replaceAll("'",""))
+                                    .collect(Collectors.toList());
+                            ParsedSQL.FilterExpression f = new ParsedSQL.FilterExpression(
+                                    expr.isNot() ? ParsedSQL.FilterExpression.OPERATOR_NOT_IN:
+                                            ParsedSQL.FilterExpression.OPERATOR_IN,
+                                    columnName,
+                                    values);
+                            filters.add(f);
+                            super.visit(expr);
+                        }
+
 
                     };
                     if (where != null)

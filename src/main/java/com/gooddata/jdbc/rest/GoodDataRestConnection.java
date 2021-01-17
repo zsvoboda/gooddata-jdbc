@@ -62,7 +62,7 @@ public class GoodDataRestConnection {
         // Replace all metric titles in the MAQL definition with their URIs
         for(String metricFactAttribute: parsedMaqlCreate.getLdmObjectTitles()) {
             //lookup attribute in LDM
-            CatalogEntry ldmObj = catalog.findLdmColumnByTitle(metricFactAttribute);
+            CatalogEntry ldmObj = catalog.findMaqlColumnByTitle(metricFactAttribute);
             String replaceWhat = String.format("\"%s\"", metricFactAttribute);
             maqlDefinition = maqlDefinition.replaceAll(
                     replaceWhat,

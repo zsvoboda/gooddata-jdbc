@@ -1,6 +1,5 @@
 package com.gooddata.jdbc.driver;
 
-import com.gooddata.jdbc.util.LoggingInvocationHandler;
 import com.gooddata.sdk.model.executeafm.Execution;
 import com.gooddata.sdk.model.executeafm.afm.Afm;
 import com.gooddata.sdk.model.executeafm.afm.AttributeItem;
@@ -16,7 +15,6 @@ import com.gooddata.sdk.service.executeafm.ExecuteAfmService;
 import com.gooddata.sdk.service.md.MetadataService;
 import net.sf.jsqlparser.JSQLParserException;
 
-import java.lang.reflect.Proxy;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
@@ -90,7 +88,7 @@ public class AfmStatement implements java.sql.Statement {
 	public ResultSet executeQuery(String sql) throws SQLException {
 		try {
 			SQLParser parser = new SQLParser();
-			SQLParser.ParsedSQL parsedSql = parser.parse(sql);
+			SQLParser.ParsedSQL parsedSql = parser.parseQuery(sql);
 			List<CatalogEntry> columns = this.metadata.getCatalog().resolveAfmColumns(parsedSql);
 			List<AfmFilter> filters = this.metadata.getCatalog().resolveAfmFilters(parsedSql);
 			Afm afm = getAfm(columns, filters);

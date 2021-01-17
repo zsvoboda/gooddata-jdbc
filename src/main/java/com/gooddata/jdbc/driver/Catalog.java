@@ -1,10 +1,5 @@
 package com.gooddata.jdbc.driver;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.gooddata.jdbc.util.DataTypeParser;
 import com.gooddata.jdbc.util.TextUtil;
 import com.gooddata.sdk.model.executeafm.UriObjQualifier;
@@ -13,8 +8,6 @@ import com.gooddata.sdk.model.md.*;
 import com.gooddata.sdk.model.project.Project;
 import com.gooddata.sdk.service.GoodData;
 import com.gooddata.sdk.service.md.MetadataService;
-import org.springframework.http.*;
-import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
 import java.sql.SQLException;
@@ -53,11 +46,11 @@ public class Catalog {
     /**
      * AFM objects (displayForms, and metrics)
      */
-    private final Map<String, CatalogEntry> afmObjects = new HashMap<>();
+    private final Map<String, CatalogEntry> afmEntries = new HashMap<>();
     /**
      * LDM objects (facts, metrics and attributes)
      */
-    private final Map<String, CatalogEntry> ldmObjects = new HashMap<>();
+    private final Map<String, CatalogEntry> maqlEntries = new HashMap<>();
 
     /**
      * Constructor
@@ -73,8 +66,8 @@ public class Catalog {
         //TODO getting default display form only
         // under the attribute title
         e.setDataType(CatalogEntry.DEFAULT_ATTRIBUTE_DATATYPE);
-        this.afmObjects.put(displayForm.getUri(), e);
-        this.ldmObjects.put(a.getUri(), new CatalogEntry(a.getUri(),
+        this.afmEntries.put(displayForm.getUri(), e);
+        this.maqlEntries.put(a.getUri(), new CatalogEntry(a.getUri(),
                 a.getTitle(), a.getCategory(), a.getIdentifier(),
                 new UriObjQualifier(a.getUri())));
     }
@@ -84,8 +77,8 @@ public class Catalog {
                 metric.getTitle(), metric.getCategory(), metric.getIdentifier(),
                 new UriObjQualifier(metric.getUri()));
         e.setDataType(CatalogEntry.DEFAULT_METRIC_DATATYPE);
-        this.afmObjects.put(metric.getUri(), e);
-        this.ldmObjects.put(metric.getUri(), e);
+        this.afmEntries.put(metric.getUri(), e);
+        this.maqlEntries.put(metric.getUri(), e);
     }
 
     public void addMetric(Metric metric) throws SQLException {
@@ -93,8 +86,8 @@ public class Catalog {
                 metric.getTitle(), metric.getCategory(), metric.getIdentifier(),
                 new UriObjQualifier(metric.getUri()));
         e.setDataType(CatalogEntry.DEFAULT_METRIC_DATATYPE);
-        this.afmObjects.put(metric.getUri(), e);
-        this.ldmObjects.put(metric.getUri(), e);
+        this.afmEntries.put(metric.getUri(), e);
+        this.maqlEntries.put(metric.getUri(), e);
     }
 
 
@@ -102,7 +95,7 @@ public class Catalog {
         CatalogEntry e = new CatalogEntry(fact.getUri(),
                 fact.getTitle(), fact.getCategory(), fact.getIdentifier(),
                 new UriObjQualifier(fact.getUri()));
-        this.ldmObjects.put(fact.getUri(), e);
+        this.maqlEntries.put(fact.getUri(), e);
     }
 
     /**
@@ -141,8 +134,8 @@ public class Catalog {
     public List<String> getAllSchemas() throws SQLException {
         Set<String> schemas = new HashSet<>();
         Set<String> allObjects = new HashSet<>();
-        allObjects.addAll(this.afmObjects.keySet());
-        allObjects.addAll(this.ldmObjects.keySet());
+        allObjects.addAll(this.afmEntries.keySet());
+        allObjects.addAll(this.maqlEntries.keySet());
         for (String uri : allObjects) {
             schemas.add(TextUtil.extractIdFromUri(uri));
         }
@@ -157,7 +150,7 @@ public class Catalog {
      * @return AFM objects collection
      */
     public Collection<CatalogEntry> afmEntries() {
-        return this.afmObjects.values().stream().sorted(CatalogEntryComparator)
+        return this.afmEntries.values().stream().sorted(CatalogEntryComparator)
                 .collect(Collectors.toList());
     }
 
@@ -166,8 +159,8 @@ public class Catalog {
      *
      * @return LDM objects collection
      */
-    public Collection<CatalogEntry> ldmEntries() {
-        return this.ldmObjects.values().stream().sorted(CatalogEntryComparator)
+    public Collection<CatalogEntry> maqlEntries() {
+        return this.maqlEntries.values().stream().sorted(CatalogEntryComparator)
                 .collect(Collectors.toList());
     }
 
@@ -181,7 +174,7 @@ public class Catalog {
      */
     public CatalogEntry findAfmColumnByTitle(String name) throws DuplicateCatalogEntryException,
             CatalogEntryNotFoundException {
-        List<CatalogEntry> objects = this.afmObjects.values().stream()
+        List<CatalogEntry> objects = this.afmEntries.values().stream()
                 .filter(catalogEntry -> name.equalsIgnoreCase(catalogEntry.getTitle())).collect(Collectors.toList());
         if (objects.size() > 1) {
             throw new DuplicateCatalogEntryException(
@@ -202,9 +195,9 @@ public class Catalog {
      * @throws DuplicateCatalogEntryException in case when there are multiple AFM objects with the same title
      * @throws CatalogEntryNotFoundException  in case when a matching object doesn't exist
      */
-    public CatalogEntry findLdmColumnByTitle(String name) throws DuplicateCatalogEntryException,
+    public CatalogEntry findMaqlColumnByTitle(String name) throws DuplicateCatalogEntryException,
             CatalogEntryNotFoundException {
-        List<CatalogEntry> objects = this.ldmObjects.values().stream()
+        List<CatalogEntry> objects = this.maqlEntries.values().stream()
                 .filter(catalogEntry -> name.equalsIgnoreCase(catalogEntry.getTitle())).collect(Collectors.toList());
         if (objects.size() > 1) {
             throw new DuplicateCatalogEntryException(
@@ -316,7 +309,12 @@ public class Catalog {
                     f = new PositiveAttributeFilter(catalogEntry.getGdObject(), e);
                 } else if (sqlFilter.getOperator() == SQLParser.ParsedSQL.FilterExpression.OPERATOR_NOT_EQUAL) {
                     f = new NegativeAttributeFilter(catalogEntry.getGdObject(), e);
-                } else {
+                } else if (sqlFilter.getOperator() == SQLParser.ParsedSQL.FilterExpression.OPERATOR_IN) {
+                    f = new PositiveAttributeFilter(catalogEntry.getGdObject(), e);
+                }  else if (sqlFilter.getOperator() == SQLParser.ParsedSQL.FilterExpression.OPERATOR_NOT_IN) {
+                    f = new NegativeAttributeFilter(catalogEntry.getGdObject(), e);
+                }
+                else {
                     throw new SQLException(String.format(
                             "Unsupported attribute filter operator '%d'", sqlFilter.getOperator()));
                 }
