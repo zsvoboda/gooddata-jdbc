@@ -1,14 +1,19 @@
 package com.gooddata.jdbc.driver;
 
 import com.gooddata.jdbc.util.AbstractResultSet;
-import com.gooddata.sdk.model.executeafm.result.Data;
-import com.gooddata.sdk.model.executeafm.result.DataList;
-import com.gooddata.sdk.model.executeafm.result.DataValue;
-import com.gooddata.sdk.model.executeafm.result.ExecutionResult;
+import com.gooddata.sdk.model.executeafm.Execution;
+import com.gooddata.sdk.model.executeafm.ResultPage;
+import com.gooddata.sdk.model.executeafm.afm.Afm;
+import com.gooddata.sdk.model.executeafm.response.ExecutionResponse;
+import com.gooddata.sdk.model.executeafm.result.*;
+import com.gooddata.sdk.model.project.Project;
+import com.gooddata.sdk.service.FutureResult;
+import com.gooddata.sdk.service.executeafm.ExecuteAfmService;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -20,8 +25,18 @@ public class AfmResultSet extends AbstractResultSet implements ResultSet {
 
 	private final static Logger LOGGER = Logger.getLogger(AfmResultSet.class.getName());
 
-	// AFM execution result
-	private final ExecutionResult afmExecutionResult;
+	// GD workspace
+	private final Project workspace;
+	// AFM Service
+	private final ExecuteAfmService gdAfm;
+	// AFM execution spec
+	private final Afm afm;
+	// Current result
+	private ExecutionResult afmExecutionResult;
+	// Results paging
+	private Paging paging;
+	// current row offset
+	private int rowOffset = 0;
 	// AFM columns
 	private final List<CatalogEntry> columns;
 	// JDBC statement
@@ -34,19 +49,47 @@ public class AfmResultSet extends AbstractResultSet implements ResultSet {
 	/**
 	 * Constructor
 	 * @param statement SQL statement
-	 * @param result GD AFM execution result
+	 * @param workspace GD workspace
+	 * @param afmService GD AFM execution service
+	 * @param afm AFM execution definition
 	 * @param columns AFM columns
 	 */
-	public AfmResultSet(Statement statement, ExecutionResult result,
+	public AfmResultSet(Statement statement, Project workspace, ExecuteAfmService afmService, Afm afm,
 						List<CatalogEntry> columns) {
-		this.afmExecutionResult = result;
+		this.workspace = workspace;
+		this.gdAfm = afmService;
+		this.afm = afm;
 		this.columns = columns;
 		this.statement = statement;
 		this.computeColumnsStatementPositions(columns);
+		this.setFetchSize(1000);
+		this.fetchPage(0);
+	}
+
+	private void fetchPage(int rowOffset) {
+		ExecutionResponse rs = this.gdAfm.executeAfm(this.workspace, new Execution(afm));
+		List<Integer> offsets = Arrays.asList(rowOffset, 0);
+		List<Integer> limits = Arrays.asList(this.fetchSize, this.columns.size());
+		ResultPage resultPage = new ResultPage(offsets, limits);
+		FutureResult<ExecutionResult> fr = this.gdAfm.getResult(rs, resultPage);
+		this.afmExecutionResult = fr.get();
+		this.paging = this.afmExecutionResult.getPaging();
+		this.rowOffset = rowOffset;
 	}
 
 	public int getRowCount() {
-		return this.afmExecutionResult.getData().size();
+		return this.paging.getTotal().get(0);
+	}
+
+	public int getMaxFetchedRow() {
+		return this.paging.getOffset().get(0) + this.paging.getCount().get(0);
+	}
+
+	private void ensureCapacity(int rowIndex) {
+		if(rowIndex < getRowCount() && (rowIndex >= this.getMaxFetchedRow()
+				|| rowIndex < this.rowOffset) ) {
+			fetchPage(rowIndex);
+		}
 	}
 
 	/**
@@ -88,9 +131,12 @@ public class AfmResultSet extends AbstractResultSet implements ResultSet {
 		if( realIndex >= this.columns.size() )
 			throw new SQLException("Column index too high.");
 
+		this.ensureCapacity(this.currentIndex);
+		int actualPageRowIndex = this.currentIndex - this.rowOffset;
+
 		CatalogEntry column = this.columns.get(realIndex);
 		if(column.getType().equals("metric")) {
-			Data data = this.afmExecutionResult.getData().get(this.currentIndex);
+			Data data = this.afmExecutionResult.getData().get(actualPageRowIndex);
 			if(data instanceof DataList) {
 				DataList row = (DataList)data;
 				return row.get(this.columnStatementPosition[realIndex]).textValue();
@@ -105,7 +151,7 @@ public class AfmResultSet extends AbstractResultSet implements ResultSet {
 		}
 		else {
 			return this.afmExecutionResult.getHeaderItems().get(0).get(this.columnStatementPosition[realIndex])
-					.get(this.currentIndex).getName();
+					.get(actualPageRowIndex).getName();
 		}
 	}
 

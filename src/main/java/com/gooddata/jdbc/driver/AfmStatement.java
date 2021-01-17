@@ -92,9 +92,7 @@ public class AfmStatement implements java.sql.Statement {
 			List<CatalogEntry> columns = this.metadata.getCatalog().resolveAfmColumns(parsedSql);
 			List<AfmFilter> filters = this.metadata.getCatalog().resolveAfmFilters(parsedSql);
 			Afm afm = getAfm(columns, filters);
-			ExecutionResponse rs = this.gdAfm.executeAfm(this.workspace, new Execution(afm));
-			FutureResult<ExecutionResult> fr = this.gdAfm.getResult(rs);
-			AfmResultSet s = new AfmResultSet(this, fr.get(), columns);
+			AfmResultSet s = new AfmResultSet(this, this.workspace, this.gdAfm, afm, columns);
 
 			/*
 			return (java.sql.ResultSet)Proxy.newProxyInstance(

@@ -6,6 +6,7 @@ import org.testng.annotations.Test;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Logger;
@@ -119,6 +120,33 @@ public class TestAfmStatement {
         this.statement.execute("ALTER METRIC \"testNGMetric\" AS SELECT SUM(\"Revenue\") " +
                 "WHERE \"Product Category\" IN ('Home')");
         this.statement.execute("DROP METRIC \"testNGMetric\";");
+    }
+
+    @Test
+    public void testPaging() throws SQLException {
+
+        Statement s = this.afmConnection.createStatement();
+        AfmResultSet rs = (AfmResultSet)s.executeQuery("SELECT \"Date (Date)\", Product, \"Product Category\", \"Customer Name\", " +
+                "\"Customer Region\", \"Customer State\", \"Order Status\", Revenue, \"# of Orders\"");
+        int rowCount = rs.getRowCount();
+        System.out.println(String.format("Row count: %d", rowCount));
+        int i=0;
+        while(rs.next()) {
+            i++;
+            System.out.printf("%d: %s, %s, %s, %s, %s, %s, %s, %s, %s\n",
+                    i,
+                    rs.getObject(1),
+                    rs.getObject(2),
+                    rs.getObject(3),
+                    rs.getObject(4),
+                    rs.getObject(5),
+                    rs.getObject(6),
+                    rs.getObject(7),
+                    rs.getObject(8),
+                    rs.getObject(9)
+            );
+        }
+
     }
 
 }

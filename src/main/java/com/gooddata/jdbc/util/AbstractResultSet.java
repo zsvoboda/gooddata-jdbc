@@ -23,6 +23,9 @@ public abstract class AbstractResultSet implements java.sql.ResultSet {
     public static final int CONCURRENCY = CONCUR_READ_ONLY;
     public static final int TYPE = TYPE_SCROLL_INSENSITIVE;
 
+    // Fetch size
+    protected int fetchSize;
+
     /**
      * Constructor
      */
@@ -616,16 +619,16 @@ public abstract class AbstractResultSet implements java.sql.ResultSet {
      * {@inheritDoc}
      */
     @Override
-    public void setFetchSize(int rows) throws SQLException {
-        throw new SQLFeatureNotSupportedException("AbstractResultSet.setFetchSize is not implemented yet");
+    public void setFetchSize(int rows) {
+        this.fetchSize = rows;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public int getFetchSize() throws SQLException {
-        throw new SQLFeatureNotSupportedException("AbstractResultSet.getFetchSize is not implemented yet");
+    public int getFetchSize()  {
+        return this.fetchSize;
     }
 
     /**
