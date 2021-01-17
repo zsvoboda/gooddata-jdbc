@@ -6,7 +6,10 @@ import java.math.BigDecimal;
 import java.math.MathContext;
 import java.sql.SQLException;
 import java.sql.Types;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -157,6 +160,25 @@ public class DataTypeParser {
         }
     }
 
+    private static SimpleDateFormat dateFormat = new SimpleDateFormat("MM/dd/yyyy");
+
+
+    /**
+     * Return Date value
+     *
+     * @param textValue text value (MM/DD/YYYY format)
+     * @return Date value
+     * @throws SQLException in case when the value cannot be converted
+     */
+    public static java.sql.Date parseDate(@NotNull String textValue) throws SQLException {
+        if (textValue == null) return null;
+        try {
+            return new java.sql.Date(dateFormat.parse(textValue).getTime());
+        } catch (ParseException e) {
+            throw new SQLException(e);
+        }
+    }
+
     /**
      * Return Object value
      *
@@ -180,6 +202,8 @@ public class DataTypeParser {
                     return parseFloat(textValue);
                 case Types.INTEGER:
                     return parseInt(textValue);
+                case Types.DATE:
+                    return parseDate(textValue);
             }
             throw new SQLException(String.format(
                     "Unsupported java.sql.Types type '%d'", sqlType));
@@ -202,7 +226,11 @@ public class DataTypeParser {
                 try {
                     return parseDouble(textValue);
                 } catch (SQLException e2) {
-                    return textValue;
+                    try {
+                        return parseDate(textValue);
+                    } catch (SQLException e3) {
+                        return textValue;
+                    }
                 }
             }
         }

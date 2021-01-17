@@ -250,7 +250,7 @@ public abstract class AbstractResultSet implements java.sql.ResultSet {
      */
     @Override
     public Date getDate(int columnIndex) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Not supported yet");
+        return DataTypeParser.parseDate(getTextValue(columnIndex));
     }
 
     /**

@@ -24,7 +24,7 @@ public class AfmDatabaseMetaData implements java.sql.DatabaseMetaData {
     /**
      * Catalog of LDM objects (attributes and metrics)
      */
-    private final Catalog catalog;
+    private Catalog catalog;
 
     /**
      * DatabaseMetadata constructor
@@ -41,8 +41,13 @@ public class AfmDatabaseMetaData implements java.sql.DatabaseMetaData {
         this.workspace = workspace;
         this.user = user;
         this.gdRestConnection = new GoodDataRestConnection(gdRestTemplate, this.workspace);
-        this.catalog = new Catalog();
-        this.catalog.populate(gd, workspace);
+        // tries to use a cached catalog
+        this.catalog = AfmDriver.getCachedCatalog(workspace.getId());
+        if(this.catalog == null) {
+            this.catalog = new Catalog();
+            this.catalog.populate(gd, workspace);
+            AfmDriver.cacheCatalog(workspace.getId(), this.catalog);
+        }
     }
 
     /**
@@ -50,6 +55,7 @@ public class AfmDatabaseMetaData implements java.sql.DatabaseMetaData {
      * @return GoodData objects catalog
      */
     public Catalog getCatalog() {
+
         return catalog;
     }
 

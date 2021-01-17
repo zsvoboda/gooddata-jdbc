@@ -20,7 +20,7 @@ public class TestAfmStatement {
     private static final String JDBC_DRIVER = "com.gooddata.jdbc.driver.AfmDriver";
     private static final String DB_URL = "jdbc:gd://%s/gdc/projects/%s";
 
-    private static final String COLUMNS = "\"Quarter/Year (Date)\", Product, Revenue::INTEGER, \"# of Orders::INTEGER\", \"Product Category\"";
+    private static final String COLUMNS = "\"Date (Date)\", Product, Revenue::INTEGER, \"# of Orders::INTEGER\", \"Product Category\"";
     private static final String COLUMNS2 = "\"# of Orders\"";
 
     private final AfmConnection afmConnection;
@@ -38,7 +38,7 @@ public class TestAfmStatement {
         this.afmConnection = (AfmConnection) DriverManager.getConnection(url, p.getUsername(), p.getPassword());
         this.statement = afmConnection.createStatement();
         this.resultSet = this.statement.executeQuery("SELECT " + COLUMNS +
-                " WHERE \"Product Category\" = 'Home' AND REVENUE > 1000 AND \"# of Orders\" > 20");
+                " WHERE \"Product Category\" = 'Home' AND REVENUE > 1 AND \"# of Orders\" > 1");
         this.resultSet2 = this.statement.executeQuery("SELECT " + COLUMNS2);
         this.columnnList = Arrays.stream(COLUMNS.split(", "))
                 .map(i->i.replaceAll("\"","")
@@ -74,7 +74,7 @@ public class TestAfmStatement {
         System.out.println("\nRESULT 1\n");
         while(this.resultSet.next()) {
         System.out.printf("%s, %s, %s, %s, %s%n",
-                this.resultSet.getString(1),
+                this.resultSet.getDate(1),
                 this.resultSet.getString(2),
                 this.resultSet.getFloat(3),
                 this.resultSet.getInt(4),
@@ -85,11 +85,11 @@ public class TestAfmStatement {
         System.out.println("\nRESULT 1 columns\n");
         while(this.resultSet.next()) {
             System.out.printf("%s, %s, %s, %s, %s%n",
-                    this.resultSet.getString(columnnList.get(0)),
-                    this.resultSet.getString(columnnList.get(1)),
+                    this.resultSet.getObject(columnnList.get(0)),
+                    this.resultSet.getObject(columnnList.get(1)),
                     this.resultSet.getObject(columnnList.get(2)),
                     this.resultSet.getObject(columnnList.get(3)),
-                    this.resultSet.getString(columnnList.get(4))
+                    this.resultSet.getObject(columnnList.get(4))
             );
         }
     }

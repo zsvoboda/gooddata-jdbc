@@ -149,13 +149,16 @@ public class Catalog {
         return new ArrayList<>(schemas);
     }
 
+    private Comparator<CatalogEntry> CatalogEntryComparator = Comparator.comparing(CatalogEntry::getTitle);
+
     /**
      * Get all AFM entries
      *
      * @return AFM objects collection
      */
     public Collection<CatalogEntry> afmEntries() {
-        return this.afmObjects.values();
+        return this.afmObjects.values().stream().sorted(CatalogEntryComparator)
+                .collect(Collectors.toList());
     }
 
     /**
@@ -164,7 +167,8 @@ public class Catalog {
      * @return LDM objects collection
      */
     public Collection<CatalogEntry> ldmEntries() {
-        return this.ldmObjects.values();
+        return this.ldmObjects.values().stream().sorted(CatalogEntryComparator)
+                .collect(Collectors.toList());
     }
 
     /**
