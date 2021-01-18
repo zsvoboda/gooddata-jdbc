@@ -1,6 +1,6 @@
-package com.gooddata.jdbc.util;
+package com.gooddata.jdbc;
 
-import com.gooddata.jdbc.Parameters;
+import com.gooddata.jdbc.util.Parameters;
 import com.gooddata.sdk.model.md.Metric;
 import com.gooddata.sdk.service.GoodData;
 import org.testng.annotations.Test;

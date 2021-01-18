@@ -1,6 +1,7 @@
-package com.gooddata.jdbc.driver;
+package com.gooddata.jdbc.metadata;
 
-import com.gooddata.jdbc.Parameters;
+import com.gooddata.jdbc.util.Parameters;
+import com.gooddata.jdbc.catalog.Catalog;
 import org.testng.annotations.Test;
 
 import java.sql.DriverManager;

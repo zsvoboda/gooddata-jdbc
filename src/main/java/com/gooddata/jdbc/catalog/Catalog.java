@@ -1,6 +1,7 @@
-package com.gooddata.jdbc.driver;
+package com.gooddata.jdbc.catalog;
 
-import com.gooddata.jdbc.util.DataTypeParser;
+import com.gooddata.jdbc.parser.SQLParser;
+import com.gooddata.jdbc.parser.DataTypeParser;
 import com.gooddata.jdbc.util.TextUtil;
 import com.gooddata.sdk.model.executeafm.UriObjQualifier;
 import com.gooddata.sdk.model.executeafm.afm.filter.*;

@@ -1,15 +1,18 @@
 package com.gooddata.jdbc.driver;
 
-import com.gooddata.sdk.model.executeafm.Execution;
+import com.gooddata.jdbc.catalog.AfmFilter;
+import com.gooddata.jdbc.catalog.Catalog;
+import com.gooddata.jdbc.catalog.CatalogEntry;
+import com.gooddata.jdbc.metadata.AfmDatabaseMetaData;
+import com.gooddata.jdbc.parser.MaqlParser;
+import com.gooddata.jdbc.parser.SQLParser;
+import com.gooddata.jdbc.resultset.AfmResultSet;
 import com.gooddata.sdk.model.executeafm.afm.Afm;
 import com.gooddata.sdk.model.executeafm.afm.AttributeItem;
 import com.gooddata.sdk.model.executeafm.afm.MeasureItem;
 import com.gooddata.sdk.model.executeafm.afm.SimpleMeasureDefinition;
-import com.gooddata.sdk.model.executeafm.response.ExecutionResponse;
-import com.gooddata.sdk.model.executeafm.result.ExecutionResult;
 import com.gooddata.sdk.model.md.Metric;
 import com.gooddata.sdk.model.project.Project;
-import com.gooddata.sdk.service.FutureResult;
 import com.gooddata.sdk.service.GoodData;
 import com.gooddata.sdk.service.executeafm.ExecuteAfmService;
 import com.gooddata.sdk.service.md.MetadataService;
@@ -114,8 +117,8 @@ public class AfmStatement implements java.sql.Statement {
 	public boolean execute(String sql) throws SQLException {
 		if(sql.trim().toLowerCase().startsWith("create")) {
 			try {
-				SQLParser parser = new SQLParser();
-				SQLParser.ParsedCreateMetricStatement parsedCreate
+				MaqlParser parser = new MaqlParser();
+				MaqlParser.ParsedCreateMetricStatement parsedCreate
 						= parser.parseCreateOrAlterMetric(sql);
 				this.executeCreateMetric(parsedCreate);
 				return false;
@@ -126,8 +129,8 @@ public class AfmStatement implements java.sql.Statement {
 			}
 		} else if(sql.trim().toLowerCase().startsWith("alter")) {
 			try {
-				SQLParser parser = new SQLParser();
-				SQLParser.ParsedCreateMetricStatement parsedCreate
+				MaqlParser parser = new MaqlParser();
+				MaqlParser.ParsedCreateMetricStatement parsedCreate
 						= parser.parseCreateOrAlterMetric(sql);
 				this.executeAlterMetric(parsedCreate);
 				return false;
@@ -139,7 +142,7 @@ public class AfmStatement implements java.sql.Statement {
 		}
 		else if(sql.trim().toLowerCase().startsWith("drop")) {
 			try {
-				SQLParser parser = new SQLParser();
+				MaqlParser parser = new MaqlParser();
 				String parsedDropMetric = parser.parseDropMetric(sql);
 				this.executeDropMetric(parsedDropMetric);
 				return false;
@@ -154,15 +157,13 @@ public class AfmStatement implements java.sql.Statement {
 		}
 	}
 
-
-
 	/**
 	 * Execute CREATE METRIC statement
 	 * @param parsedMaqlCreate CREATE METRIC statement
 	 * @throws Catalog.CatalogEntryNotFoundException issues with resolving referenced objects
 	 * @throws Catalog.DuplicateCatalogEntryException issues with resolving referenced objects
 	 */
-	public void executeCreateMetric(SQLParser.ParsedCreateMetricStatement parsedMaqlCreate) throws
+	public void executeCreateMetric(MaqlParser.ParsedCreateMetricStatement parsedMaqlCreate) throws
 			Catalog.CatalogEntryNotFoundException, Catalog.DuplicateCatalogEntryException, SQLException {
 
 		String maqlDefinition = this.metadata.getGoodDataRestConnection()
@@ -181,7 +182,7 @@ public class AfmStatement implements java.sql.Statement {
 	 * @throws Catalog.CatalogEntryNotFoundException issues with resolving referenced objects
 	 * @throws Catalog.DuplicateCatalogEntryException issues with resolving referenced objects
 	 */
-	public void executeAlterMetric(SQLParser.ParsedCreateMetricStatement parsedMaqlCreate) throws
+	public void executeAlterMetric(MaqlParser.ParsedCreateMetricStatement parsedMaqlCreate) throws
 			Catalog.CatalogEntryNotFoundException, Catalog.DuplicateCatalogEntryException,
 			SQLException {
 		String maqlDefinition = this.metadata.getGoodDataRestConnection()

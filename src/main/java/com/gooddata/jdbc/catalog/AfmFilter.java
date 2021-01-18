@@ -1,4 +1,4 @@
-package com.gooddata.jdbc.driver;
+package com.gooddata.jdbc.catalog;
 
 import com.gooddata.sdk.model.executeafm.afm.filter.CompatibilityFilter;
 

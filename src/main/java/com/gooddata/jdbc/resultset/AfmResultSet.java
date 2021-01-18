@@ -1,5 +1,7 @@
-package com.gooddata.jdbc.driver;
+package com.gooddata.jdbc.resultset;
 
+import com.gooddata.jdbc.catalog.CatalogEntry;
+import com.gooddata.jdbc.metadata.AfmResultSetMetaData;
 import com.gooddata.jdbc.util.AbstractResultSet;
 import com.gooddata.sdk.model.executeafm.Execution;
 import com.gooddata.sdk.model.executeafm.ResultPage;

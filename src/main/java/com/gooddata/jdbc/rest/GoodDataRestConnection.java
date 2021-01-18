@@ -5,9 +5,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.gooddata.jdbc.driver.Catalog;
-import com.gooddata.jdbc.driver.CatalogEntry;
-import com.gooddata.jdbc.driver.SQLParser;
+import com.gooddata.jdbc.catalog.Catalog;
+import com.gooddata.jdbc.catalog.CatalogEntry;
+import com.gooddata.jdbc.parser.MaqlParser;
 import com.gooddata.sdk.model.md.Metric;
 import com.gooddata.sdk.model.project.Project;
 import org.springframework.http.*;
@@ -55,7 +55,7 @@ public class GoodDataRestConnection {
 
     }
 
-    public String replaceMaqlTitlesWithUris(SQLParser.ParsedCreateMetricStatement parsedMaqlCreate,
+    public String replaceMaqlTitlesWithUris(MaqlParser.ParsedCreateMetricStatement parsedMaqlCreate,
                                             Catalog catalog)
             throws Catalog.CatalogEntryNotFoundException, Catalog.DuplicateCatalogEntryException {
         String maqlDefinition = parsedMaqlCreate.getMetricMaqlDefinition();

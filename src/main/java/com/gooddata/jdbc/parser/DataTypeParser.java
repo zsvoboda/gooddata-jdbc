@@ -1,4 +1,4 @@
-package com.gooddata.jdbc.util;
+package com.gooddata.jdbc.parser;
 
 import com.sun.istack.NotNull;
 
@@ -9,7 +9,6 @@ import java.sql.Types;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
 import java.util.logging.Logger;
 

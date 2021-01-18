@@ -1,5 +1,8 @@
-package com.gooddata.jdbc.driver;
+package com.gooddata.jdbc.metadata;
 
+import com.gooddata.jdbc.catalog.Catalog;
+import com.gooddata.jdbc.driver.AfmConnection;
+import com.gooddata.jdbc.driver.AfmDriver;
 import com.gooddata.jdbc.rest.GoodDataRestConnection;
 import com.gooddata.sdk.model.project.Project;
 import com.gooddata.sdk.service.GoodData;

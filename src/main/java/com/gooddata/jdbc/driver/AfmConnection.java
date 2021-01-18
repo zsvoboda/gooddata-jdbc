@@ -1,6 +1,6 @@
 package com.gooddata.jdbc.driver;
 
-import com.gooddata.jdbc.util.LoggingInvocationHandler;
+import com.gooddata.jdbc.metadata.AfmDatabaseMetaData;
 import com.gooddata.sdk.model.project.Project;
 import com.gooddata.sdk.service.GoodData;
 import com.gooddata.sdk.service.GoodDataEndpoint;
@@ -9,7 +9,6 @@ import com.gooddata.sdk.service.httpcomponents.LoginPasswordGoodDataRestProvider
 import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
-import java.lang.reflect.Proxy;
 import java.sql.*;
 import java.util.Map;
 import java.util.Properties;

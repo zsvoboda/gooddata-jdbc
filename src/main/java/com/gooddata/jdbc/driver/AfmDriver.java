@@ -1,5 +1,7 @@
 package com.gooddata.jdbc.driver;
 
+import com.gooddata.jdbc.catalog.Catalog;
+
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.sql.DriverManager;

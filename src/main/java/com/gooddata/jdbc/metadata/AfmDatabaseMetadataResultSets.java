@@ -1,6 +1,9 @@
-package com.gooddata.jdbc.driver;
+package com.gooddata.jdbc.metadata;
 
-import com.gooddata.jdbc.util.MetadataResultSet;
+import com.gooddata.jdbc.catalog.Catalog;
+import com.gooddata.jdbc.catalog.CatalogEntry;
+import com.gooddata.jdbc.parser.SQLParser;
+import com.gooddata.jdbc.resultset.MetadataResultSet;
 import com.gooddata.sdk.model.project.Project;
 
 import java.sql.SQLException;

@@ -1,4 +1,6 @@
-package com.gooddata.jdbc.util;
+package com.gooddata.jdbc.metadata;
+
+import com.gooddata.jdbc.resultset.MetadataResultSet;
 
 import java.sql.SQLException;
 import java.sql.Types;

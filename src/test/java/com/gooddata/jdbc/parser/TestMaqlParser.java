@@ -1,38 +1,18 @@
-package com.gooddata.jdbc.driver;
+package com.gooddata.jdbc.parser;
 
 import net.sf.jsqlparser.JSQLParserException;
 import org.testng.annotations.Test;
 
 import java.util.logging.Logger;
 
-public class TestSQLParser {
+public class TestMaqlParser {
 
-    private final static Logger LOGGER = Logger.getLogger(TestSQLParser.class.getName());
-
-    private final SQLParser parser = new SQLParser();
-
-    @Test
-    public void testParse() throws JSQLParserException {
-        SQLParser.ParsedSQL parsedSQL = parser.parseQuery("SELECT c1,c2 FROM t1");
-        assert(parsedSQL.getColumns().contains("c1"));
-        assert(parsedSQL.getColumns().contains("c2"));
-        assert(parsedSQL.getTables().contains("t1"));
-        parsedSQL = parser.parseQuery("SELECT \"c1\",\"c2\" FROM \"t1\"");
-        assert(parsedSQL.getColumns().contains("c1"));
-        assert(parsedSQL.getColumns().contains("c2"));
-        assert(parsedSQL.getTables().contains("t1"));
-
-        parsedSQL = parser.parseQuery("SELECT c1,c2 FROM t1 WHERE c1 IN ('v1','v2','v3')");
-        parsedSQL = parser.parseQuery("SELECT \"Product Category\",\"# of Orders\" " +
-                "WHERE \"Product Category\" NOT IN ('Outdoor', 'Clothing')");
-        parsedSQL = parser.parseQuery("SELECT \"Product Category\",\"# of Orders\" " +
-                "WHERE \"Product Category\" NOT IN ('Outdoor', 'Clothing') AND \"Revenue\" NOT BETWEEN 1000 AND 10000");
-
-    }
+    private final static Logger LOGGER = Logger.getLogger(TestMaqlParser.class.getName());
 
     @Test
     public void testParseCreateMetric() throws JSQLParserException {
-        SQLParser.ParsedCreateMetricStatement metric = parser.parseCreateOrAlterMetric(
+        MaqlParser maqlParser = new MaqlParser();
+        MaqlParser.ParsedCreateMetricStatement metric = maqlParser.parseCreateOrAlterMetric(
                 "CREATE METRIC \"test\" AS SELECT SUM(\"Revenue\") BY \"Product Category\" " +
                         "WHERE \"Product Category\" IN ('Home', 'Electronics')");
         assert("test".equals(metric.getName()));
@@ -41,7 +21,7 @@ public class TestSQLParser {
         assert(metric.getLdmObjectTitles().contains("Product Category"));
         assert(metric.getLdmObjectTitles().contains("Revenue"));
 
-        metric = parser.parseCreateOrAlterMetric(
+        metric = maqlParser.parseCreateOrAlterMetric(
                 "ALTER METRIC \"test\" AS SELECT SUM(\"Revenue\") BY \"Product Category\" " +
                         "WHERE \"Product Category\" IN ('Home', 'Electronics')");
         assert("test".equals(metric.getName()));
@@ -53,7 +33,8 @@ public class TestSQLParser {
 
     @Test
     public void testParseDropMetric() throws JSQLParserException {
-        String metric = parser.parseDropMetric(
+        MaqlParser maqlParser = new MaqlParser();
+        String metric = maqlParser.parseDropMetric(
                 "DROP METRIC \"test\"");
         assert("test".equals(metric));
     }

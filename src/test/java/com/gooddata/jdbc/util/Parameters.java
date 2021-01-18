@@ -1,4 +1,4 @@
-package com.gooddata.jdbc;
+package com.gooddata.jdbc.util;
 
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;

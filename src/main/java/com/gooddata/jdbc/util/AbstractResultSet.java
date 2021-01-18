@@ -1,6 +1,8 @@
 package com.gooddata.jdbc.util;
 
 
+import com.gooddata.jdbc.parser.DataTypeParser;
+
 import java.io.InputStream;
 import java.io.Reader;
 import java.math.BigDecimal;

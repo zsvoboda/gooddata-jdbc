@@ -1,5 +1,6 @@
-package com.gooddata.jdbc.driver;
+package com.gooddata.jdbc.catalog;
 
+import com.gooddata.jdbc.parser.SQLParser;
 import com.gooddata.sdk.model.executeafm.ObjQualifier;
 
 import java.sql.SQLException;

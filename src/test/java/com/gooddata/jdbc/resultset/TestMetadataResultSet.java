@@ -1,5 +1,6 @@
-package com.gooddata.jdbc.util;
+package com.gooddata.jdbc.resultset;
 
+import com.gooddata.jdbc.resultset.MetadataResultSet;
 import org.testng.annotations.Test;
 
 import java.sql.SQLException;
