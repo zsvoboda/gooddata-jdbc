@@ -4,6 +4,7 @@ import com.gooddata.jdbc.catalog.Catalog;
 import com.gooddata.jdbc.catalog.CatalogEntry;
 import com.gooddata.jdbc.parser.SQLParser;
 import com.gooddata.jdbc.resultset.MetadataResultSet;
+import com.gooddata.jdbc.util.TextUtil;
 import com.gooddata.sdk.model.project.Project;
 
 import java.sql.SQLException;
@@ -82,16 +83,21 @@ public class AfmDatabaseMetadataResultSets {
      * @return ResultSet with schema metadata
      */
     static MetadataResultSet schemaResultSet(Catalog catalog) throws SQLException {
-        List<String> uniqueSchemas = catalog.getAllSchemas();
-        List<String> catalogs = uniqueSchemas.stream()
-                .map(e -> "").collect(Collectors.toList());
-        List<MetadataResultSet.MetaDataColumn> data = Arrays.asList(
-                new MetadataResultSet.MetaDataColumn("TABLE_SCHEM",
-                        uniqueSchemas),
-                new MetadataResultSet.MetaDataColumn("TABLE_CATALOG",
-                        catalogs)
-        );
-        return new MetadataResultSet(data);
+        try {
+            List<String> uniqueSchemas = catalog.getAllSchemas();
+            List<String> catalogs = uniqueSchemas.stream()
+                    .map(e -> "").collect(Collectors.toList());
+            List<MetadataResultSet.MetaDataColumn> data = Arrays.asList(
+                    new MetadataResultSet.MetaDataColumn("TABLE_SCHEM",
+                            uniqueSchemas),
+                    new MetadataResultSet.MetaDataColumn("TABLE_CATALOG",
+                            catalogs)
+            );
+            return new MetadataResultSet(data);
+        } catch(TextUtil.InvalidFormatException e) {
+            throw new SQLException(e);
+        }
+
     }
 
     /**

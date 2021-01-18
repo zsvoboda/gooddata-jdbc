@@ -62,7 +62,11 @@ public class AfmResultSetMetaData extends AbstractResultSetMetaData implements R
 	public String getSchemaName(int column) throws SQLException {
 		if(column <= 0 || column > this.columns.size())
 			throw new SQLException(String.format("Column index %d column out of range.", column));
-		return TextUtil.extractIdFromUri(this.columns.get(column - 1).getUri());
+		try {
+			return TextUtil.extractIdFromUri(this.columns.get(column - 1).getUri());
+		} catch (TextUtil.InvalidFormatException e) {
+			throw new SQLException(e);
+		}
 	}
 
 	/**

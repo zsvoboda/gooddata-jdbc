@@ -14,18 +14,71 @@ public class TextUtil {
      * Extracts ID from URI
      * @param uri URI
      * @return ID
-     * @throws SQLException syntax issue
+     * @throws InvalidFormatException syntax issue
      */
-    public static String extractIdFromUri(String uri) throws SQLException {
+    public static String extractIdFromUri(String uri) throws InvalidFormatException {
         try {
-            Pattern p = Pattern.compile("^/gdc/md/(.*?)/obj/(.*?)$");
+            Pattern p = Pattern.compile("^\\s?/gdc/md/(.*?)/obj/(.*?)\\s?$");
             Matcher m = p.matcher(uri);
             m.matches();
             if (m.groupCount() != 2)
-                throw new SQLException(String.format("Wrong JDBC URL format: '%s'", uri));
+                throw new InvalidFormatException(String.format("Wrong URI format: '%s'", uri));
             return m.group(1);
         } catch (IllegalStateException e) {
-            throw new SQLException(String.format("Wrong URI format: '%s'", uri));
+            throw new InvalidFormatException(String.format("Wrong URI format: '%s'", uri));
+        }
+    }
+
+    /**
+     * Finds out whether passed string is GoodData object URI or not
+     * @param uri URI
+     * @return true or false
+     * @throws InvalidFormatException syntax issue
+     */
+    public static boolean isGoodDataObjectUri(String uri) throws InvalidFormatException {
+        try {
+            Pattern p = Pattern.compile("^\\s?/gdc/md/(.*?)/obj/(.*?)\\s?$");
+            Matcher m = p.matcher(uri);
+            return m.matches();
+        } catch (IllegalStateException e) {
+            throw new InvalidFormatException(String.format("Wrong URI format: '%s'", uri));
+        }
+    }
+
+    /**
+     * Finds out whether passed string is a column with GoodData URI or not
+     * Test format [/gdc/md/<project-id>/obj/<id>]
+     * @param columnName columnName
+     * @return true or false
+     * @throws InvalidFormatException syntax issue
+     */
+    public static boolean isGoodDataColumnWithUri(String columnName) throws InvalidFormatException {
+        try {
+            Pattern p = Pattern.compile("^\\s?\\[\\s?/gdc/md/(.*?)/obj/(.*?)\\s?\\]\\s?$");
+            Matcher m = p.matcher(columnName);
+            return m.matches();
+        } catch (IllegalStateException e) {
+            throw new InvalidFormatException(String.format("Wrong column format: '%s'", columnName));
+        }
+    }
+
+    /**
+     * Extracts object URI from the column spec format [/gdc/md/<project-id>/obj/<id>]
+     * @param columnName columnName
+     * @return URI
+     * @throws InvalidFormatException syntax issue
+     */
+    public static String extractGoodDataUriFromColumnName(String columnName) throws InvalidFormatException {
+        try {
+            Pattern p = Pattern.compile("^\\s?\\[\\s?(/gdc/md/(.*?)/obj/(.*?))\\s?\\]\\s?$");
+            Matcher m = p.matcher(columnName);
+            m.matches();
+            int groupCnt = m.groupCount();
+            if (groupCnt != 3)
+                throw new InvalidFormatException(String.format("Wrong column format: '%s'", columnName));
+            return m.group(1);
+        } catch (IllegalStateException e) {
+            throw new InvalidFormatException(String.format("Wrong column format: '%s'", columnName));
         }
     }
 
@@ -37,6 +90,15 @@ public class TextUtil {
      */
     public static boolean containsIgnoreCase(List<String> l, String s) {
         return l.stream().anyMatch(s::equalsIgnoreCase);
+    }
+
+    /**
+     * This exception is thrown when there is an invalid textual format of a column
+     */
+    public static class InvalidFormatException extends Exception {
+        public InvalidFormatException(String e) {
+            super(e);
+        }
     }
 
 }

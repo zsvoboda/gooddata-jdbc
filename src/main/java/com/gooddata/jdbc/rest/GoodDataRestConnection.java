@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.gooddata.jdbc.catalog.Catalog;
 import com.gooddata.jdbc.catalog.CatalogEntry;
 import com.gooddata.jdbc.parser.MaqlParser;
+import com.gooddata.jdbc.util.TextUtil;
 import com.gooddata.sdk.model.md.Metric;
 import com.gooddata.sdk.model.project.Project;
 import org.springframework.http.*;
@@ -57,12 +58,13 @@ public class GoodDataRestConnection {
 
     public String replaceMaqlTitlesWithUris(MaqlParser.ParsedCreateMetricStatement parsedMaqlCreate,
                                             Catalog catalog)
-            throws Catalog.CatalogEntryNotFoundException, Catalog.DuplicateCatalogEntryException {
+            throws Catalog.CatalogEntryNotFoundException, Catalog.DuplicateCatalogEntryException,
+            TextUtil.InvalidFormatException {
         String maqlDefinition = parsedMaqlCreate.getMetricMaqlDefinition();
         // Replace all metric titles in the MAQL definition with their URIs
         for(String metricFactAttribute: parsedMaqlCreate.getLdmObjectTitles()) {
             //lookup attribute in LDM
-            CatalogEntry ldmObj = catalog.findMaqlColumnByTitle(metricFactAttribute);
+            CatalogEntry ldmObj = catalog.findMaqlColumn(metricFactAttribute);
             String replaceWhat = String.format("\"%s\"", metricFactAttribute);
             maqlDefinition = maqlDefinition.replaceAll(
                     replaceWhat,
@@ -78,7 +80,7 @@ public class GoodDataRestConnection {
                 throw new Catalog.CatalogEntryNotFoundException(
                         "The value '%s' can't be associated with any attribute.");
             //lookup display form in AFM
-            CatalogEntry ldmObj = catalog.findAfmColumnByTitle(attributeName);
+            CatalogEntry ldmObj = catalog.findAfmColumn(attributeName);
             String replaceWhat = String.format("'%s'", value);
             Map<String, String> lookup = lookupAttributeElements(ldmObj.getUri(),
                             Collections.singletonList(value));

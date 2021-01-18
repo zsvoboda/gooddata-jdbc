@@ -27,6 +27,9 @@ public class TestSQLParser {
         parser.parseQuery("SELECT \"Product Category\",\"# of Orders\" " +
                 "WHERE \"Product Category\" NOT IN ('Outdoor', 'Clothing') AND \"Revenue\" NOT BETWEEN 1000 AND 10000");
 
+        SQLParser.ParsedSQL p = parser.parseQuery("SELECT \"[/gdc/a]\", \"[/gdc/b]\"");
+        System.out.println(p);
+
     }
 
 }

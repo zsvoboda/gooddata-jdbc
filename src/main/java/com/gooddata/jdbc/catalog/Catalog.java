@@ -92,7 +92,6 @@ public class Catalog {
         this.maqlEntries.put(metric.getUri(), e);
     }
 
-
     public void addFact(Entry fact) {
         CatalogEntry e = new CatalogEntry(fact.getUri(),
                 fact.getTitle(), fact.getCategory(), fact.getIdentifier(),
@@ -131,9 +130,9 @@ public class Catalog {
      * Extracts schemas from the catalog objects
      *
      * @return all schemas extracted from all objects URIs
-     * @throws SQLException in case of any issue
+     * @throws TextUtil.InvalidFormatException in case of any issue
      */
-    public List<String> getAllSchemas() throws SQLException {
+    public List<String> getAllSchemas() throws TextUtil.InvalidFormatException {
         Set<String> schemas = new HashSet<>();
         Set<String> allObjects = new HashSet<>();
         allObjects.addAll(this.afmEntries.keySet());
@@ -144,7 +143,7 @@ public class Catalog {
         return new ArrayList<>(schemas);
     }
 
-    private Comparator<CatalogEntry> CatalogEntryComparator = Comparator.comparing(CatalogEntry::getTitle);
+    private final Comparator<CatalogEntry> CatalogEntryComparator = Comparator.comparing(CatalogEntry::getTitle);
 
     /**
      * Get all AFM entries
@@ -174,42 +173,56 @@ public class Catalog {
      * @throws DuplicateCatalogEntryException in case when there are multiple AFM objects with the same title
      * @throws CatalogEntryNotFoundException  in case when a matching object doesn't exist
      */
-    public CatalogEntry findAfmColumnByTitle(String name) throws DuplicateCatalogEntryException,
-            CatalogEntryNotFoundException {
-        List<CatalogEntry> objects = this.afmEntries.values().stream()
-                .filter(catalogEntry -> name.equalsIgnoreCase(catalogEntry.getTitle())).collect(Collectors.toList());
-        if (objects.size() > 1) {
-            throw new DuplicateCatalogEntryException(
-                    String.format("Column name '%s' can't be uniquely resolved. " +
-                            "There are multiple LDM objects with this title.", name));
-        } else if (objects.size() == 0) {
-            throw new CatalogEntryNotFoundException(
-                    String.format("Column name '%s' doesn't exist.", name));
-        }
-        return objects.get(0).cloneEntry();
+    public CatalogEntry findAfmColumn(String name) throws DuplicateCatalogEntryException,
+            CatalogEntryNotFoundException, TextUtil.InvalidFormatException {
+        return this.findColumn(name, this.afmEntries);
     }
 
     /**
-     * Finds LDM object (metric, fact, attribute) by title
+     * Finds MAQL object by title
      *
-     * @param name object name
-     * @return LDM object
+     * @param name MAQL object name
+     * @return the MAQL object
      * @throws DuplicateCatalogEntryException in case when there are multiple AFM objects with the same title
      * @throws CatalogEntryNotFoundException  in case when a matching object doesn't exist
      */
-    public CatalogEntry findMaqlColumnByTitle(String name) throws DuplicateCatalogEntryException,
-            CatalogEntryNotFoundException {
-        List<CatalogEntry> objects = this.maqlEntries.values().stream()
-                .filter(catalogEntry -> name.equalsIgnoreCase(catalogEntry.getTitle())).collect(Collectors.toList());
-        if (objects.size() > 1) {
-            throw new DuplicateCatalogEntryException(
-                    String.format("Column name '%s' can't be uniquely resolved. " +
-                            "There are multiple LDM objects with this title.", name));
-        } else if (objects.size() == 0) {
-            throw new CatalogEntryNotFoundException(
-                    String.format("Column name '%s' doesn't exist.", name));
+    public CatalogEntry findMaqlColumn(String name) throws DuplicateCatalogEntryException,
+            CatalogEntryNotFoundException, TextUtil.InvalidFormatException {
+        return this.findColumn(name, this.maqlEntries);
+    }
+
+    /**
+     * Finds catalog object (metric, fact, attribute, display form)
+     *
+     * @param name object name
+     * @param catalog MAQL or AFM object catalog
+     * @return LDM object
+     * @throws DuplicateCatalogEntryException in case when there are multiple catalog objects with the same title
+     * @throws CatalogEntryNotFoundException  in case when a matching object doesn't exist
+     */
+    public CatalogEntry findColumn(String name, Map<String,CatalogEntry> catalog) throws DuplicateCatalogEntryException,
+            CatalogEntryNotFoundException, TextUtil.InvalidFormatException {
+        if(TextUtil.isGoodDataColumnWithUri(name)) {
+            String uri = TextUtil.extractGoodDataUriFromColumnName(name);
+            CatalogEntry c = catalog.get(uri);
+            if(c != null) {
+                return c.cloneEntry();
+            } else {
+                throw new CatalogEntryNotFoundException(String.format("Catalog object with uri '%s' not found.", name));
+            }
+        } else {
+            List<CatalogEntry> objects = catalog.values().stream()
+                    .filter(catalogEntry -> name.equalsIgnoreCase(catalogEntry.getTitle())).collect(Collectors.toList());
+            if (objects.size() > 1) {
+                throw new DuplicateCatalogEntryException(
+                        String.format("Column name '%s' can't be uniquely resolved. " +
+                                "There are multiple catalog objects with this title.", name));
+            } else if (objects.size() == 0) {
+                throw new CatalogEntryNotFoundException(
+                        String.format("Column name '%s' doesn't exist.", name));
+            }
+            return objects.get(0).cloneEntry();
         }
-        return objects.get(0).cloneEntry();
     }
 
     /**
@@ -223,29 +236,23 @@ public class Catalog {
      */
     public List<CatalogEntry> resolveAfmColumns(SQLParser.ParsedSQL sql)
             throws DuplicateCatalogEntryException,
-            CatalogEntryNotFoundException, SQLException {
-
+            CatalogEntryNotFoundException, TextUtil.InvalidFormatException {
         List<CatalogEntry> c = new ArrayList<>();
         List<String> columns = sql.getColumns();
         for (String column : columns) {
-            if (column.contains("::")) {
-                String[] parsedColumn = Arrays.stream(column.split("::"))
-                        .map(String::trim).toArray(String[]::new);
-                if (parsedColumn.length != 2)
-                    throw new CatalogEntryNotFoundException(String.format(
-                            "Column '%s' doesn't exist.", column));
-                CatalogEntry newColumn = findAfmColumnByTitle(parsedColumn[0]);
-                newColumn.setDataType(parsedColumn[1]);
-                c.add(newColumn);
-            } else {
-                CatalogEntry newColumn = findAfmColumnByTitle(column);
+            SQLParser.ParsedColumnName parsedColumn = SQLParser.parseColumnWithDataTypeSpecifier(column);
+            CatalogEntry newColumn = findAfmColumn(parsedColumn.getName());
+            if(parsedColumn.getDatatype() != null) {
+                newColumn.setDataType(parsedColumn.getDatatype());
+            }
+            else {
                 if (newColumn.getType().equals("metric")) {
                     newColumn.setDataType(CatalogEntry.DEFAULT_METRIC_DATATYPE);
                 } else {
                     newColumn.setDataType(CatalogEntry.DEFAULT_ATTRIBUTE_DATATYPE);
                 }
-                c.add(newColumn);
             }
+            c.add(newColumn);
         }
         return c;
     }
@@ -257,7 +264,8 @@ public class Catalog {
      * @return AFM operator
      * @throws SQLException in case when unknown operator is supplied
      */
-    private ComparisonConditionOperator getAfmComparisonOperatorFromParserOperator(int parserOperator) throws SQLException {
+    private ComparisonConditionOperator getAfmComparisonOperatorFromParserOperator(int parserOperator)
+            throws SQLException {
         switch (parserOperator) {
             case SQLParser.ParsedSQL.FilterExpression.OPERATOR_EQUAL:
                 return ComparisonConditionOperator.EQUAL_TO;
@@ -276,13 +284,13 @@ public class Catalog {
                 "Unsupported filter operator '%d'", parserOperator));
     }
 
-    private int[] ATTRIBUTE_FILTER_OPERATORS = new int[] {
+    private final int[] ATTRIBUTE_FILTER_OPERATORS = new int[] {
             SQLParser.ParsedSQL.FilterExpression.OPERATOR_EQUAL,
             SQLParser.ParsedSQL.FilterExpression.OPERATOR_NOT_EQUAL,
             SQLParser.ParsedSQL.FilterExpression.OPERATOR_IN,
             SQLParser.ParsedSQL.FilterExpression.OPERATOR_NOT_IN
     };
-    private int[] METRIC_FILTER_OPERATORS = new int[] {
+    private final int[] METRIC_FILTER_OPERATORS = new int[] {
             SQLParser.ParsedSQL.FilterExpression.OPERATOR_EQUAL,
             SQLParser.ParsedSQL.FilterExpression.OPERATOR_NOT_EQUAL,
             SQLParser.ParsedSQL.FilterExpression.OPERATOR_GREATER,
@@ -305,13 +313,13 @@ public class Catalog {
      */
     public List<AfmFilter> resolveAfmFilters(SQLParser.ParsedSQL sql)
             throws DuplicateCatalogEntryException,
-            CatalogEntryNotFoundException, SQLException {
+            CatalogEntryNotFoundException, SQLException, TextUtil.InvalidFormatException {
 
         List<AfmFilter> afmFilters = new ArrayList<>();
         List<SQLParser.ParsedSQL.FilterExpression> sqlFilters = sql.getFilters();
         for (SQLParser.ParsedSQL.FilterExpression sqlFilter : sqlFilters) {
             String sqlFilterColumnName = sqlFilter.getColumn();
-            CatalogEntry catalogEntry = findAfmColumnByTitle(sqlFilterColumnName);
+            CatalogEntry catalogEntry = findAfmColumn(sqlFilterColumnName);
 
             if (catalogEntry.getType().equalsIgnoreCase("metric")) {
                 if(!ArrayUtils.contains(METRIC_FILTER_OPERATORS, sqlFilter.getOperator()))

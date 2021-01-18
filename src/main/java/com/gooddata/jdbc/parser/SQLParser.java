@@ -1,5 +1,6 @@
 package com.gooddata.jdbc.parser;
 
+import com.gooddata.jdbc.catalog.Catalog;
 import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.ExpressionVisitor;
@@ -425,6 +426,46 @@ public class SQLParser {
         private int size;
         private int precision;
     }
+
+    public static class ParsedColumnName {
+
+        private final String name;
+        private final String datatype;
+
+        public ParsedColumnName(String name, String datatype) {
+            this.name = name;
+            this.datatype = datatype;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public String getDatatype() {
+            return datatype;
+        }
+    }
+
+    /**
+     * Parses column's datatype extension format (e.g. "REVENUE::INTEGER", "REVENUE::VARCHAR(255)")
+     * @param columnName column name with the datatype specifier
+     * @return parsed structure with name and datatype
+     */
+    public static ParsedColumnName parseColumnWithDataTypeSpecifier(String columnName)
+            throws Catalog.CatalogEntryNotFoundException {
+        if (columnName.contains("::")) {
+            String[] parsedColumn = Arrays.stream(columnName.split("::"))
+                    .map(String::trim).toArray(String[]::new);
+            if (parsedColumn.length != 2)
+                throw new Catalog.CatalogEntryNotFoundException(String.format(
+                        "Invalid column name format '%s'.", columnName));
+            return new ParsedColumnName(parsedColumn[0], parsedColumn[1]);
+        }
+        else {
+            return new ParsedColumnName(columnName, null);
+        }
+    }
+
 
     /**
      * Parses SQL datatype e.g. VARCHAR(255) or DECIMAL(13,2)

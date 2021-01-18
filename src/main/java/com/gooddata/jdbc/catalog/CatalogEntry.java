@@ -103,7 +103,7 @@ public class CatalogEntry {
         return dataType;
     }
 
-    public void setDataType(String dataType) throws SQLException {
+    public void setDataType(String dataType) {
         SQLParser.ParsedSQLDataType d = SQLParser.parseSqlDatatype(dataType);
         this.dataType = d.getName();
         this.setSize(d.getSize());
