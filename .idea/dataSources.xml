@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="DataSourceManagerImpl" format="xml" multifile-model="true">
-    <data-source source="LOCAL" name="GoodData Workspace - jdbc:gd://freeezosh.na.gooddata.com/gdc/projects/w2x7a9awsioch4l9lbzgjcn99hbkm61e" uuid="94781c58-fb94-4426-968f-622aac85de33">
+    <data-source source="LOCAL" name="GoodData Workspace - FREE Demo" uuid="012aaebd-a4bf-4ec5-be75-bba5ec3cc916">
       <driver-ref>java.sql.Driver</driver-ref>
       <synchronize>true</synchronize>
       <configured-by-url>true</configured-by-url>

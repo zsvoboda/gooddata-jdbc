@@ -1,6 +1,7 @@
 package com.gooddata.jdbc.metadata;
 
 import com.gooddata.jdbc.catalog.Catalog;
+import com.gooddata.jdbc.catalog.Schema;
 import com.gooddata.jdbc.driver.AfmConnection;
 import com.gooddata.jdbc.driver.AfmDriver;
 import com.gooddata.jdbc.rest.GoodDataRestConnection;
@@ -9,20 +10,32 @@ import com.gooddata.sdk.service.GoodData;
 import org.springframework.web.client.RestTemplate;
 
 import java.sql.*;
+import java.util.List;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 /**
  * Database metadata - converts between GoodData and JDBC metadata
  */
 public class AfmDatabaseMetaData implements java.sql.DatabaseMetaData {
 
+    private final static Logger LOGGER = Logger.getLogger(AfmDatabaseMetaData.class.getName());
+
     // JDBC connection
     private final AfmConnection afmConnection;
-    // GoodData workspace / project
-    private final Project workspace;
+    // GoodData connection
+    private final GoodData gd;
+    //Schemas = GD workspaces
+    private final List<Schema> schemas;
     // GoodData user
     private final String user;
     // GoodData REST connection
-    private final GoodDataRestConnection gdRestConnection;
+    private GoodDataRestConnection gdRestConnection;
+    // GoodData REstTemplate
+    private final RestTemplate gdRestTemplate;
+
+    //Current schema
+    private Schema schema;
 
     /**
      * Catalog of LDM objects (attributes and metrics)
@@ -33,24 +46,19 @@ public class AfmDatabaseMetaData implements java.sql.DatabaseMetaData {
      * DatabaseMetadata constructor
      * @param afmConnection SQL connection
      * @param gd GoodData connection
-     * @param workspace GoodData workspace
      * @param user username
      * @param gdRestTemplate GD Spring RestTemplate for direct GD invocation
      * @throws SQLException error
      */
-    public AfmDatabaseMetaData(AfmConnection afmConnection, GoodData gd,
-                               Project workspace, String user, RestTemplate gdRestTemplate) throws SQLException {
+    public AfmDatabaseMetaData(AfmConnection afmConnection, GoodData gd, String workspaceId, String user,
+                               RestTemplate gdRestTemplate) throws SQLException {
         this.afmConnection = afmConnection;
-        this.workspace = workspace;
+        this.gd = gd;
         this.user = user;
-        this.gdRestConnection = new GoodDataRestConnection(gdRestTemplate, this.workspace);
-        // tries to use a cached catalog
-        this.catalog = AfmDriver.getCachedCatalog(workspace.getId());
-        if(this.catalog == null) {
-            this.catalog = new Catalog();
-            this.catalog.populate(gd, workspace);
-            AfmDriver.cacheCatalog(workspace.getId(), this.catalog);
-        }
+        this.gdRestTemplate = gdRestTemplate;
+        this.schemas = Schema.populateSchemas(this.gd);
+        Schema schema = findSchemaByUri(String.format("/gdc/projects/%s", workspaceId));
+        this.setSchema(schema.getSchemaName());
     }
 
     /**
@@ -58,28 +66,61 @@ public class AfmDatabaseMetaData implements java.sql.DatabaseMetaData {
      * @return GoodData objects catalog
      */
     public Catalog getCatalog() {
-
         return catalog;
+    }
+
+    private Schema findSchemaByUri(String uri) throws SQLException {
+        List<Schema> schemas = this.schemas.stream().filter(e->e.getSchemaUri().equals(uri))
+                .collect(Collectors.toList());
+        if(schemas.size() > 1)
+            throw new SQLException(String.format("Duplicate schema uri '%s'", uri));
+        if(schemas.size() <= 0)
+            throw new SQLException(String.format("Schema with uri '%s' not found.", uri));
+        return schemas.get(0);
+    }
+
+    private Schema findSchemaByName(String schemaName) throws SQLException {
+        List<Schema> schemas = this.schemas.stream().filter(e->e.getSchemaName().equals(schemaName))
+                .collect(Collectors.toList());
+        if(schemas.size() > 1)
+            throw new SQLException(String.format("Duplicate schema names '%s'", schemaName));
+        if(schemas.size() <= 0)
+            throw new SQLException(String.format("Schema '%s' not found.", schemaName));
+        return schemas.get(0);
+    }
+
+    private Project getWorkspaceForSchema(Schema schema) {
+        return this.gd.getProjectService().getProjectByUri(schema.getSchemaUri());
+    }
+
+    private void setActiveWorkspace(Schema schema) {
+        this.gdRestConnection = new GoodDataRestConnection(this.gdRestTemplate,
+                this.getWorkspaceForSchema(schema));
+    }
+
+    public void setSchema(String schemaName) throws SQLException {
+        LOGGER.info(String.format("AfmDatabaseMetaData::setSchema '%s'", schemaName));
+        this.schema = findSchemaByName(schemaName);
+        this.catalog = AfmDriver.getCachedCatalog(schema.getSchemaUri());
+        if(this.catalog == null) {
+            this.catalog = new Catalog();
+            this.catalog.populate(gd, schema.getSchemaUri());
+            AfmDriver.cacheCatalog(schema.getSchemaUri(), this.catalog);
+        }
+        this.setActiveWorkspace(schema);
+    }
+
+    public String getSchema() {
+        LOGGER.info(String.format("AfmDatabaseMetaData::getSchema schema '%s'", this.schema.getSchemaName()));
+        return this.schema.getSchemaName();
     }
 
     public GoodDataRestConnection getGoodDataRestConnection() {
         return this.gdRestConnection;
     }
 
-    public String getUser() {
-        return this.user;
-    }
-
     public Project getWorkspace() {
-        return this.workspace;
-    }
-
-    public String getWorkspaceId() {
-        return this.workspace.getId();
-    }
-
-    public String getWorkspaceUri() {
-        return this.workspace.getUri();
+        return this.getWorkspaceForSchema(this.schema);
     }
 
     /**
@@ -1051,7 +1092,8 @@ public class AfmDatabaseMetaData implements java.sql.DatabaseMetaData {
     @Override
     public ResultSet getTables(String catalog, String schemaPattern,
                                String tableNamePattern, String[] types) {
-        return AfmDatabaseMetadataResultSets.tableResultSet(this.workspace);
+        // LOGGER.info(String.format("getTables catalog='%s' schemaPattern='%s' tableNamePattern='%s' types='%s'", catalog, schemaPattern, tableNamePattern, types));
+        return AfmDatabaseMetadataResultSets.tableResultSet(this.getWorkspaceForSchema(this.schema));
     }
 
     /**
@@ -1059,7 +1101,9 @@ public class AfmDatabaseMetaData implements java.sql.DatabaseMetaData {
      */
     @Override
     public ResultSet getSchemas() throws SQLException {
-        return AfmDatabaseMetadataResultSets.schemaResultSet(this.catalog);
+        //LOGGER.info("getSchemas");
+        // List the current schema only
+        return AfmDatabaseMetadataResultSets.schemaResultSet(this.schemas, this.schema.getSchemaName());
     }
 
 
@@ -1086,7 +1130,8 @@ public class AfmDatabaseMetaData implements java.sql.DatabaseMetaData {
     public ResultSet getColumns(String catalog, String schemaPattern,
                                 String tableNamePattern,
                                 String columnNamePattern) {
-        return AfmDatabaseMetadataResultSets.columnResultSet(this.catalog, this.workspace);
+        //LOGGER.info(String.format("getColumns catalog='%s' schemaPattern='%s' tableNamePattern='%s' columnNamePattern='%s'", catalog, schemaPattern, tableNamePattern, columnNamePattern));
+        return AfmDatabaseMetadataResultSets.columnResultSet(this.catalog, this.getWorkspaceForSchema(this.schema));
     }
 
     /**
@@ -1444,8 +1489,10 @@ public class AfmDatabaseMetaData implements java.sql.DatabaseMetaData {
      * {@inheritDoc}
      */
     @Override
-    public ResultSet getSchemas(String catalog, String schemaPattern) {
-        return AfmDatabaseMetadataResultSets.emptyResultSet();
+    public ResultSet getSchemas(String catalog, String schemaPattern) throws SQLException {
+        //LOGGER.info(String.format("getSchemas catalog='%s' schemaPattern='%s'",catalog, schemaPattern));
+        // List the current schema only
+        return AfmDatabaseMetadataResultSets.schemaResultSet(this.schemas, this.schema.getSchemaName());
     }
 
     /**

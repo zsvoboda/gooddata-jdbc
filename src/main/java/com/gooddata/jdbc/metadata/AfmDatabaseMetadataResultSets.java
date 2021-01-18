@@ -2,6 +2,7 @@ package com.gooddata.jdbc.metadata;
 
 import com.gooddata.jdbc.catalog.Catalog;
 import com.gooddata.jdbc.catalog.CatalogEntry;
+import com.gooddata.jdbc.catalog.Schema;
 import com.gooddata.jdbc.parser.SQLParser;
 import com.gooddata.jdbc.resultset.MetadataResultSet;
 import com.gooddata.jdbc.util.TextUtil;
@@ -77,27 +78,33 @@ public class AfmDatabaseMetadataResultSets {
         return new MetadataResultSet(data);
     }
 
-    /**
+        /**
      * Schema ResultSet
-     * @param catalog GoodData objects catalog
+     * @param schemas GoodData schemas (workspaces)
      * @return ResultSet with schema metadata
      */
-    static MetadataResultSet schemaResultSet(Catalog catalog) throws SQLException {
-        try {
-            List<String> uniqueSchemas = catalog.getAllSchemas();
-            List<String> catalogs = uniqueSchemas.stream()
+    static MetadataResultSet schemaResultSet(List<Schema> schemas, String schemaPattern) throws SQLException {
+        List<Schema> filteredSchemas = schemas.stream()
+                .filter(e->e.getSchemaName().equals(schemaPattern))
+                .collect(Collectors.toList());
+        return schemaResultSet(filteredSchemas);
+    }
+
+    /**
+     * Schema ResultSet
+     * @param schemas GoodData schemas (workspaces)
+     * @return ResultSet with schema metadata
+     */
+    static MetadataResultSet schemaResultSet(List<Schema> schemas) throws SQLException {
+            List<String> catalogs = schemas.stream()
                     .map(e -> "").collect(Collectors.toList());
             List<MetadataResultSet.MetaDataColumn> data = Arrays.asList(
                     new MetadataResultSet.MetaDataColumn("TABLE_SCHEM",
-                            uniqueSchemas),
+                            schemas.stream().map(e->e.getSchemaName()).collect(Collectors.toList())),
                     new MetadataResultSet.MetaDataColumn("TABLE_CATALOG",
                             catalogs)
             );
             return new MetadataResultSet(data);
-        } catch(TextUtil.InvalidFormatException e) {
-            throw new SQLException(e);
-        }
-
     }
 
     /**
@@ -126,7 +133,7 @@ public class AfmDatabaseMetadataResultSets {
                                 .collect(Collectors.toList())),
                 new MetadataResultSet.MetaDataColumn("TABLE_SCHEM",
                         columns.stream()
-                                .map(e -> workspace.getId())
+                                .map(e -> workspace.getTitle())
                                 .collect(Collectors.toList())),
                 new MetadataResultSet.MetaDataColumn("TABLE_NAME",
                         columns.stream()
@@ -210,7 +217,7 @@ public class AfmDatabaseMetadataResultSets {
                 new MetadataResultSet.MetaDataColumn("TABLE_CAT",
                         Collections.singletonList("")),
                 new MetadataResultSet.MetaDataColumn("TABLE_SCHEM",
-                        Collections.singletonList(workspace.getId())),
+                        Collections.singletonList(workspace.getTitle())),
                 new MetadataResultSet.MetaDataColumn("TABLE_NAME",
                         Collections.singletonList(AfmResultSetMetaData.UNIVERSAL_TABLE_NAME)),
                 new MetadataResultSet.MetaDataColumn("TABLE_TYPE",

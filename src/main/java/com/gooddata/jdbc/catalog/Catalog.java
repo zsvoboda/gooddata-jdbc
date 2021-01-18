@@ -103,11 +103,15 @@ public class Catalog {
      * Populates the catalog of attributes and metrics
      *
      * @param gd        Gooddata reference
-     * @param workspace workspace
+     * @param workspaceUri GoodData workspace URI
      * @throws SQLException generic issue
      */
-    public void populate(GoodData gd, Project workspace) throws SQLException {
-
+    public void populate(GoodData gd, String workspaceUri) throws SQLException {
+        LOGGER.info(String.format("Populating catalog for schema '%s'", workspaceUri));
+        Project workspace = gd.getProjectService().getProjectByUri(workspaceUri);
+        if (workspace == null) {
+            throw new SQLException(String.format("Workspace '%s' doesn't exist.", workspaceUri));
+        }
         MetadataService gdMeta = gd.getMetadataService();
         Collection<Entry> metricEntries = gdMeta.find(workspace, Metric.class);
 
@@ -124,23 +128,6 @@ public class Catalog {
         for (Entry fact : factEntries) {
             this.addFact(fact);
         }
-    }
-
-    /**
-     * Extracts schemas from the catalog objects
-     *
-     * @return all schemas extracted from all objects URIs
-     * @throws TextUtil.InvalidFormatException in case of any issue
-     */
-    public List<String> getAllSchemas() throws TextUtil.InvalidFormatException {
-        Set<String> schemas = new HashSet<>();
-        Set<String> allObjects = new HashSet<>();
-        allObjects.addAll(this.afmEntries.keySet());
-        allObjects.addAll(this.maqlEntries.keySet());
-        for (String uri : allObjects) {
-            schemas.add(TextUtil.extractIdFromUri(uri));
-        }
-        return new ArrayList<>(schemas);
     }
 
     private final Comparator<CatalogEntry> CatalogEntryComparator = Comparator.comparing(CatalogEntry::getTitle);

@@ -30,9 +30,6 @@ public class AfmConnection implements java.sql.Connection {
     private boolean isClosed = false;
     private boolean autoCommit = false;
     private Properties clientInfo = new Properties();
-    private final Project workspace;
-
-    private String schema = null;
 
     /**
      * Constructor
@@ -52,11 +49,9 @@ public class AfmConnection implements java.sql.Connection {
         boolean matches = m.matches();
         if (matches && m.groupCount() != 2)
             throw new SQLException(String.format("Wrong JDBC URL format: '%s'", url));
-        String pid = m.group(2);
         String host = m.group(1);
+        String pid = m.group(2);
         this.gd = new GoodData(host, login, password);
-        this.workspace = gd.getProjectService().getProjectById(pid);
-
         LoginPasswordGoodDataRestProvider lp = new LoginPasswordGoodDataRestProvider(
                 new GoodDataEndpoint(host, GoodDataEndpoint.PORT, GoodDataEndpoint.PROTOCOL),
                 new GoodDataSettings(),
@@ -64,16 +59,8 @@ public class AfmConnection implements java.sql.Connection {
                 password);
         RestTemplate gdRestTemplate = lp.getRestTemplate();
         this.afmDatabaseMetaData = new AfmDatabaseMetaData(
-                this, this.gd, workspace, login, gdRestTemplate);
+                this, this.gd, pid, login, gdRestTemplate);
 
-    }
-
-    /**
-     * Refreshes the AFM catalog
-     * @throws SQLException connectivity issues
-     */
-    public void refreshCatalog() throws SQLException {
-        this.afmDatabaseMetaData.getCatalog().populate(this.gd, this.workspace);
     }
 
     /**
@@ -468,7 +455,7 @@ public class AfmConnection implements java.sql.Connection {
      */
     @Override
     public String getSchema() {
-        return this.afmDatabaseMetaData.getWorkspaceId();
+        return this.afmDatabaseMetaData.getSchema();
     }
 
     /**
@@ -476,7 +463,7 @@ public class AfmConnection implements java.sql.Connection {
      */
     @Override
     public void setSchema(String schema) throws SQLException {
-        this.schema = schema;
+        this.afmDatabaseMetaData.setSchema(schema);
     }
 
     /**

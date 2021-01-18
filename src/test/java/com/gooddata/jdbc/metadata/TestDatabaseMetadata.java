@@ -52,8 +52,9 @@ public class TestDatabaseMetadata {
     }
 
     @Test
-    public void testFindColumnIndex() throws SQLException {
-
+    public void testSchemaMetadata() throws SQLException {
+        AfmDatabaseMetaData dm = (AfmDatabaseMetaData)this.connection.getMetaData();
+        printResultSet(dm.getSchemas());
     }
 
     @Test
