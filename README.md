@@ -20,22 +20,21 @@ and it expects the following JDBC URL format
 - You don't use FROM clause. Just list of columns in the ```SELECT <column-list> ``` 
   and ```WHERE <conditions> ```
 - Columns are quoted in double-quotes (```"```)
-- Textual values are quoted in single-quotes (```'```) 
+- Textual values are quoted in single-quotes (```'```)
 - SELECT column list 
     - only supports plain list of attributes and metrics (no expressions or functions)
-    - supports datatype specification using ```"Revenue::DECIMAL(13,2)"``` 
+    - supports datatype specification using ```"Revenue::DECIMAL(13,2)"```
 - WHERE clause
     - only supports ```AND``` logical operators 
     - supports ``` =,<>, IN, NOT IN ``` operators for attributes
     - supports ``` =,<>, >, <, >=, <=, BETWEEN, NOT BETWEEN ``` operators for metrics
     - supports simple expressions like ```(2+5)*3```
+- ORDER BY - not yet supported
+- LIMIT, OFFSET - not yet supported
 - MAQL
     - supports ```CREATE METRIC <name> AS <maql>```
     - supports ```ALTER METRIC <name> AS <maql>```
     - supports ```DROP METRIC <name>```
-  
-- ORDER BY - not yet supported
-- LIMIT, OFFSET - not yet supported 
   
 
 ### Tested with
