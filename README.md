@@ -1,6 +1,9 @@
 # GoodData workspace JDBC driver 
 JDBC driver for accessing GoodData workspace data using the 
 standard JDBC protocol.
+
+![](https://github.com/zsvoboda/gooddata-jdbc/wiki/images/dbeaver.png)
+
 ## Getting Started
 
 You need just [this JAR file](https://github.com/zsvoboda/gooddata-jdbc/wiki/files/gooddata-jdbc-0.6.jar) on your ```CLASSPATH``` 
