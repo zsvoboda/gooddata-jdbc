@@ -43,7 +43,7 @@ and it expects the following JDBC URL format
 - [Squirrel SQL](https://http://squirrel-sql.sourceforge.net/) doesn't work. Let me know if you have any idea why.
 
 ## License
-[Plain MIT license](LICENSE)
+[MIT license](LICENSE)
 
 ## Let me know
 Submit github [issue](https://github.com/zsvoboda/gooddata-jdbc/issues). 
