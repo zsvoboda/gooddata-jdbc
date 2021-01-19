@@ -102,3 +102,5 @@ dependency-reduced-pom.xml
 .classpath
 .project
 .settings/*
+/.idea/
+/gooddata-jdbc.iml
