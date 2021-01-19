@@ -30,7 +30,7 @@ and it expects the following JDBC URL format
     - supports ``` =,<>, >, <, >=, <=, BETWEEN, NOT BETWEEN ``` operators for metrics
     - supports simple expressions like ```(2+5)*3```
 
-### Tested in tools
+### Tested with
 - [DBeaver](https://dbeaver.io/)
 - [IntelliJ, DataGrip, and other JetBrains tools](https://www.jetbrains.com/)
 - [Squirrel SQL](https://http://squirrel-sql.sourceforge.net/) doesn't work. Let me know if you have any idea why.
