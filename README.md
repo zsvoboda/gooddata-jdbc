@@ -29,6 +29,11 @@ and it expects the following JDBC URL format
     - supports ``` =,<>, IN, NOT IN ``` operators for attributes
     - supports ``` =,<>, >, <, >=, <=, BETWEEN, NOT BETWEEN ``` operators for metrics
     - supports simple expressions like ```(2+5)*3```
+- MAQL
+    - supports ```CREATE METRIC <name> AS <maql>```
+    - supports ```ALTER METRIC <name> AS <maql>```
+    - supports ```DROP METRIC <name>```
+  
 
 ### Tested with
 - [DBeaver](https://dbeaver.io/)
