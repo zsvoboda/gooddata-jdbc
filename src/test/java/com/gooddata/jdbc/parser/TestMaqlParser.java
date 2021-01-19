@@ -25,6 +25,24 @@ public class TestMaqlParser {
         assert(metric.getLdmObjectTitles().size() == 3);
         assert(metric.getLdmObjectTitles().contains("Product Category"));
         assert(metric.getLdmObjectTitles().contains("Revenue"));
+
+        metric = maqlParser.parseCreateOrAlterMetric(
+                "CREATE METRIC \"Yearly Revenue\" AS SELECT SUM(\"Revenue\") BY \"Year (Date)\" ALL OTHERS");
+        assert(metric.getName().equals("Yearly Revenue"));
+        assert(metric.getLdmObjectTitles().contains("Revenue"));
+        assert(metric.getLdmObjectTitles().contains("Year (Date)"));
+
+        metric = maqlParser.parseCreateOrAlterMetric(
+                "CREATE METRIC \"Yearly Revenue\" AS SELECT SUM(\"Revenue\") BY \"Year (Date)\" ALL OTHERS " +
+                        "WHERE \"Product Category\" IN ('Home', 'Electronics')");
+        assert(metric.getName().equals("Yearly Revenue"));
+        assert(metric.getLdmObjectTitles().contains("Revenue"));
+        assert(metric.getLdmObjectTitles().contains("Year (Date)"));
+        assert(metric.getLdmObjectTitles().contains("Product Category"));
+        assert(metric.getAttributeElementValues().contains("Home"));
+        assert(metric.getAttributeElementValues().contains("Electronics"));
+        assert(metric.getAttributeElementToAttributeNameLookup().get("Electronics").equals("Product Category"));
+
     }
 
     @Test

@@ -103,7 +103,7 @@ public class TestAfmStatement {
     public void testCREATE() throws SQLException {
         Statement statement = this.afmConnection.createStatement();
         statement.execute("CREATE METRIC \"testNGMetric\" AS SELECT SUM(\"Revenue\") " +
-                "WHERE \"Product Category\" IN ('Home','Electronics')");
+                "BY \"Year (Date)\" ALL OTHER");
         statement.execute("ALTER METRIC \"testNGMetric\" AS SELECT SUM(\"Revenue\") " +
                 "WHERE \"Product Category\" IN ('Home')");
         statement.execute("DROP METRIC \"testNGMetric\";");

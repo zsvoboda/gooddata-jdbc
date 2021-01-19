@@ -2,10 +2,7 @@ package com.gooddata.jdbc.parser;
 
 import net.sf.jsqlparser.JSQLParserException;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -24,8 +21,8 @@ public class MaqlParser {
          * @param attributeElementValues attribute element values that the CREATE METRIC statement uses
          * @param attributeElementToAttributeNameLookup lookup that translates attribute element value to attribute name
          */
-        public ParsedCreateMetricStatement(String name, String metricMaqlDefinition, Set<String> ldmObjectTitles,
-                                           Set<String> attributeElementValues,
+        public ParsedCreateMetricStatement(String name, String metricMaqlDefinition, List<String> ldmObjectTitles,
+                                           List<String> attributeElementValues,
                                            Map<String,String> attributeElementToAttributeNameLookup) {
             this.metricMaqlDefinition = metricMaqlDefinition;
             this.ldmObjectTitles = ldmObjectTitles;
@@ -42,19 +39,19 @@ public class MaqlParser {
             this.metricMaqlDefinition = metricMaqlDefinition;
         }
 
-        public Set<String> getLdmObjectTitles() {
+        public List<String> getLdmObjectTitles() {
             return ldmObjectTitles;
         }
 
-        public void setLdmObjectTitles(Set<String> ldmObjectTitles) {
+        public void setLdmObjectTitles(List<String> ldmObjectTitles) {
             this.ldmObjectTitles = ldmObjectTitles;
         }
 
-        public Set<String> getAttributeElementValues() {
+        public List<String> getAttributeElementValues() {
             return attributeElementValues;
         }
 
-        public void setAttributeElementValues(Set<String> attributeElementValues) {
+        public void setAttributeElementValues(List<String> attributeElementValues) {
             this.attributeElementValues = attributeElementValues;
         }
 
@@ -76,8 +73,8 @@ public class MaqlParser {
         }
 
         private String metricMaqlDefinition;
-        private Set<String> ldmObjectTitles;
-        private Set<String> attributeElementValues;
+        private List<String> ldmObjectTitles;
+        private List<String> attributeElementValues;
         private Map<String, String> attributeElementToAttributeNameLookup;
 
         private String name;
@@ -91,45 +88,42 @@ public class MaqlParser {
      * @throws JSQLParserException in case of a parser error
      */
     public ParsedCreateMetricStatement parseMaql(String metricName, String metricMaql) throws JSQLParserException {
-        Set<String> factsMetricsOrAttributeTitles = new HashSet<>();
+        List<String> factsMetricsOrAttributeTitles = new ArrayList<>();
         String s = metricMaql;
-        Pattern p1 = Pattern.compile("(\"[a-zA-Z ]+\")");
+        Pattern p1 = Pattern.compile("(\".*?\")+");
         Matcher m1 = p1.matcher(s);
         while (m1.find()) {
-            factsMetricsOrAttributeTitles.add(m1.group(1).replaceAll("\"",""));
-            s = s.substring(m1.start() + 1);
-            m1 = p1.matcher(s);
+            for (int i = 1; i <= m1.groupCount(); i++) {
+                factsMetricsOrAttributeTitles.add(m1.group(i).replaceAll("\"",""));
+            }
         }
 
         Pattern p3 = Pattern.compile(
                 "^\\s?.*?where\\s+(.*?)\\s?$",Pattern.CASE_INSENSITIVE);
         Matcher m3 = p3.matcher(metricMaql);
-        boolean b3 = m3.matches();
-        if (b3 && m3.groupCount() != 1)
-            throw new JSQLParserException(String.format("Wrong CREATE METRIC syntax: '%s'", metricMaql));
-
-        String whereClause = m3.group(1);
-        Pattern p2 = Pattern.compile("(['\"][a-zA-Z ]+['\"])");
-        Matcher m2 = p2.matcher(whereClause);
         Map<String, String> attributeElementToAttributeNameLookup = new HashMap<>();
-        Set<String> attributeElementValues = new HashSet<>();
-        String leadingAttribute = null;
-        while (m2.find()) {
-            String attributeOrElement = m2.group(1);
-            if(attributeOrElement.startsWith("\"")) {
-                leadingAttribute = attributeOrElement.replaceAll("\"","");
-            } else {
-                String value = attributeOrElement.replaceAll("'","");
-                attributeElementValues.add(value);
-                if(leadingAttribute == null)
-                    throw new JSQLParserException(String.format("Wrong WHERE syntax: '%s'. The '%s' value " +
-                            "can't be matched with any attribute.", whereClause, value));
-                attributeElementToAttributeNameLookup.put(value, leadingAttribute);
+        List<String> attributeElementValues = new ArrayList<>();
+        if( m3.find()) {
+            String whereClause = m3.group(1);
+            Pattern p2 = Pattern.compile("(['\"].*?['\"])");
+            Matcher m2 = p2.matcher(whereClause);
+            String leadingAttribute = null;
+            while (m2.find()) {
+                for (int i = 1; i <= m1.groupCount(); i++) {
+                    String attributeOrElement = m2.group(i);
+                    if(attributeOrElement.startsWith("\"")) {
+                        leadingAttribute = attributeOrElement.replaceAll("\"","");
+                    } else {
+                        String value = attributeOrElement.replaceAll("'","");
+                        attributeElementValues.add(value);
+                        if(leadingAttribute == null)
+                            throw new JSQLParserException(String.format("Wrong WHERE syntax: '%s'. The '%s' value " +
+                                    "can't be matched with any attribute.", whereClause, value));
+                        attributeElementToAttributeNameLookup.put(value, leadingAttribute);
+                    }
+                }
             }
-            s = s.substring(m2.start() + 1);
-            m2 = p2.matcher(s);
         }
-
         return new ParsedCreateMetricStatement(metricName, metricMaql,
                 factsMetricsOrAttributeTitles, attributeElementValues,
                 attributeElementToAttributeNameLookup);

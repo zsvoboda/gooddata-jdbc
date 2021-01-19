@@ -59,7 +59,7 @@ public class GoodDataRestConnection {
             //lookup attribute in LDM
             CatalogEntry ldmObj = catalog.findMaqlColumn(metricFactAttribute);
             String replaceWhat = String.format("\"%s\"", metricFactAttribute);
-            maqlDefinition = maqlDefinition.replaceAll(
+            maqlDefinition = maqlDefinition.replace(
                     replaceWhat,
                     String.format("[%s]", ldmObj.getUri()));
         }
@@ -85,7 +85,7 @@ public class GoodDataRestConnection {
                 throw new Catalog.CatalogEntryNotFoundException(
                         "The value '%s' doesn't exist.");
             String replaceWith = String.format("[%s]", elementUri);
-            maqlDefinition = maqlDefinition.replaceAll(replaceWhat, replaceWith);
+            maqlDefinition = maqlDefinition.replace(replaceWhat, replaceWith);
         }
         return maqlDefinition;
     }
