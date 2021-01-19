@@ -1,7 +1,7 @@
 package com.gooddata.jdbc.catalog;
 
-import com.gooddata.jdbc.parser.SQLParser;
 import com.gooddata.jdbc.parser.DataTypeParser;
+import com.gooddata.jdbc.parser.SQLParser;
 import com.gooddata.jdbc.util.TextUtil;
 import com.gooddata.sdk.model.executeafm.UriObjQualifier;
 import com.gooddata.sdk.model.executeafm.afm.filter.*;
@@ -66,7 +66,7 @@ public class Catalog {
      */
     public void remove(CatalogEntry c) {
         this.afmEntries.remove(c.getUri());
-        this.maqlEntries().remove(c.getUri());
+        this.maqlEntries.remove(c.getUri());
     }
 
     /**
@@ -244,7 +244,7 @@ public class Catalog {
      * @return list of AFM objects
      * @throws DuplicateCatalogEntryException in case when there are multiple AFM objects with the same title
      * @throws CatalogEntryNotFoundException  in case when a matching object doesn't exist
-     * @throws SQLException                   generic problem
+     * @throws TextUtil.InvalidFormatException  generic problem
      */
     public List<CatalogEntry> resolveAfmColumns(SQLParser.ParsedSQL sql)
             throws DuplicateCatalogEntryException,

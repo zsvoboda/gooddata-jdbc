@@ -1,6 +1,5 @@
 package com.gooddata.jdbc.catalog;
 
-import com.gooddata.jdbc.driver.AfmDriver;
 import com.gooddata.jdbc.util.Parameters;
 import com.gooddata.sdk.service.GoodData;
 import org.testng.annotations.Test;

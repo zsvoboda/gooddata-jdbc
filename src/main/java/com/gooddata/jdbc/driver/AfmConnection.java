@@ -1,7 +1,6 @@
 package com.gooddata.jdbc.driver;
 
 import com.gooddata.jdbc.metadata.AfmDatabaseMetaData;
-import com.gooddata.sdk.model.project.Project;
 import com.gooddata.sdk.service.GoodData;
 import com.gooddata.sdk.service.GoodDataEndpoint;
 import com.gooddata.sdk.service.GoodDataSettings;
@@ -68,8 +67,7 @@ public class AfmConnection implements java.sql.Connection {
      */
     @Override
     public java.sql.Statement createStatement() {
-        AfmStatement s =  new AfmStatement(this, this.gd, this.afmDatabaseMetaData);
-        return s;
+        return new AfmStatement(this, this.gd, this.afmDatabaseMetaData);
     }
 
     /**

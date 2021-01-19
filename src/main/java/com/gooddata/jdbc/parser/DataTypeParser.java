@@ -159,7 +159,7 @@ public class DataTypeParser {
         }
     }
 
-    private static SimpleDateFormat dateFormat = new SimpleDateFormat("MM/dd/yyyy");
+    private static final SimpleDateFormat dateFormat = new SimpleDateFormat("MM/dd/yyyy");
 
 
     /**

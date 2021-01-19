@@ -10,8 +10,6 @@ import java.util.logging.Logger;
 
 public class TestAfmDriver {
 
-    private final static Logger LOGGER = Logger.getLogger(TestAfmDriver.class.getName());
-
     // JDBC driver name and database URL
     static final String JDBC_DRIVER = "com.gooddata.jdbc.driver.AfmDriver";
     static final String DB_URL = "jdbc:gd://%s/gdc/projects/%s";

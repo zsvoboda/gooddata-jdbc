@@ -98,15 +98,7 @@ public class AfmStatement implements java.sql.Statement {
             List<CatalogEntry> columns = this.metadata.getCatalog().resolveAfmColumns(parsedSql);
             List<AfmFilter> filters = this.metadata.getCatalog().resolveAfmFilters(parsedSql);
             Afm afm = getAfm(columns, filters);
-            AfmResultSet s = new AfmResultSet(this, this.workspace, this.gdAfm, afm, columns);
-
-			/*
-			return (java.sql.ResultSet)Proxy.newProxyInstance(
-					s.getClass().getClassLoader(),
-					new Class[] { java.sql.ResultSet.class },
-					new LoggingInvocationHandler(s));
-			*/
-            return s;
+            return  new AfmResultSet(this, this.workspace, this.gdAfm, afm, columns);
         } catch (JSQLParserException | Catalog.CatalogEntryNotFoundException
                 | Catalog.DuplicateCatalogEntryException | TextUtil.InvalidFormatException e) {
             throw new SQLException(e);
@@ -154,9 +146,11 @@ public class AfmStatement implements java.sql.Statement {
      * @param parsedMaqlCreate CREATE METRIC statement
      * @throws Catalog.CatalogEntryNotFoundException  issues with resolving referenced objects
      * @throws Catalog.DuplicateCatalogEntryException issues with resolving referenced objects
+     * @throws TextUtil.InvalidFormatException invalid format of URI
      */
     public void executeCreateMetric(MaqlParser.ParsedCreateMetricStatement parsedMaqlCreate) throws
-            Catalog.CatalogEntryNotFoundException, Catalog.DuplicateCatalogEntryException, SQLException, TextUtil.InvalidFormatException {
+            Catalog.CatalogEntryNotFoundException, Catalog.DuplicateCatalogEntryException,
+            TextUtil.InvalidFormatException {
 
         String maqlDefinition = this.metadata.getGoodDataRestConnection()
                 .replaceMaqlTitlesWithUris(parsedMaqlCreate, this.metadata.getCatalog());

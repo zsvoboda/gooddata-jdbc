@@ -105,7 +105,6 @@ public class MaqlParser {
                 "^\\s?.*?where\\s+(.*?)\\s?$",Pattern.CASE_INSENSITIVE);
         Matcher m3 = p3.matcher(metricMaql);
         boolean b3 = m3.matches();
-        int cnt = m3.groupCount();
         if (b3 && m3.groupCount() != 1)
             throw new JSQLParserException(String.format("Wrong CREATE METRIC syntax: '%s'", metricMaql));
 

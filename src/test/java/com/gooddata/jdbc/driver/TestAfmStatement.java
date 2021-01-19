@@ -3,23 +3,20 @@ package com.gooddata.jdbc.driver;
 import com.gooddata.jdbc.util.Parameters;
 import org.testng.annotations.Test;
 
-import java.sql.*;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Arrays;
 import java.util.List;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 
 public class TestAfmStatement {
 
-    private final static Logger LOGGER = Logger.getLogger(TestAfmStatement.class.getName());
-
     // JDBC driver name and database URL
     private static final String JDBC_DRIVER = "com.gooddata.jdbc.driver.AfmDriver";
     private static final String DB_URL = "jdbc:gd://%s/gdc/projects/%s";
-
-    private static final String COLUMNS2 = "\"# of Orders\"";
-
     private final AfmConnection afmConnection;
 
     public TestAfmStatement() throws SQLException, ClassNotFoundException {
@@ -44,46 +41,45 @@ public class TestAfmStatement {
     }
 
     public void testRetrieve(String columns, String where, String columnNames) throws SQLException {
+        String s = columnNames != null && columnNames.trim().length() > 0 ? columnNames : columns;
         List<String> columnnList = Arrays.stream(
-                (columnNames!=null && columnNames.trim().length()>0 ? columnNames : columns)
-                .split(", "))
-                    .map(i->i.replaceAll("\"","")
+                s.split(", ")).map(i->i.replaceAll("\"","")
                             .trim())
                     .map(e->e.split("::")[0])
                     .collect(Collectors.toList());
         Statement statement = this.afmConnection.createStatement();
         ResultSet resultSet = statement.executeQuery("SELECT " + columns + " " + where);
 
-        testFindColumnIndex(columnNames != null && columnNames.trim().length()>0 ? columnNames : columns,
-                where, resultSet);
+        testFindColumnIndex(s,where, resultSet);
         boolean printHeader = true;
         while(resultSet.next()) {
             if(printHeader) {
-                String txtRow = "";
+                StringBuilder txtRow = new StringBuilder();
                 for(int i=0; i< columnnList.size(); i++) {
                     if(i>0)
-                        txtRow += ", ";
-                    txtRow += resultSet.getMetaData().getColumnName(i+1);
+                        txtRow.append(", ");
+                    txtRow.append(resultSet.getMetaData().getColumnName(i + 1));
                 }
                 System.out.println(txtRow);
                 printHeader = false;
             }
-            String txtRow = "";
+            StringBuilder txtRow = new StringBuilder();
             for(int i=0; i< columnnList.size(); i++) {
                 if(i>0)
-                    txtRow += ", ";
-                txtRow += resultSet.getObject(i+1);
+                    txtRow.append(", ");
+                txtRow.append(resultSet.getObject(i + 1));
             }
             System.out.println(txtRow);
         }
         resultSet.beforeFirst();
         while(resultSet.next()) {
-            String txtRow = "";
+            StringBuilder txtRow = new StringBuilder();
             for(int i=0; i< columnnList.size(); i++) {
                 if(i>0)
-                    txtRow += ", ";
-                txtRow += resultSet.getObject(columnnList.get(i));
+                    txtRow.append(", ");
+                txtRow.append(resultSet.getObject(columnnList.get(i)));
             }
+            System.out.println(txtRow);
         }
     }
 

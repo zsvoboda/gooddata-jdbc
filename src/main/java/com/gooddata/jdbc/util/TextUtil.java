@@ -1,6 +1,5 @@
 package com.gooddata.jdbc.util;
 
-import java.sql.SQLException;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -20,8 +19,8 @@ public class TextUtil {
         try {
             Pattern p = Pattern.compile("^\\s?/gdc/md/(.*?)/obj/(.*?)\\s?$");
             Matcher m = p.matcher(uri);
-            m.matches();
-            if (m.groupCount() != 2)
+            boolean b = m.matches();
+            if (b && m.groupCount() != 2)
                 throw new InvalidFormatException(String.format("Wrong URI format: '%s'", uri));
             return m.group(1);
         } catch (IllegalStateException e) {
@@ -54,7 +53,7 @@ public class TextUtil {
      */
     public static boolean isGoodDataColumnWithUri(String columnName) throws InvalidFormatException {
         try {
-            Pattern p = Pattern.compile("^\\s?\\[\\s?/gdc/md/(.*?)/obj/(.*?)\\s?\\]\\s?$");
+            Pattern p = Pattern.compile("^\\s?\\[\\s?/gdc/md/(.*?)/obj/(.*?)\\s?]\\s?$");
             Matcher m = p.matcher(columnName);
             return m.matches();
         } catch (IllegalStateException e) {
@@ -70,11 +69,11 @@ public class TextUtil {
      */
     public static String extractGoodDataUriFromColumnName(String columnName) throws InvalidFormatException {
         try {
-            Pattern p = Pattern.compile("^\\s?\\[\\s?(/gdc/md/(.*?)/obj/(.*?))\\s?\\]\\s?$");
+            Pattern p = Pattern.compile("^\\s?\\[\\s?(/gdc/md/(.*?)/obj/(.*?))\\s?]\\s?$");
             Matcher m = p.matcher(columnName);
-            m.matches();
+            boolean b = m.matches();
             int groupCnt = m.groupCount();
-            if (groupCnt != 3)
+            if (b && groupCnt != 3)
                 throw new InvalidFormatException(String.format("Wrong column format: '%s'", columnName));
             return m.group(1);
         } catch (IllegalStateException e) {

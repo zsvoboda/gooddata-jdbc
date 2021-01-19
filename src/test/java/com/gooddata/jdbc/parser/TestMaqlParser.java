@@ -3,11 +3,7 @@ package com.gooddata.jdbc.parser;
 import net.sf.jsqlparser.JSQLParserException;
 import org.testng.annotations.Test;
 
-import java.util.logging.Logger;
-
 public class TestMaqlParser {
-
-    private final static Logger LOGGER = Logger.getLogger(TestMaqlParser.class.getName());
 
     @Test
     public void testParseCreateMetric() throws JSQLParserException {

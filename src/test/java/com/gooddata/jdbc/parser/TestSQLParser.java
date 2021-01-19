@@ -3,12 +3,7 @@ package com.gooddata.jdbc.parser;
 import net.sf.jsqlparser.JSQLParserException;
 import org.testng.annotations.Test;
 
-import java.sql.SQLException;
-import java.util.logging.Logger;
-
 public class TestSQLParser {
-
-    private final static Logger LOGGER = Logger.getLogger(TestSQLParser.class.getName());
 
     @Test
     public void testParse() throws JSQLParserException {

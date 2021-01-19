@@ -1,8 +1,6 @@
 package com.gooddata.jdbc.catalog;
 
-import com.gooddata.sdk.common.collections.Page;
 import com.gooddata.sdk.common.collections.PageBrowser;
-import com.gooddata.sdk.common.collections.PageRequest;
 import com.gooddata.sdk.model.project.Project;
 import com.gooddata.sdk.service.GoodData;
 import com.gooddata.sdk.service.project.ProjectService;

@@ -1,7 +1,5 @@
 package com.gooddata.jdbc.parser;
 
-import com.gooddata.jdbc.parser.DataTypeParser;
-import com.gooddata.jdbc.parser.SQLParser;
 import org.testng.annotations.Test;
 
 import java.math.BigDecimal;

@@ -54,7 +54,7 @@ public class AfmDriver implements java.sql.Driver {
     }
 
     // Caching catalogs by schema
-    private static Map<String, Catalog> catalogCache = new HashMap<>();
+    private static final Map<String, Catalog> catalogCache = new HashMap<>();
 
     /**
      * Default constructor

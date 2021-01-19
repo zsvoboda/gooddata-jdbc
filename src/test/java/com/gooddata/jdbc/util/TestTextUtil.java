@@ -2,8 +2,6 @@ package com.gooddata.jdbc.util;
 
 import org.testng.annotations.Test;
 
-import java.sql.SQLException;
-
 public class TestTextUtil {
 
     @Test
@@ -17,7 +15,7 @@ public class TestTextUtil {
     }
 
     @Test
-    public void testUri() throws SQLException, TextUtil.InvalidFormatException {
+    public void testUri() throws TextUtil.InvalidFormatException {
         assert(TextUtil.isGoodDataObjectUri("/gdc/md/w2x7a9awsioch4l9lbzgjcn99hbkm61e/obj/386"));
         assert(TextUtil.isGoodDataColumnWithUri("[/gdc/md/w2x7a9awsioch4l9lbzgjcn99hbkm61e/obj/386]"));
         assert(TextUtil.isGoodDataColumnWithUri(" [ /gdc/md/w2x7a9awsioch4l9lbzgjcn99hbkm61e/obj/386 ] "));

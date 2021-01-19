@@ -5,10 +5,8 @@ import com.gooddata.jdbc.catalog.CatalogEntry;
 import com.gooddata.jdbc.catalog.Schema;
 import com.gooddata.jdbc.parser.SQLParser;
 import com.gooddata.jdbc.resultset.MetadataResultSet;
-import com.gooddata.jdbc.util.TextUtil;
 import com.gooddata.sdk.model.project.Project;
 
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -83,7 +81,7 @@ public class AfmDatabaseMetadataResultSets {
      * @param schemas GoodData schemas (workspaces)
      * @return ResultSet with schema metadata
      */
-    static MetadataResultSet schemaResultSet(List<Schema> schemas, String schemaPattern) throws SQLException {
+    static MetadataResultSet schemaResultSet(List<Schema> schemas, String schemaPattern) {
         List<Schema> filteredSchemas = schemas.stream()
                 .filter(e->e.getSchemaName().equals(schemaPattern))
                 .collect(Collectors.toList());
@@ -95,12 +93,12 @@ public class AfmDatabaseMetadataResultSets {
      * @param schemas GoodData schemas (workspaces)
      * @return ResultSet with schema metadata
      */
-    static MetadataResultSet schemaResultSet(List<Schema> schemas) throws SQLException {
+    static MetadataResultSet schemaResultSet(List<Schema> schemas) {
             List<String> catalogs = schemas.stream()
                     .map(e -> "").collect(Collectors.toList());
             List<MetadataResultSet.MetaDataColumn> data = Arrays.asList(
                     new MetadataResultSet.MetaDataColumn("TABLE_SCHEM",
-                            schemas.stream().map(e->e.getSchemaName()).collect(Collectors.toList())),
+                            schemas.stream().map(Schema::getSchemaName).collect(Collectors.toList())),
                     new MetadataResultSet.MetaDataColumn("TABLE_CATALOG",
                             catalogs)
             );

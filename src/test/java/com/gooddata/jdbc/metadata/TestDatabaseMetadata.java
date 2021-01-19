@@ -1,21 +1,19 @@
 package com.gooddata.jdbc.metadata;
 
-import com.gooddata.jdbc.util.Parameters;
 import com.gooddata.jdbc.catalog.Catalog;
+import com.gooddata.jdbc.util.Parameters;
 import org.testng.annotations.Test;
 
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Logger;
 
 
 public class TestDatabaseMetadata {
-
-    private final static Logger LOGGER = Logger.getLogger(TestDatabaseMetadata.class.getName());
 
     // JDBC driver name and database URL
     private static final String JDBC_DRIVER = "com.gooddata.jdbc.driver.AfmDriver";
@@ -67,12 +65,12 @@ public class TestDatabaseMetadata {
         for(String value: values) {
             assert(m.containsKey(value));
         }
-        m = dm.getGoodDataRestConnection().lookupAttributeElements(
+        dm.getGoodDataRestConnection().lookupAttributeElements(
                 "/gdc/md/w2x7a9awsioch4l9lbzgjcn99hbkm61e/obj/272",
                 Arrays.asList("NONEXISTENT1","NONEXISTENT2"));
-        m = dm.getGoodDataRestConnection().lookupAttributeElements(
+        dm.getGoodDataRestConnection().lookupAttributeElements(
                 "/gdc/md/w2x7a9awsioch4l9lbzgjcn99hbkm61e/obj/272",
-                Arrays.asList("NONEXISTENT1"));
+                Collections.singletonList("NONEXISTENT1"));
     }
 
 

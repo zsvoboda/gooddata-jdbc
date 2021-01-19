@@ -15,22 +15,15 @@ import org.springframework.http.*;
 import org.springframework.web.client.RestTemplate;
 
 import java.sql.SQLException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class GoodDataRestConnection {
 
-    private RestTemplate gdRestTemplate;
-    private Project workspace;
+    private final RestTemplate gdRestTemplate;
+    private final Project workspace;
 
     private static final String ELEMENT_LABEL_TO_URI = "{\"elementLabelToUri\":[{\"mode\": " +
             "\"EXACT\",\"labelUri\":\"\",\"patterns\":[]}]}";
-
-    private static final String METRIC = "{\"metric\": {\"content\": {\"expression\": \"\", " +
-            "\"format\": \"\"}, \"meta\": {\"category\": \"metric\", \"deprecated\": \"0\", " +
-            "\"isProduction\": 1, \"summary\": \"\",\"title\": \"\",\"uri\" : \"\"}}}";
 
     public GoodDataRestConnection(RestTemplate gdRestTemplate, Project workspace) {
         this.gdRestTemplate = gdRestTemplate;
@@ -125,7 +118,7 @@ public class GoodDataRestConnection {
             String url = String.format("%s/labels", this.workspace.getMetadataUri());
             ResponseEntity<JsonNode> response = this.gdRestTemplate.postForEntity(url, request, JsonNode.class);
             if (response.getStatusCode() == HttpStatus.OK) {
-                ArrayNode results = (ArrayNode) response.getBody()
+                ArrayNode results = (ArrayNode) Objects.requireNonNull(response.getBody())
                         .get("elementLabelUri").get(0).get("result");
                 for (JsonNode result : results) {
                     ArrayNode elementLabels = (ArrayNode) result.get("elementLabels");
