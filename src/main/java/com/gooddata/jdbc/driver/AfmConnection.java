@@ -69,12 +69,6 @@ public class AfmConnection implements java.sql.Connection {
     @Override
     public java.sql.Statement createStatement() {
         AfmStatement s =  new AfmStatement(this, this.gd, this.afmDatabaseMetaData);
-        /*
-        return (AfmStatement) Proxy.newProxyInstance(
-                s.getClass().getClassLoader(),
-                new Class[] { s.getClass() },
-                new LoggingInvocationHandler(s));
-         */
         return s;
     }
 
