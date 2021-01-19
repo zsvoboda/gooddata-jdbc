@@ -2,6 +2,9 @@
 JDBC driver for accessing GoodData workspace data using the 
 standard JDBC protocol.
 ## Getting Started
+
+[Download the JDBC driver binary](files/gooddata-jdbc-0.6.jar)
+
 You need just this JAR file on your ```CLASSPATH``` 
 
 The JDBC driver class is 
