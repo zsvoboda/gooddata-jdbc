@@ -34,6 +34,9 @@ and it expects the following JDBC URL format
     - supports ```ALTER METRIC <name> AS <maql>```
     - supports ```DROP METRIC <name>```
   
+- ORDER BY - not yet supported
+- LIMIT, OFFSET - not yet supported 
+  
 
 ### Tested with
 - [DBeaver](https://dbeaver.io/)
