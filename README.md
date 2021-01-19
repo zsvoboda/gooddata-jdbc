@@ -6,7 +6,7 @@ standard JDBC protocol.
 
 ## Getting Started
 
-You need just [this JAR file](https://github.com/zsvoboda/gooddata-jdbc/wiki/files/gooddata-jdbc-0.6.jar) on your ```CLASSPATH``` 
+You need just [this JAR file](https://github.com/zsvoboda/gooddata-jdbc/wiki/files/gooddata-jdbc-0.7.jar) on your ```CLASSPATH``` 
 
 The JDBC driver class is 
 
