@@ -35,4 +35,4 @@ and it expects the following JDBC URL format
 [Plain MIT license](LICENSE)
 
 ## Let me know
-Submit github [issue](/issues). 
+Submit github [issue](https://github.com/zsvoboda/gooddata-jdbc/issues). 
