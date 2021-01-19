@@ -40,12 +40,15 @@ public class AfmDriver implements java.sql.Driver {
     }
 
     static {
-
         try {
             setupLogging();
-            LOGGER.info("GooodData JDBC Driver started");
+        }  catch (IOException e) {
+            LOGGER.info("You can configure java.logging in the  ~/.logging file.");
+        }
+        try {
+            LOGGER.info("GooodData Workspace JDBC Driver started");
             DriverManager.registerDriver(new AfmDriver());
-        } catch (IOException | SQLException e) {
+        } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }

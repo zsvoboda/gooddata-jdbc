@@ -198,6 +198,7 @@ public class AfmStatement implements java.sql.Statement {
             Catalog.CatalogEntryNotFoundException, Catalog.DuplicateCatalogEntryException, TextUtil.InvalidFormatException {
         CatalogEntry ldmObj = this.metadata.getCatalog().findAfmColumn(metricName);
         this.gdMeta.removeObjByUri(ldmObj.getUri());
+        this.metadata.getCatalog().remove(ldmObj);
     }
 
     /**

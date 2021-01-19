@@ -60,21 +60,38 @@ public class Catalog {
     public Catalog() {
     }
 
-    public void addAttribute(Attribute a) throws SQLException {
-        DisplayForm displayForm = a.getDefaultDisplayForm();
+    /**
+     * Removes object from catalog
+     * @param c object to remove
+     */
+    public void remove(CatalogEntry c) {
+        this.afmEntries.remove(c.getUri());
+        this.maqlEntries().remove(c.getUri());
+    }
+
+    /**
+     * Adds attribute to catalog
+     * @param attribute attribute to add
+     */
+    public void addAttribute(Attribute attribute) {
+        DisplayForm displayForm = attribute.getDefaultDisplayForm();
         CatalogEntry e = new CatalogEntry(displayForm.getUri(),
-                a.getTitle(), displayForm.getCategory(), displayForm.getIdentifier(),
+                attribute.getTitle(), displayForm.getCategory(), displayForm.getIdentifier(),
                 new UriObjQualifier(displayForm.getUri()));
         //TODO getting default display form only
         // under the attribute title
         e.setDataType(CatalogEntry.DEFAULT_ATTRIBUTE_DATATYPE);
         this.afmEntries.put(displayForm.getUri(), e);
-        this.maqlEntries.put(a.getUri(), new CatalogEntry(a.getUri(),
-                a.getTitle(), a.getCategory(), a.getIdentifier(),
-                new UriObjQualifier(a.getUri())));
+        this.maqlEntries.put(attribute.getUri(), new CatalogEntry(attribute.getUri(),
+                attribute.getTitle(), attribute.getCategory(), attribute.getIdentifier(),
+                new UriObjQualifier(attribute.getUri())));
     }
 
-    public void addMetric(Entry metric) throws SQLException {
+    /**
+     * Adds metric to catalog
+     * @param metric metric to add
+     */
+    public void addMetric(Entry metric) {
         CatalogEntry e = new CatalogEntry(metric.getUri(),
                 metric.getTitle(), metric.getCategory(), metric.getIdentifier(),
                 new UriObjQualifier(metric.getUri()));
@@ -83,7 +100,11 @@ public class Catalog {
         this.maqlEntries.put(metric.getUri(), e);
     }
 
-    public void addMetric(Metric metric) throws SQLException {
+    /**
+     * Adds metric to catalog
+     * @param metric metric to add
+     */
+    public void addMetric(Metric metric) {
         CatalogEntry e = new CatalogEntry(metric.getUri(),
                 metric.getTitle(), metric.getCategory(), metric.getIdentifier(),
                 new UriObjQualifier(metric.getUri()));
@@ -92,6 +113,10 @@ public class Catalog {
         this.maqlEntries.put(metric.getUri(), e);
     }
 
+    /**
+     * Adds fact to catalog
+     * @param fact metric to add
+     */
     public void addFact(Entry fact) {
         CatalogEntry e = new CatalogEntry(fact.getUri(),
                 fact.getTitle(), fact.getCategory(), fact.getIdentifier(),

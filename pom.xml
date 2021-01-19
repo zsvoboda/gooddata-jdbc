@@ -110,5 +110,11 @@
             <version>1.1.1</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-jexl</artifactId>
+            <version>2.1.1</version>
+        </dependency>
+
     </dependencies>
 </project>

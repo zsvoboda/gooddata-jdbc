@@ -2,21 +2,21 @@ package com.gooddata.jdbc.parser;
 
 import com.gooddata.jdbc.catalog.Catalog;
 import net.sf.jsqlparser.JSQLParserException;
-import net.sf.jsqlparser.expression.Expression;
-import net.sf.jsqlparser.expression.ExpressionVisitor;
-import net.sf.jsqlparser.expression.ExpressionVisitorAdapter;
-import net.sf.jsqlparser.expression.NotExpression;
+import net.sf.jsqlparser.expression.*;
+import net.sf.jsqlparser.expression.operators.arithmetic.Addition;
+import net.sf.jsqlparser.expression.operators.arithmetic.Division;
+import net.sf.jsqlparser.expression.operators.arithmetic.Multiplication;
+import net.sf.jsqlparser.expression.operators.arithmetic.Subtraction;
 import net.sf.jsqlparser.expression.operators.conditional.OrExpression;
 import net.sf.jsqlparser.expression.operators.relational.*;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.select.*;
+import org.apache.commons.jexl2.JexlEngine;
+import org.apache.commons.jexl2.MapContext;
 
 import java.sql.Types;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -122,6 +122,16 @@ public class SQLParser {
 
     }
 
+    private static final JexlEngine jexl = new JexlEngine();
+
+    private static String evaluateExpression(Expression e) {
+        if (e instanceof BinaryExpression) {
+            org.apache.commons.jexl2.Expression jexlExpr = jexl.createExpression(e.toString());
+            return jexlExpr.evaluate(new MapContext()).toString();
+        }
+        return e.toString().replaceAll("'", "");
+    }
+
     /**
      * Main parser method for SELECT queries
      * @param query SQL query
@@ -175,30 +185,15 @@ public class SQLParser {
                     Expression where = plainSelect.getWhere();
                     ExpressionVisitor ev = new ExpressionVisitorAdapter() {
 
-                        public void visit(EqualsTo expr) {
-                            String columnName = expr.getLeftExpression().toString()
-                                    .replaceAll("\"","");
-                            String value = expr.getRightExpression().toString()
-                                    .replaceAll("'","");
+                        private void handleVisit(BinaryExpression e, int operator) {
+                            String columnName = e.getLeftExpression().toString()
+                                    .replaceAll("\"", "");
+                            String value = evaluateExpression(e.getRightExpression());
                             ParsedSQL.FilterExpression f = new ParsedSQL.FilterExpression(
-                                    ParsedSQL.FilterExpression.OPERATOR_EQUAL,
+                                    operator,
                                     columnName,
                                     Collections.singletonList(value));
                             filters.add(f);
-                            super.visit(expr);
-                        }
-
-                        public void visit(GreaterThan expr) {
-                            String columnName = expr.getLeftExpression().toString()
-                                    .replaceAll("\"","");
-                            String value = expr.getRightExpression().toString()
-                                    .replaceAll("'","");
-                            ParsedSQL.FilterExpression f = new ParsedSQL.FilterExpression(
-                                    ParsedSQL.FilterExpression.OPERATOR_GREATER,
-                                    columnName,
-                                    Collections.singletonList(value));
-                            filters.add(f);
-                            super.visit(expr);
                         }
 
                         public void visit(OrExpression expr) {
@@ -209,58 +204,36 @@ public class SQLParser {
                             errors.add(new JSQLParserException("NOT logical operators are not supported yet."));
                         }
 
+                        public void visit(EqualsTo expr) {
+                            handleVisit(expr, ParsedSQL.FilterExpression.OPERATOR_EQUAL);
+                            super.visit(expr);
+                        }
+
+                        public void visit(GreaterThan expr) {
+                            handleVisit(expr, ParsedSQL.FilterExpression.OPERATOR_GREATER);
+                            super.visit(expr);
+                        }
+
                         public void visit(GreaterThanEquals expr) {
-                            String columnName = expr.getLeftExpression().toString()
-                                    .replaceAll("\"","");
-                            String value = expr.getRightExpression().toString()
-                                    .replaceAll("'","");
-                            ParsedSQL.FilterExpression f = new ParsedSQL.FilterExpression(
-                                    ParsedSQL.FilterExpression.OPERATOR_GREATER_OR_EQUAL,
-                                    columnName,
-                                    Collections.singletonList(value));
-                            filters.add(f);
+                            handleVisit(expr, ParsedSQL.FilterExpression.OPERATOR_GREATER_OR_EQUAL);
                             super.visit(expr);
                         }
 
                         @Override
                         public void visit(MinorThan expr) {
-                            String columnName = expr.getLeftExpression().toString()
-                                    .replaceAll("\"","");
-                            String value = expr.getRightExpression().toString()
-                                    .replaceAll("'","");
-                            ParsedSQL.FilterExpression f = new ParsedSQL.FilterExpression(
-                                    ParsedSQL.FilterExpression.OPERATOR_LOWER,
-                                    columnName,
-                                    Collections.singletonList(value));
-                            filters.add(f);
+                            handleVisit(expr, ParsedSQL.FilterExpression.OPERATOR_LOWER);
                             super.visit(expr);
                         }
 
                         @Override
                         public void visit(MinorThanEquals expr) {
-                            String columnName = expr.getLeftExpression().toString()
-                                    .replaceAll("\"","");
-                            String value = expr.getRightExpression().toString()
-                                    .replaceAll("'","");
-                            ParsedSQL.FilterExpression f = new ParsedSQL.FilterExpression(
-                                    ParsedSQL.FilterExpression.OPERATOR_LOWER_OR_EQUAL,
-                                    columnName,
-                                    Collections.singletonList(value));
-                            filters.add(f);
+                            handleVisit(expr, ParsedSQL.FilterExpression.OPERATOR_LOWER_OR_EQUAL);
                             super.visit(expr);
                         }
 
                         @Override
                         public void visit(NotEqualsTo expr) {
-                            String columnName = expr.getLeftExpression().toString()
-                                    .replaceAll("\"","");
-                            String value = expr.getRightExpression().toString()
-                                    .replaceAll("'","");
-                            ParsedSQL.FilterExpression f = new ParsedSQL.FilterExpression(
-                                    ParsedSQL.FilterExpression.OPERATOR_NOT_EQUAL,
-                                    columnName,
-                                    Collections.singletonList(value));
-                            filters.add(f);
+                            handleVisit(expr, ParsedSQL.FilterExpression.OPERATOR_NOT_EQUAL);
                             super.visit(expr);
                         }
 
@@ -270,7 +243,7 @@ public class SQLParser {
                                     .replaceAll("\"","");
                             ExpressionList expressionValues = expr.getRightItemsList(ExpressionList.class);
                             List<String> values = expressionValues.getExpressions().stream()
-                                    .map(e->e.toString().replaceAll("'",""))
+                                    .map(SQLParser::evaluateExpression)
                                     .collect(Collectors.toList());
                             ParsedSQL.FilterExpression f = new ParsedSQL.FilterExpression(
                                     expr.isNot() ? ParsedSQL.FilterExpression.OPERATOR_NOT_IN:
@@ -285,14 +258,13 @@ public class SQLParser {
                         public void visit(Between expr) {
                             String columnName = expr.getLeftExpression().toString()
                                     .replaceAll("\"","");
-
                             ParsedSQL.FilterExpression f = new ParsedSQL.FilterExpression(
                                     expr.isNot() ? ParsedSQL.FilterExpression.OPERATOR_NOT_BETWEEN:
                                             ParsedSQL.FilterExpression.OPERATOR_BETWEEN,
                                     columnName,
                                     Arrays.asList(
-                                            expr.getBetweenExpressionStart().toString(),
-                                            expr.getBetweenExpressionEnd().toString()));
+                                            evaluateExpression(expr.getBetweenExpressionStart()),
+                                            evaluateExpression(expr.getBetweenExpressionEnd())));
                             filters.add(f);
                             super.visit(expr);
                         }
@@ -303,6 +275,7 @@ public class SQLParser {
                         where.accept(ev);
                     super.visit(plainSelect);
                 }
+
             };
             sb.accept(sv);
             if (errors.size() > 0) {
