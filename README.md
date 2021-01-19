@@ -11,7 +11,7 @@ The JDBC driver class is
 
 and it expects the following JDBC URL format 
 
-``` jdbc:gd://<your-gooddata-domain-name>>/gdc/projects/<your-gooddata-project-id>> ```
+``` jdbc:gd://<your-gooddata-domain-name>>/gdc/projects/<your-gooddata-project-id> ```
 
 ### Supported features
 - You don't use FROM clause. Just list of columns in the ```SELECT <column-list> ``` 
