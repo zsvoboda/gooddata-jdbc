@@ -19,9 +19,9 @@ and it expects the following JDBC URL format
 ### Supported features
 - You don't use FROM clause. Just list of columns in the ```SELECT <column-list> ``` 
   and ```WHERE <conditions> ```
-- Columns are quoted in double-quotes (```"```)
+- Columns (attributes and metrics) are quoted in double-quotes (```"Revenue"```)
   - columns can be referenced by name or by URI (```[/gdc/md/w2x7a9awsioch4l9lbzgjcn99hbkm61e/obj/275]```)   
-- Textual values are quoted in single-quotes (```'```)
+- Textual values are quoted in single-quotes (```'Home'```)
 - SELECT column list 
     - only supports plain list of attributes and metrics (no expressions or functions)
     - supports datatype specification using ```"Revenue::DECIMAL(13,2)"```
