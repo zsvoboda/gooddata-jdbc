@@ -36,7 +36,18 @@ and it expects the following JDBC URL format
     - supports ```CREATE METRIC <name> AS <maql>```
     - supports ```ALTER METRIC <name> AS <maql>```
     - supports ```DROP METRIC <name>```
-  
+
+### Example
+```
+CREATE METRIC "Total Revenue by State" AS SELECT "Revenue" BY "Customer State" ALL OTHER;
+
+SELECT "Product Category", "Customer State", "Revenue", "Total Revenue by State" 
+WHERE "Customer State" IN ('CA','MA');
+
+SELECT "Product Category", "Product", "# of Orders" ORDER BY 3 ASC LIMIT 10 OFFSET 3;
+
+DROP METRIC "Total Revenue by State";
+```
 
 ### Tested with
 - [DBeaver](https://dbeaver.io/)
