@@ -28,14 +28,14 @@ public class TestAfmStatement {
 
     public void testFindColumnIndex(String columns, String where, ResultSet resultSet) throws SQLException {
         final List<String> columnnList = Arrays.stream(columns.split(", "))
-                .map(i->i.replaceAll("\"","")
+                .map(i -> i.replaceAll("\"", "")
                         .trim())
-                .map(e->e.split("::")[0])
+                .map(e -> e.split("::")[0])
                 .collect(Collectors.toList());
         int i = 1;
-        for(String columnLabel: columnnList) {
+        for (String columnLabel : columnnList) {
             int columnIndex = resultSet.findColumn(columnLabel);
-            assert(columnIndex == i);
+            assert (columnIndex == i);
             i++;
         }
     }
@@ -43,49 +43,43 @@ public class TestAfmStatement {
     public void testRetrieve(String columns, String where, String columnNames) throws SQLException {
         String s = columnNames != null && columnNames.trim().length() > 0 ? columnNames : columns;
         List<String> columnnList = Arrays.stream(
-                s.split(", ")).map(i->i.replaceAll("\"","")
-                            .trim())
-                    .map(e->e.split("::")[0])
-                    .collect(Collectors.toList());
+                s.split(", ")).map(i -> i.replaceAll("\"", "")
+                .trim())
+                .map(e -> e.split("::")[0])
+                .collect(Collectors.toList());
         Statement statement = this.afmConnection.createStatement();
         ResultSet resultSet = statement.executeQuery("SELECT " + columns + " " + where);
 
-        testFindColumnIndex(s,where, resultSet);
-        boolean printHeader = true;
-        while(resultSet.next()) {
-            if(printHeader) {
-                StringBuilder txtRow = new StringBuilder();
-                for(int i=0; i< columnnList.size(); i++) {
-                    if(i>0)
-                        txtRow.append(", ");
-                    txtRow.append(resultSet.getMetaData().getColumnName(i + 1));
-                }
-                System.out.println(txtRow);
-                printHeader = false;
-            }
-            StringBuilder txtRow = new StringBuilder();
-            for(int i=0; i< columnnList.size(); i++) {
-                if(i>0)
-                    txtRow.append(", ");
-                txtRow.append(resultSet.getObject(i + 1));
-            }
-            System.out.println(txtRow);
+        testFindColumnIndex(s, where, resultSet);
+        StringBuilder txtRow = new StringBuilder();
+        for (int i = 0; i < columnnList.size(); i++) {
+            if (i > 0)
+                txtRow.append(", ");
+            txtRow.append(resultSet.getMetaData().getColumnName(i + 1));
         }
-        resultSet.beforeFirst();
-        while(resultSet.next()) {
-            StringBuilder txtRow = new StringBuilder();
-            for(int i=0; i< columnnList.size(); i++) {
-                if(i>0)
+        System.out.println(txtRow.toString());
+
+        int rowNum = 1;
+        while (resultSet.next()) {
+            txtRow = new StringBuilder();
+            for (int i = 0; i < columnnList.size(); i++) {
+                if (i > 0)
                     txtRow.append(", ");
+                else {
+                    txtRow.append(rowNum++);
+                    txtRow.append("::");
+                }
                 txtRow.append(resultSet.getObject(columnnList.get(i)));
             }
-            System.out.println(txtRow);
+            System.out.println(txtRow.toString());
         }
     }
 
 
     @Test
     public void testResultSet() throws SQLException {
+        testRetrieve("\"Date (Date)\", \"Product Category\", \"Product\", \"# of Orders\"",
+                "LIMIT 5000 OFFSET 2", null);
         testRetrieve("\"Date (Date)\", Product, Revenue::INTEGER, \"# of Orders::INTEGER\"," +
                 " \"Product Category\"", " WHERE \"Product Category\" = 'Home' " +
                 "AND \"# of Orders\" BETWEEN 3 AND 5 ", null);

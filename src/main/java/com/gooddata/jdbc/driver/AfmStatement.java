@@ -98,7 +98,8 @@ public class AfmStatement implements java.sql.Statement {
             List<CatalogEntry> columns = this.metadata.getCatalog().resolveAfmColumns(parsedSql);
             List<AfmFilter> filters = this.metadata.getCatalog().resolveAfmFilters(parsedSql);
             Afm afm = getAfm(columns, filters);
-            return  new AfmResultSet(this, this.workspace, this.gdAfm, afm, columns);
+            return  new AfmResultSet(this, this.workspace, this.gdAfm, afm, columns,
+                    parsedSql.getLimit(), parsedSql.getOffset());
         } catch (JSQLParserException | Catalog.CatalogEntryNotFoundException
                 | Catalog.DuplicateCatalogEntryException | TextUtil.InvalidFormatException e) {
             throw new SQLException(e);

@@ -1,4 +1,4 @@
-package com.gooddata.jdbc.util;
+package com.gooddata.jdbc.resultset;
 
 
 import com.gooddata.jdbc.parser.DataTypeParser;
@@ -539,31 +539,45 @@ public abstract class AbstractResultSet implements java.sql.ResultSet {
      * {@inheritDoc}
      */
     @Override
-    abstract public void beforeFirst();
+    public void beforeFirst() {
+        this.absolute(0);
+    }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    abstract public void afterLast();
+    public void afterLast() {
+        this.absolute(this.getRowCount() + 1);
+    }
+
 
     /**
      * {@inheritDoc}
      */
     @Override
-    abstract public boolean first();
+    public boolean first() {
+        return this.absolute(1);
+    }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    abstract public boolean last();
+    public boolean last() {
+        return this.absolute(this.getRowCount() - 1);
+    }
 
     /**
      * {@inheritDoc}
      */
     @Override
     abstract public int getRow();
+
+    /**
+     * {@inheritDoc}
+     */
+    abstract public int getRowCount();
 
     /**
      * {@inheritDoc}

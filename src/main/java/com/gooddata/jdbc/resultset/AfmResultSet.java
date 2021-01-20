@@ -2,7 +2,6 @@ package com.gooddata.jdbc.resultset;
 
 import com.gooddata.jdbc.catalog.CatalogEntry;
 import com.gooddata.jdbc.metadata.AfmResultSetMetaData;
-import com.gooddata.jdbc.util.AbstractResultSet;
 import com.gooddata.sdk.model.executeafm.Execution;
 import com.gooddata.sdk.model.executeafm.ResultPage;
 import com.gooddata.sdk.model.executeafm.afm.Afm;
@@ -37,16 +36,20 @@ public class AfmResultSet extends AbstractResultSet implements ResultSet {
 	private ExecutionResult afmExecutionResult;
 	// Results paging
 	private Paging paging;
-	// current row offset
-	private int rowOffset = 0;
+	// current row offset in current page
+	private int pageOffset = 0;
 	// AFM columns
 	private final List<CatalogEntry> columns;
 	// JDBC statement
 	private final Statement statement;
+	// SQL LIMIT
+	private int sqlLimit = 0;
+	// SQL OFFSET
+	private int sqlOffset = 0;
 
 	// Mapping between the column positions in AFM and in SELECT
 	private int[] columnStatementPosition;
-	private int currentIndex = -1;
+	private int currentRowNum = -1;
 
 	/**
 	 * Constructor
@@ -55,14 +58,18 @@ public class AfmResultSet extends AbstractResultSet implements ResultSet {
 	 * @param afmService GD AFM execution service
 	 * @param afm AFM execution definition
 	 * @param columns AFM columns
+	 * @param sqlLimit SQL LIMIT number
+	 * @param sqlOffset SQL OFFSET number
 	 */
 	public AfmResultSet(Statement statement, Project workspace, ExecuteAfmService afmService, Afm afm,
-						List<CatalogEntry> columns) {
+						List<CatalogEntry> columns, int sqlLimit, int sqlOffset) {
 		this.workspace = workspace;
 		this.gdAfm = afmService;
 		this.afm = afm;
 		this.columns = columns;
 		this.statement = statement;
+		this.sqlLimit = sqlLimit;
+		this.sqlOffset = sqlOffset;
 		this.computeColumnsStatementPositions(columns);
 		this.setFetchSize(1000);
 		this.fetchPage(0);
@@ -76,20 +83,20 @@ public class AfmResultSet extends AbstractResultSet implements ResultSet {
 		FutureResult<ExecutionResult> fr = this.gdAfm.getResult(rs, resultPage);
 		this.afmExecutionResult = fr.get();
 		this.paging = this.afmExecutionResult.getPaging();
-		this.rowOffset = rowOffset;
+		this.pageOffset = rowOffset;
 	}
 
 	public int getRowCount() {
-		return this.paging.getTotal().get(0);
+		return Math.min(this.paging.getTotal().get(0) - this.sqlOffset, this.sqlLimit);
 	}
 
 	public int getMaxFetchedRow() {
 		return this.paging.getOffset().get(0) + this.paging.getCount().get(0);
 	}
 
-	private void ensureCapacity(int rowIndex) {
-		if(rowIndex < getRowCount() && (rowIndex >= this.getMaxFetchedRow()
-				|| rowIndex < this.rowOffset) ) {
+	private void ensurePageFetched(int rowIndex) {
+		if(rowIndex < this.getRowCount() && (rowIndex >= this.getMaxFetchedRow()
+				|| rowIndex < this.pageOffset) ) {
 			fetchPage(rowIndex);
 		}
 	}
@@ -127,14 +134,16 @@ public class AfmResultSet extends AbstractResultSet implements ResultSet {
 	 * @throws SQLException in case of issues
 	 */
 	public String getTextValue(int columnIndex) throws SQLException {
-		if(this.currentIndex < 0 || this.currentIndex >= this.getRowCount())
+		if(this.currentRowNum < 0 || this.currentRowNum >= this.getRowCount())
 			throw new SQLException("Cursor is out of range.");
 		int realIndex = columnIndex - 1;
 		if( realIndex >= this.columns.size() )
 			throw new SQLException("Column index too high.");
 
-		this.ensureCapacity(this.currentIndex);
-		int actualPageRowIndex = this.currentIndex - this.rowOffset;
+		int rowNumWithOffset = this.currentRowNum + this.sqlOffset;
+		this.ensurePageFetched(rowNumWithOffset);
+		// index within the current page
+		int actualPageRowIndex = rowNumWithOffset - this.pageOffset;
 
 		CatalogEntry column = this.columns.get(realIndex);
 		if(column.getType().equals("metric")) {
@@ -185,7 +194,7 @@ public class AfmResultSet extends AbstractResultSet implements ResultSet {
 	 */
 	@Override
 	public boolean isBeforeFirst() {
-		return this.currentIndex == -1;
+		return this.currentRowNum < 0;
 	}
 
 	/**
@@ -193,7 +202,7 @@ public class AfmResultSet extends AbstractResultSet implements ResultSet {
 	 */
 	@Override
 	public boolean isAfterLast() {
-		return this.currentIndex >= this.getRowCount();
+		return this.currentRowNum >= this.getRowCount();
 	}
 
 	/**
@@ -201,7 +210,7 @@ public class AfmResultSet extends AbstractResultSet implements ResultSet {
 	 */
 	@Override
 	public boolean isFirst()  {
-		return this.currentIndex == 0;
+		return this.currentRowNum == 0;
 	}
 
 	/**
@@ -209,41 +218,7 @@ public class AfmResultSet extends AbstractResultSet implements ResultSet {
 	 */
 	@Override
 	public boolean isLast() {
-		return this.currentIndex == this.getRowCount() - 1;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void beforeFirst() {
-		this.currentIndex = -1;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void afterLast() {
-		this.currentIndex = this.getRowCount();
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public boolean first() {
-		this.currentIndex = 0;
-		return true;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public boolean last() {
-		this.currentIndex = this.getRowCount() - 1;
-		return true;
+		return this.currentRowNum == this.getRowCount() - 1;
 	}
 
 	/**
@@ -251,7 +226,7 @@ public class AfmResultSet extends AbstractResultSet implements ResultSet {
 	 */
 	@Override
 	public int getRow() {
-		return this.currentIndex + 1;
+		return this.currentRowNum + 1;
 	}
 
 	/**
@@ -260,7 +235,7 @@ public class AfmResultSet extends AbstractResultSet implements ResultSet {
 	@Override
 	public boolean absolute(int row) {
 		if(row > 0 && row <= this.getRowCount()) {
-			this.currentIndex = row - 1;
+			this.currentRowNum =  row - 1;
 			return true;
 		}
 		return false;
@@ -271,7 +246,7 @@ public class AfmResultSet extends AbstractResultSet implements ResultSet {
 	 */
 	@Override
 	public boolean relative(int rowsIncrement) {
-		return absolute(this.currentIndex + 1 + rowsIncrement);
+		return absolute(this.currentRowNum + 1 + rowsIncrement);
 	}
 
 }

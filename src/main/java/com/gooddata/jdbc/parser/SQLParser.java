@@ -94,17 +94,24 @@ public class SQLParser {
         private final List<String> columns;
         private final List<String> tables;
         private final List<FilterExpression> filters;
+        private final int limit;
+        private final int offset;
 
         /**
          * Parsed SQL structure - main result from parsing
          * @param columns SQL columns
          * @param tables SQL tables
          * @param filters SQL filters
+         * @param limit SQL LIMIT
+         * @param offset SQL OFFSTE
          */
-        public ParsedSQL(List<String> columns, List<String> tables, List<FilterExpression> filters) {
+        public ParsedSQL(List<String> columns, List<String> tables, List<FilterExpression> filters,
+                         int limit, int offset) {
             this.columns = columns;
             this.tables = tables;
             this.filters = filters;
+            this.limit = limit;
+            this.offset = offset;
         }
 
         public List<String> getColumns() {
@@ -119,6 +126,13 @@ public class SQLParser {
             return this.filters;
         }
 
+        public int getLimit() {
+            return limit;
+        }
+
+        public int getOffset() {
+            return offset;
+        }
     }
 
     private static final JexlEngine jexl = new JexlEngine();
@@ -144,6 +158,7 @@ public class SQLParser {
             Select sl = (Select) st;
             SelectBody sb = sl.getSelectBody();
 
+            final int[] limitAndOffset = new int[]{Integer.MAX_VALUE, 0};
             List<String> columns = new ArrayList<>();
             List<String> tables = new ArrayList<>();
             List<ParsedSQL.FilterExpression> filters = new ArrayList<>();
@@ -180,6 +195,15 @@ public class SQLParser {
                     };
                     if (fromTables != null)
                         fromTables.accept(fv);
+
+                    Limit limitTerm = plainSelect.getLimit();
+                    if(limitTerm != null) {
+                        limitAndOffset[0] = Integer.parseInt(limitTerm.getRowCount().toString());
+                    }
+                    Offset offsetTerm = plainSelect.getOffset();
+                    if(offsetTerm != null) {
+                        limitAndOffset[1] = (int)offsetTerm.getOffset();
+                    }
 
                     Expression where = plainSelect.getWhere();
                     ExpressionVisitor ev = new ExpressionVisitorAdapter() {
@@ -280,7 +304,7 @@ public class SQLParser {
             if (errors.size() > 0) {
                 throw errors.get(0);
             }
-            return new ParsedSQL(columns, tables, filters);
+            return new ParsedSQL(columns, tables, filters, limitAndOffset[0], limitAndOffset[1]);
         } else {
             throw new JSQLParserException("Only SELECT SQL statements are supported.");
         }

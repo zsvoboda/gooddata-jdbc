@@ -1,7 +1,6 @@
 package com.gooddata.jdbc.resultset;
 
 import com.gooddata.jdbc.metadata.MetadataResultSetMetaData;
-import com.gooddata.jdbc.util.AbstractResultSet;
 
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -15,7 +14,7 @@ import java.util.stream.Collectors;
  */
 public class MetadataResultSet extends AbstractResultSet {
 
-    private int currentIndex = -1;
+    private int currentRowNum = -1;
     private final List<MetaDataColumn> data;
     private final int rowCount;
     private final ResultSetMetaData metadata;
@@ -111,12 +110,12 @@ public class MetadataResultSet extends AbstractResultSet {
      */
     @Override
     public String getTextValue(int columnIndex) throws SQLException {
-        if (this.currentIndex < 0 || this.currentIndex >= this.rowCount)
+        if (this.currentRowNum < 0 || this.currentRowNum >= this.rowCount)
             throw new SQLException("Cursor is out of range.");
         int realIndex = columnIndex - 1;
         if (realIndex >= this.data.size())
             throw new SQLException("Column index too high.");
-        return data.get(columnIndex - 1).getValues().get(this.currentIndex);
+        return data.get(columnIndex - 1).getValues().get(this.currentRowNum);
     }
 
     /**
@@ -135,6 +134,14 @@ public class MetadataResultSet extends AbstractResultSet {
      * {@inheritDoc}
      */
     @Override
+    public int getRowCount() {
+        return this.rowCount;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public Statement getStatement() throws SQLException {
         throw new SQLFeatureNotSupportedException("MetadataResultSet.getStatement is not implemented yet");
     }
@@ -144,7 +151,7 @@ public class MetadataResultSet extends AbstractResultSet {
      */
     @Override
     public boolean isBeforeFirst() {
-        return this.currentIndex == -1;
+        return this.currentRowNum <= -1;
     }
 
     /**
@@ -152,7 +159,7 @@ public class MetadataResultSet extends AbstractResultSet {
      */
     @Override
     public boolean isAfterLast() {
-        return this.currentIndex >= this.rowCount;
+        return this.currentRowNum >= this.rowCount;
     }
 
     /**
@@ -160,7 +167,7 @@ public class MetadataResultSet extends AbstractResultSet {
      */
     @Override
     public boolean isFirst() {
-        return this.currentIndex == 0;
+        return this.currentRowNum == 0;
     }
 
     /**
@@ -168,49 +175,16 @@ public class MetadataResultSet extends AbstractResultSet {
      */
     @Override
     public boolean isLast() {
-        return this.currentIndex == this.rowCount - 1;
+        return this.currentRowNum == this.getRowCount() - 1;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void beforeFirst() {
-        this.currentIndex = -1;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void afterLast() {
-        this.currentIndex = this.rowCount;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean first() {
-        this.currentIndex = 0;
-        return true;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean last() {
-        this.currentIndex = this.rowCount - 1;
-        return true;
-    }
 
     /**
      * {@inheritDoc}
      */
     @Override
     public int getRow() {
-        return Math.max(this.currentIndex, 0);
+        return this.currentRowNum + 1;
     }
 
     /**
@@ -218,8 +192,8 @@ public class MetadataResultSet extends AbstractResultSet {
      */
     @Override
     public boolean absolute(int row) {
-        if (row >= 0 && row < this.rowCount) {
-            this.currentIndex = row;
+        if (row > 0 && row <= this.rowCount) {
+            this.currentRowNum = row - 1;
             return true;
         }
         return false;
@@ -230,7 +204,7 @@ public class MetadataResultSet extends AbstractResultSet {
      */
     @Override
     public boolean relative(int rowsIncrement) {
-        return absolute(this.currentIndex + rowsIncrement);
+        return absolute(this.currentRowNum + 1 + rowsIncrement);
     }
 
 }

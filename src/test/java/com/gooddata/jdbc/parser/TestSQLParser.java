@@ -68,6 +68,14 @@ public class TestSQLParser {
 
     }
 
+    @Test
+    public void testLimit() throws JSQLParserException {
+        SQLParser parser = new SQLParser();
+        SQLParser.ParsedSQL parsedSQL = parser.parseQuery("SELECT c1,c2,m1 FROM t1 WHERE c1='Home' LIMIT 10 OFFSET 3");
+        assert(parsedSQL.getOffset() == 3);
+        assert(parsedSQL.getLimit() == 10);
+    }
+
     @Test(expectedExceptions = { JSQLParserException.class })
     public void testParseException() throws JSQLParserException {
         SQLParser parser = new SQLParser();
