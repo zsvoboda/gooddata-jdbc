@@ -20,6 +20,7 @@ and it expects the following JDBC URL format
 - You don't use FROM clause. Just list of columns in the ```SELECT <column-list> ``` 
   and ```WHERE <conditions> ```
 - Columns are quoted in double-quotes (```"```)
+  - columns can be referenced by name or by URI (```[/gdc/md/w2x7a9awsioch4l9lbzgjcn99hbkm61e/obj/275]```)   
 - Textual values are quoted in single-quotes (```'```)
 - SELECT column list 
     - only supports plain list of attributes and metrics (no expressions or functions)
@@ -29,8 +30,8 @@ and it expects the following JDBC URL format
     - supports ``` =,<>, IN, NOT IN ``` operators for attributes
     - supports ``` =,<>, >, <, >=, <=, BETWEEN, NOT BETWEEN ``` operators for metrics
     - supports simple expressions like ```(2+5)*3```
-- ORDER BY - not yet supported
-- LIMIT, OFFSET - not yet supported
+- ORDER BY - not yet supported (stay tuned)
+- LIMIT, OFFSET - not yet supported (stay tuned)
 - MAQL
     - supports ```CREATE METRIC <name> AS <maql>```
     - supports ```ALTER METRIC <name> AS <maql>```
