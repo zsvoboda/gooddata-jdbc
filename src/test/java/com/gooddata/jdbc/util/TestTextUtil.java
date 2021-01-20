@@ -29,6 +29,7 @@ public class TestTextUtil {
                 .equals("/gdc/md/w2x7a9awsioch4l9lbzgjcn99hbkm61e/obj/386"));
         assert(TextUtil.extractGoodDataUriFromColumnName("[/gdc/md/w2x7a9awsioch4l9lbzgjcn99hbkm61e/obj/386]")
                 .equals("/gdc/md/w2x7a9awsioch4l9lbzgjcn99hbkm61e/obj/386"));
+        assert(!TextUtil.isGoodDataColumnWithUri("Revenue"));
     }
 
     @Test(expectedExceptions = { TextUtil.InvalidFormatException.class })

@@ -75,6 +75,11 @@ public class TestAfmStatement {
         }
     }
 
+    @Test
+    public void testOrderBy() throws SQLException {
+        testRetrieve("\"Product Category\", \"Product\", \"# of Orders\"",
+                "ORDER BY \"Product\"", null);
+    }
 
     @Test
     public void testResultSet() throws SQLException {

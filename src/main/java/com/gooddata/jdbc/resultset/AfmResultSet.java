@@ -7,6 +7,9 @@ import com.gooddata.sdk.model.executeafm.ResultPage;
 import com.gooddata.sdk.model.executeafm.afm.Afm;
 import com.gooddata.sdk.model.executeafm.response.ExecutionResponse;
 import com.gooddata.sdk.model.executeafm.result.*;
+import com.gooddata.sdk.model.executeafm.resultspec.Dimension;
+import com.gooddata.sdk.model.executeafm.resultspec.ResultSpec;
+import com.gooddata.sdk.model.executeafm.resultspec.SortItem;
 import com.gooddata.sdk.model.project.Project;
 import com.gooddata.sdk.service.FutureResult;
 import com.gooddata.sdk.service.executeafm.ExecuteAfmService;
@@ -14,6 +17,7 @@ import com.gooddata.sdk.service.executeafm.ExecuteAfmService;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Logger;
@@ -46,6 +50,8 @@ public class AfmResultSet extends AbstractResultSet implements ResultSet {
 	private int sqlLimit = 0;
 	// SQL OFFSET
 	private int sqlOffset = 0;
+	// Order BY elements
+	private final List<SortItem> orderBys;
 
 	// Mapping between the column positions in AFM and in SELECT
 	private int[] columnStatementPosition;
@@ -58,11 +64,12 @@ public class AfmResultSet extends AbstractResultSet implements ResultSet {
 	 * @param afmService GD AFM execution service
 	 * @param afm AFM execution definition
 	 * @param columns AFM columns
+	 * @param orderBys SQL ORDER BY
 	 * @param sqlLimit SQL LIMIT number
 	 * @param sqlOffset SQL OFFSET number
 	 */
 	public AfmResultSet(Statement statement, Project workspace, ExecuteAfmService afmService, Afm afm,
-						List<CatalogEntry> columns, int sqlLimit, int sqlOffset) {
+						List<CatalogEntry> columns, List<SortItem> orderBys, int sqlLimit, int sqlOffset) {
 		this.workspace = workspace;
 		this.gdAfm = afmService;
 		this.afm = afm;
@@ -70,13 +77,26 @@ public class AfmResultSet extends AbstractResultSet implements ResultSet {
 		this.statement = statement;
 		this.sqlLimit = sqlLimit;
 		this.sqlOffset = sqlOffset;
+		this.orderBys = orderBys;
 		this.computeColumnsStatementPositions(columns);
 		this.setFetchSize(1000);
 		this.fetchPage(0);
 	}
 
 	private void fetchPage(int rowOffset) {
-		ExecutionResponse rs = this.gdAfm.executeAfm(this.workspace, new Execution(afm));
+		Execution e;
+		if (this.orderBys != null && this.orderBys.size() > 0) {
+			List<Dimension> dimensions = new ArrayList<>();
+			dimensions.add(new Dimension(this.columns.stream()
+					.filter(i->i.getType().equals("attributeDisplayForm"))
+					.map(i->i.getIdentifier()).collect(Collectors.toList())));
+			dimensions.add(new Dimension("measureGroup"));
+			e = new Execution(afm, new ResultSpec(dimensions,this.orderBys));
+		}
+		else {
+			e = new Execution(afm);
+		}
+		ExecutionResponse rs = this.gdAfm.executeAfm(this.workspace, e);
 		List<Integer> offsets = Arrays.asList(rowOffset, 0);
 		List<Integer> limits = Arrays.asList(this.fetchSize, this.columns.size());
 		ResultPage resultPage = new ResultPage(offsets, limits);

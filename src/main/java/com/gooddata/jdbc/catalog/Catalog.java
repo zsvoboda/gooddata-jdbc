@@ -5,11 +5,14 @@ import com.gooddata.jdbc.parser.SQLParser;
 import com.gooddata.jdbc.util.TextUtil;
 import com.gooddata.sdk.model.executeafm.UriObjQualifier;
 import com.gooddata.sdk.model.executeafm.afm.filter.*;
+import com.gooddata.sdk.model.executeafm.result.Paging;
+import com.gooddata.sdk.model.executeafm.resultspec.*;
 import com.gooddata.sdk.model.md.*;
 import com.gooddata.sdk.model.project.Project;
 import com.gooddata.sdk.service.GoodData;
 import com.gooddata.sdk.service.md.MetadataService;
 import org.apache.commons.lang3.ArrayUtils;
+import org.w3c.dom.Text;
 
 import java.math.BigDecimal;
 import java.sql.SQLException;
@@ -267,6 +270,50 @@ public class Catalog {
             c.add(newColumn);
         }
         return c;
+    }
+
+    public List<SortItem> resolveOrderBys(SQLParser.ParsedSQL parsedSql,
+                                          List<CatalogEntry> columns) throws SQLException {
+        List<SQLParser.ParsedSQL.OrderByExpression> orderBys = parsedSql.getOrderBys();
+        List<SortItem> sortItems = new ArrayList<>();
+        for(SQLParser.ParsedSQL.OrderByExpression orderByElement: orderBys) {
+            CatalogEntry c;
+            String orderColumn = orderByElement.getColumn();
+            try {
+                int order = Integer.parseInt(orderColumn);
+                if(order <= 0 || order > columns.size())
+                    throw new SQLException(String.format("ORDER BY column '%s' is too high.", orderColumn));
+                c = columns.get(order - 1);
+            }
+            catch (NumberFormatException e) {
+                List<CatalogEntry> l;
+                try {
+                    if (TextUtil.isGoodDataColumnWithUri(orderColumn)) {
+                        String uri = TextUtil.extractGoodDataUriFromColumnName(orderColumn);
+                        l = columns.stream().filter(i -> i.getUri().equals(uri)).collect(Collectors.toList());
+                    }
+                    else {
+                        l = columns.stream().filter(i -> i.getTitle().equals(orderColumn)).collect(Collectors.toList());
+                    }
+                    if(l.size() > 1 || l.size() <= 0) {
+                        throw new SQLException(String.format("Can't uniquely resolve the ORDER BY column '%s'",
+                                orderColumn));
+                    }
+                    c = l.get(0);
+                } catch (TextUtil.InvalidFormatException e1) {
+                    throw new SQLException(e1);
+                }
+            }
+            if(c.getType().equals("metric")) {
+                sortItems.add(new MeasureSortItem(orderByElement.getOrder().toLowerCase(),
+                        Arrays.asList(new MeasureLocatorItem(c.getIdentifier()))));
+            }
+            else {
+                sortItems.add(new AttributeSortItem(orderByElement.getOrder().toLowerCase(),
+                        c.getIdentifier()));
+            }
+        }
+        return sortItems;
     }
 
     /**

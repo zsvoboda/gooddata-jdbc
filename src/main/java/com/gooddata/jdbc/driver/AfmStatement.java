@@ -12,6 +12,7 @@ import com.gooddata.sdk.model.executeafm.afm.Afm;
 import com.gooddata.sdk.model.executeafm.afm.AttributeItem;
 import com.gooddata.sdk.model.executeafm.afm.MeasureItem;
 import com.gooddata.sdk.model.executeafm.afm.SimpleMeasureDefinition;
+import com.gooddata.sdk.model.executeafm.resultspec.SortItem;
 import com.gooddata.sdk.model.md.Metric;
 import com.gooddata.sdk.model.project.Project;
 import com.gooddata.sdk.service.GoodData;
@@ -97,8 +98,9 @@ public class AfmStatement implements java.sql.Statement {
             SQLParser.ParsedSQL parsedSql = parser.parseQuery(sql);
             List<CatalogEntry> columns = this.metadata.getCatalog().resolveAfmColumns(parsedSql);
             List<AfmFilter> filters = this.metadata.getCatalog().resolveAfmFilters(parsedSql);
+            List<SortItem> orderBys = this.metadata.getCatalog().resolveOrderBys(parsedSql, columns);
             Afm afm = getAfm(columns, filters);
-            return  new AfmResultSet(this, this.workspace, this.gdAfm, afm, columns,
+            return  new AfmResultSet(this, this.workspace, this.gdAfm, afm, columns, orderBys,
                     parsedSql.getLimit(), parsedSql.getOffset());
         } catch (JSQLParserException | Catalog.CatalogEntryNotFoundException
                 | Catalog.DuplicateCatalogEntryException | TextUtil.InvalidFormatException e) {

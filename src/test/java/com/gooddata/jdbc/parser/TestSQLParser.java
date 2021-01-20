@@ -76,6 +76,26 @@ public class TestSQLParser {
         assert(parsedSQL.getLimit() == 10);
     }
 
+    @Test
+    public void testOrderBy() throws JSQLParserException {
+        SQLParser parser = new SQLParser();
+        SQLParser.ParsedSQL parsedSQL = parser.parseQuery("SELECT c1,c2,m1 FROM t1 WHERE c1='Home' ORDER BY 1, 2 ASC, 3 DESC");
+        assert(parsedSQL.getOrderBys().get(0).getOrder().equals("ASC"));
+        assert(parsedSQL.getOrderBys().get(0).getColumn().equals("1"));
+        assert(parsedSQL.getOrderBys().get(1).getOrder().equals("ASC"));
+        assert(parsedSQL.getOrderBys().get(1).getColumn().equals("2"));
+        assert(parsedSQL.getOrderBys().get(2).getOrder().equals("DESC"));
+        assert(parsedSQL.getOrderBys().get(2).getColumn().equals("3"));
+        parsedSQL = parser.parseQuery("SELECT c1,c2,m1 FROM t1 WHERE c1='Home' ORDER BY \"c1\" ASC, c2 DESC, m1");
+        assert(parsedSQL.getOrderBys().get(0).getOrder().equals("ASC"));
+        assert(parsedSQL.getOrderBys().get(0).getColumn().equals("c1"));
+        assert(parsedSQL.getOrderBys().get(1).getOrder().equals("DESC"));
+        assert(parsedSQL.getOrderBys().get(1).getColumn().equals("c2"));
+        assert(parsedSQL.getOrderBys().get(2).getOrder().equals("ASC"));
+        assert(parsedSQL.getOrderBys().get(2).getColumn().equals("m1"));
+
+    }
+
     @Test(expectedExceptions = { JSQLParserException.class })
     public void testParseException() throws JSQLParserException {
         SQLParser parser = new SQLParser();

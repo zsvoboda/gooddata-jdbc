@@ -30,8 +30,8 @@ and it expects the following JDBC URL format
     - supports ``` =,<>, IN, NOT IN ``` operators for attributes
     - supports ``` =,<>, >, <, >=, <=, BETWEEN, NOT BETWEEN ``` operators for metrics
     - supports simple expressions like ```(2+5)*3```
-- ORDER BY - not yet supported (stay tuned)
-- LIMIT, OFFSET - not yet supported (stay tuned)
+- ORDER BY - standard support (e.g. ```ORDER BY 1 ASC, 2 DESC``` or ```ORDER BY "Product" ASC, "Product Category" DESC``` )
+- LIMIT, OFFSET standard support (e.g. ```LIMIT 100 OFFSET 35```)
 - MAQL
     - supports ```CREATE METRIC <name> AS <maql>```
     - supports ```ALTER METRIC <name> AS <maql>```

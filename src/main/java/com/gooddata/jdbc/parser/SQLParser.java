@@ -26,6 +26,8 @@ import java.util.stream.Collectors;
  */
 public class SQLParser {
 
+    private final static Logger LOGGER = Logger.getLogger(ParsedSQL.class.getName());
+
     /**
      * Parsed SQL result
      */
@@ -89,29 +91,54 @@ public class SQLParser {
 
         }
 
-        private final static Logger LOGGER = Logger.getLogger(ParsedSQL.class.getName());
+        public static class OrderByExpression {
+
+            public OrderByExpression(String order, String column) {
+                this.order = order;
+                this.column = column;
+            }
+
+            public String getOrder() {
+                return order;
+            }
+
+            public String getColumn() {
+                return column;
+            }
+
+            private String order;
+            private String column;
+        }
 
         private final List<String> columns;
         private final List<String> tables;
         private final List<FilterExpression> filters;
         private final int limit;
         private final int offset;
+        private final List<ParsedSQL.OrderByExpression> orderBys;
 
         /**
          * Parsed SQL structure - main result from parsing
          * @param columns SQL columns
          * @param tables SQL tables
          * @param filters SQL filters
+         * @param orderBys ORDER BY elements
          * @param limit SQL LIMIT
          * @param offset SQL OFFSTE
          */
         public ParsedSQL(List<String> columns, List<String> tables, List<FilterExpression> filters,
+                         List<ParsedSQL.OrderByExpression> orderBys,
                          int limit, int offset) {
             this.columns = columns;
             this.tables = tables;
             this.filters = filters;
+            this.orderBys = orderBys;
             this.limit = limit;
             this.offset = offset;
+        }
+
+        public List<OrderByExpression> getOrderBys() {
+            return this.orderBys;
         }
 
         public List<String> getColumns() {
@@ -133,6 +160,7 @@ public class SQLParser {
         public int getOffset() {
             return offset;
         }
+
     }
 
     private static final JexlEngine jexl = new JexlEngine();
@@ -152,7 +180,7 @@ public class SQLParser {
      * @throws JSQLParserException wrong syntax
      */
     public ParsedSQL parseQuery(String query) throws JSQLParserException {
-        ParsedSQL.LOGGER.fine(String.format("Parsing query '%s'", query));
+        SQLParser.LOGGER.fine(String.format("Parsing query '%s'", query));
         net.sf.jsqlparser.statement.Statement st = CCJSqlParserUtil.parse(query);
         if (st instanceof Select) {
             Select sl = (Select) st;
@@ -162,6 +190,8 @@ public class SQLParser {
             List<String> columns = new ArrayList<>();
             List<String> tables = new ArrayList<>();
             List<ParsedSQL.FilterExpression> filters = new ArrayList<>();
+
+            final List<ParsedSQL.OrderByExpression> orderBys = new ArrayList<>();
 
             final List<JSQLParserException> errors = new ArrayList<>();
             SelectVisitor sv = new SelectVisitorAdapter() {
@@ -185,7 +215,7 @@ public class SQLParser {
                         }
 
                         public void visit(Table tableName) {
-                            ParsedSQL.LOGGER.fine(String.format("Getting table '%s'", tableName));
+                            SQLParser.LOGGER.fine(String.format("Getting table '%s'", tableName));
                             if (tableName != null)
                                 tables.add(tableName.toString().replace("\"", "")
                                 );
@@ -203,6 +233,16 @@ public class SQLParser {
                     Offset offsetTerm = plainSelect.getOffset();
                     if(offsetTerm != null) {
                         limitAndOffset[1] = (int)offsetTerm.getOffset();
+                    }
+
+                    List<OrderByElement> orderByElements = plainSelect.getOrderByElements();
+                    if(orderByElements != null) {
+                        for (OrderByElement orderByElement : orderByElements) {
+                            orderBys.add(new ParsedSQL.OrderByExpression(
+                                    orderByElement.isAsc() ? "ASC" : "DESC"
+                                    , orderByElement.getExpression().toString().replace("\"", "")
+                            ));
+                        }
                     }
 
                     Expression where = plainSelect.getWhere();
@@ -304,7 +344,7 @@ public class SQLParser {
             if (errors.size() > 0) {
                 throw errors.get(0);
             }
-            return new ParsedSQL(columns, tables, filters, limitAndOffset[0], limitAndOffset[1]);
+            return new ParsedSQL(columns, tables, filters, orderBys, limitAndOffset[0], limitAndOffset[1]);
         } else {
             throw new JSQLParserException("Only SELECT SQL statements are supported.");
         }
