@@ -82,7 +82,19 @@ public class TestAfmStatement {
                 "LIMIT 5000 OFFSET 2", null);
         testRetrieve("\"Date (Date)\", Product, Revenue::INTEGER, \"# of Orders::INTEGER\"," +
                 " \"Product Category\"", " WHERE \"Product Category\" = 'Home' " +
-                "AND \"# of Orders\" BETWEEN 3 AND 5 ", null);
+                "AND \"# of Orders\" BETWEEN 3 AND 5 OFFSET 6", null);
+        testRetrieve("\"Date (Date)\", Product, Revenue::INTEGER, \"# of Orders::INTEGER\"," +
+                " \"Product Category\"", " WHERE \"Product Category\" = 'Home' " +
+                "AND \"# of Orders\" BETWEEN 3 AND 5 OFFSET 6 LIMIT 1", null);
+        testRetrieve("\"Date (Date)\", Product, Revenue::INTEGER, \"# of Orders::INTEGER\"," +
+                " \"Product Category\"", " WHERE \"Product Category\" = 'Home' " +
+                "AND \"# of Orders\" BETWEEN 3 AND 5 OFFSET 6 LIMIT 2", null);
+        testRetrieve("\"Date (Date)\", Product, Revenue::INTEGER, \"# of Orders::INTEGER\"," +
+                " \"Product Category\"", " WHERE \"Product Category\" = 'Home' " +
+                "AND \"# of Orders\" BETWEEN 3 AND 5 OFFSET 7", null);
+        testRetrieve("\"Date (Date)\", Product, Revenue::INTEGER, \"# of Orders::INTEGER\"," +
+                " \"Product Category\"", " WHERE \"Product Category\" = 'Home' " +
+                "AND \"# of Orders\" BETWEEN 3 AND 5 OFFSET 8", null);
         testRetrieve("Revenue::INTEGER", " WHERE \"Product Category\" IN ('Home')",
                 null);
         testRetrieve("\"[/gdc/md/w2x7a9awsioch4l9lbzgjcn99hbkm61e/obj/465]::INTEGER\"",
