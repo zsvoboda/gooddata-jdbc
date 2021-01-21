@@ -282,7 +282,7 @@ public abstract class AbstractResultSet implements java.sql.ResultSet {
     public BigDecimal getBigDecimal(int columnIndex, int scale) throws SQLException {
         LOGGER.fine(String.format(
                 "AbstractResultSet::getBigDecimal columnLabel='%d' scale='%d'",columnIndex, scale));
-        BigDecimal d = DataTypeParser.parseBigDecimal(getTextValue(columnIndex), scale);
+        BigDecimal d = DataTypeParser.parseBigDecimal(getTextValue(columnIndex));
         LOGGER.fine(String.format(
                 "AbstractResultSet::getBigDecimal returning '%g'",d));
         return d;
@@ -446,7 +446,7 @@ public abstract class AbstractResultSet implements java.sql.ResultSet {
      */
     @Override
     public BigDecimal getBigDecimal(String columnLabel, int scale) throws SQLException {
-        return getBigDecimal(this.findColumn(columnLabel), scale);
+        return getBigDecimal(this.findColumn(columnLabel));
     }
 
     /**
