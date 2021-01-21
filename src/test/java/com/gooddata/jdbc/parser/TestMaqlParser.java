@@ -53,5 +53,16 @@ public class TestMaqlParser {
         assert("test".equals(metric));
     }
 
+    @Test(expectedExceptions = { JSQLParserException.class })
+    public void testUnquotedIdentifier() throws JSQLParserException {
+        MaqlParser maqlParser = new MaqlParser();
+        maqlParser.parseDropMetric(
+                "CREATE METRIC \"ORDER_AMOUNT_METRIC\" AS SELECT SUM(ORDER_QUANTITY * PRODUCT_PRICE)");
+        maqlParser.parseDropMetric(
+                "ALTER METRIC \"ORDER_AMOUNT_METRIC\" AS SELECT SUM(\"ORDER_QUANTITY\" * PRODUCT_PRICE)");
+        maqlParser.parseDropMetric(
+                "DROP METRIC ORDER_AMOUNT_METRIC");
+
+    }
 
 }

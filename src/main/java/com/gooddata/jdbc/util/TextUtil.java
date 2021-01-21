@@ -20,7 +20,7 @@ public class TextUtil {
             Pattern p = Pattern.compile("^\\s?/gdc/md/(.*?)/obj/(.*?)\\s?$");
             Matcher m = p.matcher(uri);
             boolean b = m.matches();
-            if (b && m.groupCount() != 2)
+            if (!b || m.groupCount() != 2)
                 throw new InvalidFormatException(String.format("Wrong URI format: '%s'", uri));
             return m.group(1);
         } catch (IllegalStateException e) {
@@ -73,7 +73,7 @@ public class TextUtil {
             Matcher m = p.matcher(columnName);
             boolean b = m.matches();
             int groupCnt = m.groupCount();
-            if (b && groupCnt != 3)
+            if (!b || groupCnt != 3)
                 throw new InvalidFormatException(String.format("Wrong column format: '%s'", columnName));
             return m.group(1);
         } catch (IllegalStateException e) {

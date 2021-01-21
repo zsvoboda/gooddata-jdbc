@@ -142,8 +142,8 @@ public class MaqlParser {
                 Pattern.CASE_INSENSITIVE);
         Matcher m = p.matcher(sqlWithNoNewlines);
         boolean b = m.matches();
-        if (b && m.groupCount() != 3)
-            throw new JSQLParserException(String.format("Wrong CREATE METRIC syntax: '%s'", maql));
+        if (!b || m.groupCount() != 3)
+            throw new JSQLParserException(String.format("Wrong CREATE METRIC syntax (e.g. no quoted names of metrics or identifiers): '%s'", maql));
         String metricName = m.group(2);
         String metricMaql = m.group(3);
         return parseMaql(metricName, metricMaql);
@@ -162,8 +162,8 @@ public class MaqlParser {
                 Pattern.CASE_INSENSITIVE);
         Matcher m = p.matcher(sqlWithNoNewlines);
         boolean b = m.matches();
-        if (b && m.groupCount() != 1)
-            throw new JSQLParserException(String.format("Wrong DROP METRIC syntax: '%s'", maql));
+        if (!b || m.groupCount() != 1)
+            throw new JSQLParserException(String.format("Wrong DROP METRIC syntax (e.g. no quoted names of metrics or identifiers): '%s'", maql));
         return m.group(1);
     }
 
