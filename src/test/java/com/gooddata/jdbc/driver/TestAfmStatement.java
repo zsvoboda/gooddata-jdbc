@@ -82,6 +82,12 @@ public class TestAfmStatement {
     }
 
     @Test
+    public void testPrecision() throws SQLException {
+        testRetrieve("\"PRODUCT_NAME\", \"ORDER_AMOUNT_METRIC\"",
+                "", null);
+    }
+
+    @Test
     public void testResultSet() throws SQLException {
         testRetrieve("\"Date (Date)\", \"Product Category\", \"Product\", \"# of Orders\"",
                 "LIMIT 5000 OFFSET 2", null);

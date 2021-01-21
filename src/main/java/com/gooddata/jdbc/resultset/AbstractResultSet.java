@@ -347,7 +347,7 @@ public abstract class AbstractResultSet implements java.sql.ResultSet {
                 "AbstractResultSet::getObject columnLabel='%d'",columnIndex));
         ResultSetMetaData m = this.getMetaData();
         Object d = DataTypeParser.parseObject(getTextValue(columnIndex),
-                m.getColumnType(columnIndex), m.getPrecision(columnIndex));
+                m.getColumnType(columnIndex), m.getPrecision(columnIndex)+m.getScale(columnIndex));
         LOGGER.fine(String.format(
                 "AbstractResultSet::getObject returning '%s'",d));
         return d;
