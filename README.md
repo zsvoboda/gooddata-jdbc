@@ -36,6 +36,7 @@ and it expects the following JDBC URL format
     - supports ```CREATE METRIC <name> AS <maql>```
     - supports ```ALTER METRIC <name> AS <maql>```
     - supports ```DROP METRIC <name>```
+    - make sure you quote all identifiers in double quotes
 
 ### Example
 ```
