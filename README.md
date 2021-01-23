@@ -58,5 +58,10 @@ DROP METRIC "Total Revenue by State";
 ## License
 [MIT license](LICENSE)
 
+## Tutorials and articles
+
+- [Motivation: SQL and aggregated data: is there a better way?](https://github.com/zsvoboda/gooddata-jdbc/wiki/SQL-and-aggregated-data:-is-there-a-better-way%3F)
+- [DBeaver JDBC tutorial](https://github.com/zsvoboda/gooddata-jdbc/wiki/GoodData-metrics-tutorial)
+
 ## Let me know
 Submit github [issue](https://github.com/zsvoboda/gooddata-jdbc/issues). 
