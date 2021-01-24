@@ -1100,7 +1100,7 @@ public class AfmDatabaseMetaData implements java.sql.DatabaseMetaData {
      * {@inheritDoc}
      */
     @Override
-    public ResultSet getSchemas() throws SQLException {
+    public ResultSet getSchemas() {
         //LOGGER.info("getSchemas");
         // List the current schema only
         return AfmDatabaseMetadataResultSets.schemaResultSet(this.schemas, this.schema.getSchemaName());
@@ -1212,9 +1212,9 @@ public class AfmDatabaseMetaData implements java.sql.DatabaseMetaData {
      * {@inheritDoc}
      */
     @Override
-    public ResultSet getTypeInfo() throws SQLException {
-        throw new SQLFeatureNotSupportedException("DatabaseMetaData.getTypeInfo is not implemented yet");
-        //return this.emptyResultSet;
+    public ResultSet getTypeInfo() {
+        // TBD need to return
+        return AfmDatabaseMetadataResultSets.emptyResultSet();
     }
 
     /**
@@ -1489,7 +1489,7 @@ public class AfmDatabaseMetaData implements java.sql.DatabaseMetaData {
      * {@inheritDoc}
      */
     @Override
-    public ResultSet getSchemas(String catalog, String schemaPattern) throws SQLException {
+    public ResultSet getSchemas(String catalog, String schemaPattern) {
         //LOGGER.info(String.format("getSchemas catalog='%s' schemaPattern='%s'",catalog, schemaPattern));
         // List the current schema only
         return AfmDatabaseMetadataResultSets.schemaResultSet(this.schemas, this.schema.getSchemaName());

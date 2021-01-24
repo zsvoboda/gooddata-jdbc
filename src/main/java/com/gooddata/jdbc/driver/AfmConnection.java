@@ -9,6 +9,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
 import java.sql.*;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Executor;
@@ -29,6 +30,7 @@ public class AfmConnection implements java.sql.Connection {
     private boolean isClosed = false;
     private boolean autoCommit = false;
     private Properties clientInfo = new Properties();
+    private String catalog = "";
 
     /**
      * Constructor
@@ -40,7 +42,7 @@ public class AfmConnection implements java.sql.Connection {
      */
     public AfmConnection(final String url,
                          final Properties properties) throws SQLException, IOException {
-
+        LOGGER.info(String.format("AfmConnection: url='%s', properties='%s'", url, properties));
         String login = properties.getProperty("user");
         String password = properties.getProperty("password");
         Pattern p = Pattern.compile("^jdbc:gd://(.*?)/gdc/projects/(.*?)$");
@@ -67,6 +69,7 @@ public class AfmConnection implements java.sql.Connection {
      */
     @Override
     public java.sql.Statement createStatement() {
+        LOGGER.info("createStatement");
         return new AfmStatement(this, this.gd, this.afmDatabaseMetaData);
     }
 
@@ -75,6 +78,7 @@ public class AfmConnection implements java.sql.Connection {
      */
     @Override
     public PreparedStatement prepareStatement(String sql) throws SQLException {
+        LOGGER.info(String.format("prepareStatement sql='%s'", sql));
         throw new SQLFeatureNotSupportedException("Connection.prepareStatement is not supported yet.");
     }
 
@@ -83,6 +87,7 @@ public class AfmConnection implements java.sql.Connection {
      */
     @Override
     public CallableStatement prepareCall(String sql) throws SQLException {
+        LOGGER.info(String.format("prepareCall sql='%s'", sql));
         throw new SQLFeatureNotSupportedException("Connection.prepareCall is not supported yet.");
     }
 
@@ -91,6 +96,7 @@ public class AfmConnection implements java.sql.Connection {
      */
     @Override
     public String nativeSQL(String sql) throws SQLException {
+        LOGGER.info(String.format("nativeSQL sql='%s'", sql));
         throw new SQLFeatureNotSupportedException("Connection.nativeSQL is not supported yet.");
     }
 
@@ -99,6 +105,7 @@ public class AfmConnection implements java.sql.Connection {
      */
     @Override
     public boolean getAutoCommit() {
+        LOGGER.info("getAutoCommit");
         return this.autoCommit;
     }
 
@@ -107,6 +114,7 @@ public class AfmConnection implements java.sql.Connection {
      */
     @Override
     public void setAutoCommit(boolean autoCommit) {
+        LOGGER.info(String.format("setAutoCommit autoCommit='%s'", autoCommit));
         this.autoCommit = autoCommit;
     }
 
@@ -115,7 +123,7 @@ public class AfmConnection implements java.sql.Connection {
      */
     @Override
     public void commit() {
-
+        LOGGER.info("commit");
     }
 
     /**
@@ -123,7 +131,7 @@ public class AfmConnection implements java.sql.Connection {
      */
     @Override
     public void rollback() {
-
+        LOGGER.info("rollback");
     }
 
     /**
@@ -131,6 +139,7 @@ public class AfmConnection implements java.sql.Connection {
      */
     @Override
     public void close() {
+        LOGGER.info("close");
         this.gd.logout();
         this.isClosed = true;
     }
@@ -140,6 +149,7 @@ public class AfmConnection implements java.sql.Connection {
      */
     @Override
     public boolean isClosed() {
+        LOGGER.info("isClosed");
         return this.isClosed;
     }
 
@@ -156,6 +166,7 @@ public class AfmConnection implements java.sql.Connection {
      */
     @Override
     public boolean isReadOnly() {
+        LOGGER.info("isReadOnly");
         return true;
     }
 
@@ -164,6 +175,7 @@ public class AfmConnection implements java.sql.Connection {
      */
     @Override
     public void setReadOnly(boolean readOnly) throws SQLException {
+        LOGGER.info(String.format("setReadOnly readOnly='%s'", readOnly));
         throw new SQLFeatureNotSupportedException("Connection.setReadOnly is not supported yet.");
     }
 
@@ -172,7 +184,8 @@ public class AfmConnection implements java.sql.Connection {
      */
     @Override
     public String getCatalog() {
-        return "";
+        LOGGER.info("getCatalog");
+        return this.catalog;
     }
 
     /**
@@ -180,7 +193,8 @@ public class AfmConnection implements java.sql.Connection {
      */
     @Override
     public void setCatalog(String catalog) {
-        //throw new SQLFeatureNotSupportedException("Not supported yet.");
+        LOGGER.info(String.format("setCatalog catalog='%s'", catalog));
+        this.catalog = catalog;
     }
 
     /**
@@ -188,7 +202,8 @@ public class AfmConnection implements java.sql.Connection {
      */
     @Override
     public int getTransactionIsolation() throws SQLException {
-        throw new SQLFeatureNotSupportedException("Connection.getTransactionIsolation is not supported yet.");
+        LOGGER.info("getTransactionIsolation");
+        return Connection.TRANSACTION_NONE;
     }
 
     /**
@@ -196,6 +211,7 @@ public class AfmConnection implements java.sql.Connection {
      */
     @Override
     public void setTransactionIsolation(int level) throws SQLException {
+        LOGGER.info(String.format("setTransactionIsolation level='%d'", level));
         throw new SQLFeatureNotSupportedException("Connection.setTransactionIsolation is not supported yet.");
     }
 
@@ -203,16 +219,17 @@ public class AfmConnection implements java.sql.Connection {
      * {@inheritDoc}
      */
     @Override
-    public SQLWarning getWarnings() throws SQLException {
-        throw new SQLFeatureNotSupportedException("Connection.getWarnings is not supported yet.");
+    public SQLWarning getWarnings() {
+        LOGGER.info("getWarnings");
+        return new SQLWarning();
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void clearWarnings() throws SQLException {
-        throw new SQLFeatureNotSupportedException("Connection.getWarnings is not supported yet.");
+    public void clearWarnings() {
+        LOGGER.info("clearWarnings");
     }
 
     /**
@@ -220,6 +237,8 @@ public class AfmConnection implements java.sql.Connection {
      */
     @Override
     public java.sql.Statement createStatement(int resultSetType, int resultSetConcurrency) {
+        LOGGER.info(String.format("createStatement resultSetType='%d', resultSetConcurrency='%d'",
+                resultSetType, resultSetConcurrency));
         return this.createStatement();
     }
 
@@ -229,6 +248,8 @@ public class AfmConnection implements java.sql.Connection {
     @Override
     public PreparedStatement prepareStatement(String sql, int resultSetType, int resultSetConcurrency)
             throws SQLException {
+        LOGGER.info(String.format("prepareStatement sql='%s', resultSetType='%d', resultSetConcurrency='%d'",
+                sql, resultSetType, resultSetConcurrency));
         return this.prepareStatement(sql);
     }
 
@@ -237,6 +258,8 @@ public class AfmConnection implements java.sql.Connection {
      */
     @Override
     public CallableStatement prepareCall(String sql, int resultSetType, int resultSetConcurrency) throws SQLException {
+        LOGGER.info(String.format("prepareCall sql='%s', resultSetType='%d', resultSetConcurrency='%d'",
+                sql, resultSetType, resultSetConcurrency));
         return this.prepareCall(sql);
     }
 
@@ -245,6 +268,7 @@ public class AfmConnection implements java.sql.Connection {
      */
     @Override
     public Map<String, Class<?>> getTypeMap() throws SQLException {
+        LOGGER.info("getTypeMap");
         throw new SQLFeatureNotSupportedException("Connection.getTypeMap is not supported yet.");
     }
 
@@ -253,6 +277,7 @@ public class AfmConnection implements java.sql.Connection {
      */
     @Override
     public void setTypeMap(Map<String, Class<?>> map) throws SQLException {
+        LOGGER.info(String.format("setTypeMap map='%s'", map));
         throw new SQLFeatureNotSupportedException("Connection.setTypeMap is not supported yet.");
     }
 
@@ -261,6 +286,7 @@ public class AfmConnection implements java.sql.Connection {
      */
     @Override
     public int getHoldability() throws SQLException {
+        LOGGER.info("getHoldability");
         throw new SQLFeatureNotSupportedException("Connection.getHoldability is not supported yet.");
     }
 
@@ -269,6 +295,7 @@ public class AfmConnection implements java.sql.Connection {
      */
     @Override
     public void setHoldability(int holdability) throws SQLException {
+        LOGGER.info(String.format("setHoldability holdability='%d'", holdability));
         throw new SQLFeatureNotSupportedException("Connection.setHoldability is not supported yet.");
     }
 
@@ -277,6 +304,7 @@ public class AfmConnection implements java.sql.Connection {
      */
     @Override
     public Savepoint setSavepoint() throws SQLException {
+        LOGGER.info("setSavepoint");
         throw new SQLFeatureNotSupportedException("Connection.setSavepoint is not supported yet.");
     }
 
@@ -285,6 +313,7 @@ public class AfmConnection implements java.sql.Connection {
      */
     @Override
     public Savepoint setSavepoint(String name) throws SQLException {
+        LOGGER.info(String.format("setSavepoint name='%s'", name));
         throw new SQLFeatureNotSupportedException("Connection.setSavepoint is not supported yet.");
     }
 
@@ -293,6 +322,7 @@ public class AfmConnection implements java.sql.Connection {
      */
     @Override
     public void rollback(Savepoint savepoint) throws SQLException {
+        LOGGER.info(String.format("rollback savepoint='%s'", savepoint));
         throw new SQLFeatureNotSupportedException("Connection.rollback is not supported yet.");
     }
 
@@ -301,6 +331,7 @@ public class AfmConnection implements java.sql.Connection {
      */
     @Override
     public void releaseSavepoint(Savepoint savepoint) throws SQLException {
+        LOGGER.info(String.format("releaseSavepoint savepoint='%s'", savepoint));
         throw new SQLFeatureNotSupportedException("Connection.releaseSavepoint is not supported yet.");
     }
 
@@ -309,6 +340,8 @@ public class AfmConnection implements java.sql.Connection {
      */
     @Override
     public java.sql.Statement createStatement(int resultSetType, int resultSetConcurrency, int resultSetHoldability) {
+        LOGGER.info(String.format("createStatement resultsetType='%d', resultSetConcurrency='%d', " +
+                "resultSetHoldability='%s'", resultSetType, resultSetConcurrency, resultSetHoldability));
         return this.createStatement();
     }
 
@@ -318,6 +351,8 @@ public class AfmConnection implements java.sql.Connection {
     @Override
     public PreparedStatement prepareStatement(String sql, int resultSetType, int resultSetConcurrency,
                                               int resultSetHoldability) throws SQLException {
+        LOGGER.info(String.format("prepareStatement sql='%s', resultsetType='%d', resultSetConcurrency='%d', " +
+                "resultSetHoldability='%s'", sql, resultSetType, resultSetConcurrency, resultSetHoldability));
         return this.prepareStatement(sql);
     }
 
@@ -327,6 +362,8 @@ public class AfmConnection implements java.sql.Connection {
     @Override
     public CallableStatement prepareCall(String sql, int resultSetType, int resultSetConcurrency,
                                          int resultSetHoldability) throws SQLException {
+        LOGGER.info(String.format("prepareCall sql='%s', resultsetType='%d', resultSetConcurrency='%d', " +
+                "resultSetHoldability='%s'", sql, resultSetType, resultSetConcurrency, resultSetHoldability));
         return this.prepareCall(sql);
     }
 
@@ -335,6 +372,7 @@ public class AfmConnection implements java.sql.Connection {
      */
     @Override
     public PreparedStatement prepareStatement(String sql, int autoGeneratedKeys) throws SQLException {
+        LOGGER.info(String.format("prepareStatement sql='%s', autoGeneratedKeys='%d'", sql, autoGeneratedKeys));
         return this.prepareStatement(sql);
     }
 
@@ -343,6 +381,7 @@ public class AfmConnection implements java.sql.Connection {
      */
     @Override
     public PreparedStatement prepareStatement(String sql, int[] columnIndexes) throws SQLException {
+        LOGGER.info(String.format("prepareStatement sql='%s', columnIndexes='%s'", sql, Arrays.toString(columnIndexes)));
         return this.prepareStatement(sql);
     }
 
@@ -351,6 +390,7 @@ public class AfmConnection implements java.sql.Connection {
      */
     @Override
     public PreparedStatement prepareStatement(String sql, String[] columnNames) throws SQLException {
+        LOGGER.info(String.format("prepareStatement sql='%s', columnNames='%s'", sql, Arrays.toString(columnNames)));
         return this.prepareStatement(sql);
     }
 
@@ -359,6 +399,7 @@ public class AfmConnection implements java.sql.Connection {
      */
     @Override
     public Clob createClob() throws SQLException {
+        LOGGER.info("createClob");
         throw new SQLFeatureNotSupportedException("Connection.createClob is not supported yet.");
     }
 
@@ -367,6 +408,7 @@ public class AfmConnection implements java.sql.Connection {
      */
     @Override
     public Blob createBlob() throws SQLException {
+        LOGGER.info("createBlob");
         throw new SQLFeatureNotSupportedException("Connection.createBlob is not supported yet.");
     }
 
@@ -375,6 +417,7 @@ public class AfmConnection implements java.sql.Connection {
      */
     @Override
     public NClob createNClob() throws SQLException {
+        LOGGER.info("createNClob");
         throw new SQLFeatureNotSupportedException("Connection.createNClob is not supported yet.");
     }
 
@@ -383,6 +426,7 @@ public class AfmConnection implements java.sql.Connection {
      */
     @Override
     public SQLXML createSQLXML() throws SQLException {
+        LOGGER.info("createSQLXML");
         throw new SQLFeatureNotSupportedException("Connection.createSQLXML is not supported yet.");
     }
 
@@ -391,6 +435,7 @@ public class AfmConnection implements java.sql.Connection {
      */
     @Override
     public boolean isValid(int timeout) {
+        LOGGER.info(String.format("isValid timeout='%d'", timeout));
         return true;
     }
 
@@ -399,6 +444,7 @@ public class AfmConnection implements java.sql.Connection {
      */
     @Override
     public void setClientInfo(String name, String value) {
+        LOGGER.info(String.format("setClientInfo name='%s', value='%s'", name, value));
         this.clientInfo.put(name, value);
     }
 
@@ -407,6 +453,7 @@ public class AfmConnection implements java.sql.Connection {
      */
     @Override
     public String getClientInfo(String name) {
+        LOGGER.info(String.format("getClientInfo name='%s'", name));
         return (String) this.clientInfo.get(name);
     }
 
@@ -415,6 +462,7 @@ public class AfmConnection implements java.sql.Connection {
      */
     @Override
     public Properties getClientInfo() {
+        LOGGER.info("getClientInfo");
         return this.clientInfo;
     }
 
@@ -423,6 +471,7 @@ public class AfmConnection implements java.sql.Connection {
      */
     @Override
     public void setClientInfo(Properties properties) {
+        LOGGER.info(String.format("setClientInfo properties='%s'", properties));
         this.clientInfo = properties;
     }
 
@@ -431,6 +480,7 @@ public class AfmConnection implements java.sql.Connection {
      */
     @Override
     public Array createArrayOf(String typeName, Object[] elements) throws SQLException {
+        LOGGER.info(String.format("createArrayOf typeName='%s', elements='%s'", typeName, Arrays.toString(elements)));
         throw new SQLFeatureNotSupportedException("Connection.createArrayOf is not supported yet.");
     }
 
@@ -439,6 +489,7 @@ public class AfmConnection implements java.sql.Connection {
      */
     @Override
     public Struct createStruct(String typeName, Object[] attributes) throws SQLException {
+        LOGGER.info(String.format("createStruct typeName='%s', attributes='%s'", typeName, Arrays.toString(attributes)));
         throw new SQLFeatureNotSupportedException("Connection.createStruct is not supported yet.");
     }
 
@@ -447,6 +498,7 @@ public class AfmConnection implements java.sql.Connection {
      */
     @Override
     public String getSchema() {
+        LOGGER.info("getSchema");
         return this.afmDatabaseMetaData.getSchema();
     }
 
@@ -455,6 +507,7 @@ public class AfmConnection implements java.sql.Connection {
      */
     @Override
     public void setSchema(String schema) throws SQLException {
+        LOGGER.info(String.format("setSchema schema='%s'", schema));
         this.afmDatabaseMetaData.setSchema(schema);
     }
 
@@ -463,6 +516,7 @@ public class AfmConnection implements java.sql.Connection {
      */
     @Override
     public void abort(Executor executor) {
+        LOGGER.info(String.format("abort executor='%s'", executor));
         this.close();
     }
 
@@ -471,6 +525,7 @@ public class AfmConnection implements java.sql.Connection {
      */
     @Override
     public void setNetworkTimeout(Executor executor, int milliseconds) throws SQLException {
+        LOGGER.info(String.format("setNetworkTimeout executor='%s', milliseconds='%d'", executor, milliseconds));
         throw new SQLFeatureNotSupportedException("Connection.setNetworkTimeout is not supported yet.");
     }
 
@@ -479,6 +534,7 @@ public class AfmConnection implements java.sql.Connection {
      */
     @Override
     public int getNetworkTimeout() throws SQLException {
+        LOGGER.info("getNetworkTimeout");
         throw new SQLFeatureNotSupportedException("Connection.getNetworkTimeout is not supported yet.");
     }
 
@@ -487,6 +543,7 @@ public class AfmConnection implements java.sql.Connection {
      */
     @Override
     public <T> T unwrap(Class<T> iface) throws SQLException {
+        LOGGER.info(String.format("unwrap iface='%s'", iface));
         throw new SQLFeatureNotSupportedException("Connection.unwrap is not supported yet.");
     }
 
@@ -495,6 +552,7 @@ public class AfmConnection implements java.sql.Connection {
      */
     @Override
     public boolean isWrapperFor(Class<?> iface) throws SQLException {
+        LOGGER.info(String.format("isWrapperFor iface='%s'", iface));
         throw new SQLFeatureNotSupportedException("Connection.isWrapperFor is not supported yet.");
     }
 

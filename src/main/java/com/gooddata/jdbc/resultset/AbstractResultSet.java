@@ -23,7 +23,7 @@ public abstract class AbstractResultSet implements java.sql.ResultSet {
     public static final int HOLDABILITY = CLOSE_CURSORS_AT_COMMIT;
     public static final int FETCH_DIRECTION = FETCH_FORWARD;
     public static final int CONCURRENCY = CONCUR_READ_ONLY;
-    public static final int TYPE = TYPE_SCROLL_INSENSITIVE;
+    public static final int TYPE = TYPE_FORWARD_ONLY;
 
     // Fetch size
     protected int fetchSize;
@@ -687,12 +687,6 @@ public abstract class AbstractResultSet implements java.sql.ResultSet {
         throw new SQLFeatureNotSupportedException("AbstractResultSet.getBinaryStream is not implemented yet");
     }
 
-    /**
-     * Get ascii stream value
-     * @param columnLabel name of the column
-     * @return ascii stream value
-     * @throws SQLException in case of issues
-     */
     /**
      * {@inheritDoc}
      */

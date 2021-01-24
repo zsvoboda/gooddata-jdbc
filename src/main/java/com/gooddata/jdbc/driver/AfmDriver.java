@@ -60,6 +60,7 @@ public class AfmDriver implements java.sql.Driver {
      * Default constructor
      */
     public AfmDriver() {
+        LOGGER.info("AfmDriver");
     }
 
 	/**
@@ -68,7 +69,8 @@ public class AfmDriver implements java.sql.Driver {
 	 * @return cached catalog
 	 */
 	public static Catalog getCachedCatalog(String schema) {
-    	return catalogCache.get(schema);
+        LOGGER.info(String.format("getCachedCatalog: schema='%s'", schema));
+	    return catalogCache.get(schema);
 	}
 
 	/**
@@ -77,7 +79,8 @@ public class AfmDriver implements java.sql.Driver {
 	 * @param catalog catalog to cache
 	 */
 	public static void cacheCatalog(String schema, Catalog catalog) {
-		catalogCache.put(schema, catalog);
+        LOGGER.info(String.format("cacheCatalog: schema='%s'", schema));
+	    catalogCache.put(schema, catalog);
 	}
 
     /**
@@ -85,9 +88,9 @@ public class AfmDriver implements java.sql.Driver {
      */
     @Override
     public java.sql.Connection connect(String url, Properties info) throws SQLException {
+        LOGGER.info(String.format("connect: url='%s', info = '%s'", url, info));
         if (this.acceptsURL(url)) {
             try {
-
                 return new AfmConnection(url, info);
             } catch (IOException e) {
                 throw new SQLException(e);
@@ -103,6 +106,7 @@ public class AfmDriver implements java.sql.Driver {
      */
     @Override
     public boolean acceptsURL(String url) {
+        LOGGER.info(String.format("acceptsURL: url='%s'", url));
         return url.startsWith("jdbc:gd:");
     }
 
@@ -111,7 +115,8 @@ public class AfmDriver implements java.sql.Driver {
      */
     @Override
     public DriverPropertyInfo[] getPropertyInfo(String url, Properties info) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Driver.getPropertyInfo is not supported yet.");
+        LOGGER.info(String.format("getPropertyInfo: url='%s' info='%s'", url, info));
+        return new DriverPropertyInfo[]{};
     }
 
     /**
@@ -119,6 +124,7 @@ public class AfmDriver implements java.sql.Driver {
      */
     @Override
     public int getMajorVersion() {
+        LOGGER.info(String.format("getMajorVersion"));
         return MAJOR_VERSION;
     }
 
@@ -127,6 +133,7 @@ public class AfmDriver implements java.sql.Driver {
      */
     @Override
     public int getMinorVersion() {
+        LOGGER.info(String.format("getMinorVersion"));
         return MINOR_VERSION;
     }
 
@@ -135,6 +142,7 @@ public class AfmDriver implements java.sql.Driver {
      */
     @Override
     public boolean jdbcCompliant() {
+        LOGGER.info(String.format("jdbcCompliant"));
         return false;
     }
 
@@ -143,6 +151,7 @@ public class AfmDriver implements java.sql.Driver {
      */
     @Override
     public Logger getParentLogger() {
+        LOGGER.info(String.format("getParentLogger"));
         return LOGGER;
     }
 
