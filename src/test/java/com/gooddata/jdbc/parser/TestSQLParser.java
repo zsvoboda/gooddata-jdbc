@@ -104,5 +104,14 @@ public class TestSQLParser {
         parser.parseQuery("SELECT c1,c2,m1 FROM t1 WHERE c1 BETWEEN 2 ");
     }
 
+    @Test
+    public void testSparkSubquery() throws JSQLParserException {
+        SQLParser parser = new SQLParser();
+        SQLParser.ParsedSQL parsedSQL = parser.parseQuery("SELECT * FROM (SELECT \"PRODUCT_CATEGORY\", \"REVENUE\") " +
+                "SPARK_GEN_SUBQ_0 WHERE 1 = 0");
+        assert(parsedSQL.getColumns().contains("PRODUCT_CATEGORY"));
+        assert(parsedSQL.getColumns().contains("REVENUE"));
+    }
+
 
 }

@@ -34,6 +34,7 @@ public class AfmDriver implements java.sql.Driver {
         Logger log = Logger.getGlobal();
         FileInputStream fis = new FileInputStream(String.format("%s/.logging",
                 System.getProperty("user.home")));
+        //FileInputStream fis = new FileInputStream("/.logging");
         LogManager.getLogManager().readConfiguration(fis);
         log.setUseParentHandlers(false);
         fis.close();

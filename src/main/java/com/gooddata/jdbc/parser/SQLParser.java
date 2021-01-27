@@ -181,6 +181,7 @@ public class SQLParser {
      */
     public ParsedSQL parseQuery(String query) throws JSQLParserException {
         SQLParser.LOGGER.fine(String.format("Parsing query '%s'", query));
+        final List<ParsedSQL> results = new ArrayList<>();
         net.sf.jsqlparser.statement.Statement st = CCJSqlParserUtil.parse(query);
         if (st instanceof Select) {
             Select sl = (Select) st;
@@ -210,7 +211,20 @@ public class SQLParser {
                         }
 
                         public void visit(SubSelect subSelect) {
-                            errors.add(new JSQLParserException("Subqueries queries aren't supported."));
+                            /*
+                            errors.add(new JSQLParserException(
+                                    String.format("Subqueries queries aren't supported sql='%s'.", query)
+                            ));
+                            */
+                            try {
+                                // handling SPARK SUBQUERY format
+                                // SELECT * FROM (<original select>) SPARK_GEN_SUBQ_0 WHERE 1=0
+                                results.add(parseQuery(subSelect.getSelectBody().toString()));
+                            } catch (JSQLParserException e) {
+                                errors.add(new JSQLParserException(
+                                        String.format("Wrong subquery format sql='%s'.",
+                                                subSelect.getSelectBody().toString())));
+                            }
                             super.visit(subSelect);
                         }
 
@@ -344,7 +358,12 @@ public class SQLParser {
             if (errors.size() > 0) {
                 throw errors.get(0);
             }
-            return new ParsedSQL(columns, tables, filters, orderBys, limitAndOffset[0], limitAndOffset[1]);
+            if ( results.size()>0 ) {
+                return results.get(0);
+            }
+            else {
+                return new ParsedSQL(columns, tables, filters, orderBys, limitAndOffset[0], limitAndOffset[1]);
+            }
         } else {
             throw new JSQLParserException("Only SELECT SQL statements are supported.");
         }

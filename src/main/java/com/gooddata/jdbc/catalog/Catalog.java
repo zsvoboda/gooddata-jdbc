@@ -12,6 +12,8 @@ import com.gooddata.sdk.model.project.Project;
 import com.gooddata.sdk.service.GoodData;
 import com.gooddata.sdk.service.md.MetadataService;
 import org.apache.commons.lang3.ArrayUtils;
+import org.springframework.core.task.SimpleAsyncTaskExecutor;
+import org.springframework.core.task.TaskExecutor;
 import org.w3c.dom.Text;
 
 import java.math.BigDecimal;
@@ -25,29 +27,7 @@ import java.util.stream.Collectors;
  */
 public class Catalog {
 
-    /**
-     * Duplicate LDM object exception is thrown when there are multiple LDM objects with the same title
-     */
-    public static class DuplicateCatalogEntryException extends Exception {
-        public DuplicateCatalogEntryException(String e) {
-            super(e);
-        }
-    }
-
-    /**
-     * Thrown when a LDM object with a title isn't found
-     */
-    public static class CatalogEntryNotFoundException extends Exception {
-        public CatalogEntryNotFoundException(String e) {
-            super(e);
-        }
-        public CatalogEntryNotFoundException(Exception e) {
-            super(e);
-        }
-    }
-
     private final static Logger LOGGER = Logger.getLogger(Catalog.class.getName());
-
     /**
      * AFM objects (displayForms, and metrics)
      */
@@ -56,6 +36,26 @@ public class Catalog {
      * LDM objects (facts, metrics and attributes)
      */
     private final Map<String, CatalogEntry> maqlEntries = new HashMap<>();
+    private final Comparator<CatalogEntry> CatalogEntryComparator = Comparator.comparing(CatalogEntry::getTitle);
+    private final int[] ATTRIBUTE_FILTER_OPERATORS = new int[] {
+            SQLParser.ParsedSQL.FilterExpression.OPERATOR_EQUAL,
+            SQLParser.ParsedSQL.FilterExpression.OPERATOR_NOT_EQUAL,
+            SQLParser.ParsedSQL.FilterExpression.OPERATOR_IN,
+            SQLParser.ParsedSQL.FilterExpression.OPERATOR_NOT_IN
+    };
+    private final int[] METRIC_FILTER_OPERATORS = new int[] {
+            SQLParser.ParsedSQL.FilterExpression.OPERATOR_EQUAL,
+            SQLParser.ParsedSQL.FilterExpression.OPERATOR_NOT_EQUAL,
+            SQLParser.ParsedSQL.FilterExpression.OPERATOR_GREATER,
+            SQLParser.ParsedSQL.FilterExpression.OPERATOR_GREATER_OR_EQUAL,
+            SQLParser.ParsedSQL.FilterExpression.OPERATOR_LOWER,
+            SQLParser.ParsedSQL.FilterExpression.OPERATOR_LOWER_OR_EQUAL,
+            SQLParser.ParsedSQL.FilterExpression.OPERATOR_BETWEEN,
+            SQLParser.ParsedSQL.FilterExpression.OPERATOR_NOT_BETWEEN
+    };
+
+    // Is catalog populated?
+    private boolean isCatalogPopulated = false;
 
     /**
      * Constructor
@@ -77,17 +77,24 @@ public class Catalog {
      * @param attribute attribute to add
      */
     public void addAttribute(Attribute attribute) {
-        DisplayForm displayForm = attribute.getDefaultDisplayForm();
-        CatalogEntry e = new CatalogEntry(displayForm.getUri(),
-                attribute.getTitle(), displayForm.getCategory(), displayForm.getIdentifier(),
-                new UriObjQualifier(displayForm.getUri()));
-        //TODO getting default display form only
-        // under the attribute title
-        e.setDataType(CatalogEntry.DEFAULT_ATTRIBUTE_DATATYPE);
-        this.afmEntries.put(displayForm.getUri(), e);
-        this.maqlEntries.put(attribute.getUri(), new CatalogEntry(attribute.getUri(),
-                attribute.getTitle(), attribute.getCategory(), attribute.getIdentifier(),
-                new UriObjQualifier(attribute.getUri())));
+        LOGGER.info(String.format("Adding attribute title='%s'", attribute.getTitle()));
+        if (attribute.getDisplayForms().size() > 0) {
+            DisplayForm displayForm = attribute.getDefaultDisplayForm();
+            LOGGER.info(String.format("Default display form title='%s'", displayForm.getTitle()));
+            CatalogEntry e = new CatalogEntry(displayForm.getUri(),
+                    attribute.getTitle(), displayForm.getCategory(), displayForm.getIdentifier(),
+                    new UriObjQualifier(displayForm.getUri()));
+            //TODO getting default display form only
+            // under the attribute title
+            e.setDataType(CatalogEntry.DEFAULT_ATTRIBUTE_DATATYPE);
+            this.afmEntries.put(displayForm.getUri(), e);
+            this.maqlEntries.put(attribute.getUri(), new CatalogEntry(attribute.getUri(),
+                    attribute.getTitle(), attribute.getCategory(), attribute.getIdentifier(),
+                    new UriObjQualifier(attribute.getUri())));
+        }
+        else {
+            LOGGER.info(String.format("Skipping attribute title='%s'", attribute.getTitle()));
+        }
     }
 
     /**
@@ -127,6 +134,38 @@ public class Catalog {
         this.maqlEntries.put(fact.getUri(), e);
     }
 
+    private class PopulateExecutor extends Thread {
+
+        private GoodData gd;
+        private String workspaceUri;
+
+        public PopulateExecutor(GoodData gd, String workspaceUri) {
+            this.gd = gd;
+            this.workspaceUri = workspaceUri;
+        }
+
+        @Override
+        public void run() {
+            try {
+                populateSync(this.gd, this.workspaceUri);
+            } catch (SQLException e) {
+                // TBD better error handling
+                System.err.println(e);
+            }
+        }
+    }
+
+    public synchronized void waitForCatalogPopulationFinished() {
+        while (!this.isCatalogPopulated) {
+            try {
+                wait();
+            } catch (InterruptedException e) {
+                // TBD better handling
+                e.printStackTrace();
+            }
+        }
+    }
+
     /**
      * Populates the catalog of attributes and metrics
      *
@@ -134,31 +173,51 @@ public class Catalog {
      * @param workspaceUri GoodData workspace URI
      * @throws SQLException generic issue
      */
-    public void populate(GoodData gd, String workspaceUri) throws SQLException {
+    public void populateAsync(GoodData gd, String workspaceUri) throws SQLException {
+        PopulateExecutor exec = new PopulateExecutor(gd, workspaceUri);
+        exec.start();
+    }
+
+    /**
+     * Populates the catalog of attributes and metrics
+     *
+     * @param gd        Gooddata reference
+     * @param workspaceUri GoodData workspace URI
+     * @throws SQLException generic issue
+     */
+    public synchronized void populateSync(GoodData gd, String workspaceUri) throws SQLException {
         LOGGER.info(String.format("Populating catalog for schema '%s'", workspaceUri));
+        LOGGER.info("Catalog lock acquired.");
+        this.isCatalogPopulated = false;
         Project workspace = gd.getProjectService().getProjectByUri(workspaceUri);
         if (workspace == null) {
             throw new SQLException(String.format("Workspace '%s' doesn't exist.", workspaceUri));
         }
         MetadataService gdMeta = gd.getMetadataService();
+        LOGGER.info("Fetching metrics.");
         Collection<Entry> metricEntries = gdMeta.find(workspace, Metric.class);
 
         for (Entry metric : metricEntries) {
             this.addMetric(metric);
         }
 
+        LOGGER.info("Fetching attributes.");
         Collection<Entry> attributeEntries = gdMeta.find(workspace, Attribute.class);
         for (Entry attribute : attributeEntries) {
             this.addAttribute(gdMeta.getObjByUri(attribute.getUri(), Attribute.class));
         }
 
+        LOGGER.info("Fetching facts.");
         Collection<Entry> factEntries = gdMeta.find(workspace, Fact.class);
         for (Entry fact : factEntries) {
             this.addFact(fact);
         }
+        this.isCatalogPopulated = true;
+        LOGGER.info(String.format("Catalog population finished. Fetched '%d' AFM and '%d' objects.",
+                this.afmEntries.size(), this.maqlEntries.size()));
+        notifyAll();
+        LOGGER.info("Catalog lock released");
     }
-
-    private final Comparator<CatalogEntry> CatalogEntryComparator = Comparator.comparing(CatalogEntry::getTitle);
 
     /**
      * Get all AFM entries
@@ -343,24 +402,6 @@ public class Catalog {
                 "Unsupported filter operator '%d'", parserOperator));
     }
 
-    private final int[] ATTRIBUTE_FILTER_OPERATORS = new int[] {
-            SQLParser.ParsedSQL.FilterExpression.OPERATOR_EQUAL,
-            SQLParser.ParsedSQL.FilterExpression.OPERATOR_NOT_EQUAL,
-            SQLParser.ParsedSQL.FilterExpression.OPERATOR_IN,
-            SQLParser.ParsedSQL.FilterExpression.OPERATOR_NOT_IN
-    };
-    private final int[] METRIC_FILTER_OPERATORS = new int[] {
-            SQLParser.ParsedSQL.FilterExpression.OPERATOR_EQUAL,
-            SQLParser.ParsedSQL.FilterExpression.OPERATOR_NOT_EQUAL,
-            SQLParser.ParsedSQL.FilterExpression.OPERATOR_GREATER,
-            SQLParser.ParsedSQL.FilterExpression.OPERATOR_GREATER_OR_EQUAL,
-            SQLParser.ParsedSQL.FilterExpression.OPERATOR_LOWER,
-            SQLParser.ParsedSQL.FilterExpression.OPERATOR_LOWER_OR_EQUAL,
-            SQLParser.ParsedSQL.FilterExpression.OPERATOR_BETWEEN,
-            SQLParser.ParsedSQL.FilterExpression.OPERATOR_NOT_BETWEEN
-    };
-
-
     /**
      * Resolve the parsed SQL filters to AFM filters
      *
@@ -431,6 +472,27 @@ public class Catalog {
             }
         }
         return afmFilters;
+    }
+
+    /**
+     * Duplicate LDM object exception is thrown when there are multiple LDM objects with the same title
+     */
+    public static class DuplicateCatalogEntryException extends Exception {
+        public DuplicateCatalogEntryException(String e) {
+            super(e);
+        }
+    }
+
+    /**
+     * Thrown when a LDM object with a title isn't found
+     */
+    public static class CatalogEntryNotFoundException extends Exception {
+        public CatalogEntryNotFoundException(String e) {
+            super(e);
+        }
+        public CatalogEntryNotFoundException(Exception e) {
+            super(e);
+        }
     }
 
 }

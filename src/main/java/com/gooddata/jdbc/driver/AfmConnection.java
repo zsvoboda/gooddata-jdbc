@@ -70,7 +70,7 @@ public class AfmConnection implements java.sql.Connection {
     @Override
     public java.sql.Statement createStatement() {
         LOGGER.info("createStatement");
-        return new AfmStatement(this, this.gd, this.afmDatabaseMetaData);
+        return new AfmStatement(this, this.gd, this.afmDatabaseMetaData, "");
     }
 
     /**
@@ -79,7 +79,7 @@ public class AfmConnection implements java.sql.Connection {
     @Override
     public PreparedStatement prepareStatement(String sql) throws SQLException {
         LOGGER.info(String.format("prepareStatement sql='%s'", sql));
-        throw new SQLFeatureNotSupportedException("Connection.prepareStatement is not supported yet.");
+        return new AfmStatement(this, this.gd, this.afmDatabaseMetaData, sql);
     }
 
     /**
@@ -97,7 +97,7 @@ public class AfmConnection implements java.sql.Connection {
     @Override
     public String nativeSQL(String sql) throws SQLException {
         LOGGER.info(String.format("nativeSQL sql='%s'", sql));
-        throw new SQLFeatureNotSupportedException("Connection.nativeSQL is not supported yet.");
+        return sql;
     }
 
     /**

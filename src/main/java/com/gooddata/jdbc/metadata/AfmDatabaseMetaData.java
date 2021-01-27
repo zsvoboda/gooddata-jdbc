@@ -66,6 +66,7 @@ public class AfmDatabaseMetaData implements java.sql.DatabaseMetaData {
      * @return GoodData objects catalog
      */
     public Catalog getCatalog() {
+        this.catalog.waitForCatalogPopulationFinished();
         return catalog;
     }
 
@@ -104,7 +105,7 @@ public class AfmDatabaseMetaData implements java.sql.DatabaseMetaData {
         this.catalog = AfmDriver.getCachedCatalog(schema.getSchemaUri());
         if(this.catalog == null) {
             this.catalog = new Catalog();
-            this.catalog.populate(gd, schema.getSchemaUri());
+            this.catalog.populateAsync(gd, schema.getSchemaUri());
             AfmDriver.cacheCatalog(schema.getSchemaUri(), this.catalog);
         }
         this.setActiveWorkspace(schema);
