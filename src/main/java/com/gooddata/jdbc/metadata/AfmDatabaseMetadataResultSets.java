@@ -154,7 +154,7 @@ public class AfmDatabaseMetadataResultSets {
                                 .collect(Collectors.toList())),
                 new MetadataResultSet.MetaDataColumn("BUFFER_LENGTH", "INTEGER",
                         catalog.afmEntries().stream()
-                                .map(e -> Integer.toString(e.getSize()))
+                                .map(e -> Integer.toString(e.getSize() + e.getPrecision()))
                                 .collect(Collectors.toList())),
                 new MetadataResultSet.MetaDataColumn("DECIMAL_DIGITS", "INTEGER",
                         catalog.afmEntries().stream()

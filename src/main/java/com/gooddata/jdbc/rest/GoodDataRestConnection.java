@@ -1,6 +1,5 @@
 package com.gooddata.jdbc.rest;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -14,6 +13,7 @@ import com.gooddata.sdk.model.project.Project;
 import org.springframework.http.*;
 import org.springframework.web.client.RestTemplate;
 
+import java.io.IOException;
 import java.sql.SQLException;
 import java.util.*;
 
@@ -133,7 +133,7 @@ public class GoodDataRestConnection {
                 throw new Catalog.CatalogEntryNotFoundException(
                         String.format("AttributeElements lookup failed for uri '%s'", displayFormUri));
             }
-        } catch (JsonProcessingException e) {
+        } catch (IOException e) {
             throw new Catalog.CatalogEntryNotFoundException(e);
         }
     }

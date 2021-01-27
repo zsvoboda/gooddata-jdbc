@@ -6,7 +6,6 @@ import org.testng.annotations.Test;
 import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.util.logging.Logger;
 
 public class TestAfmDriver {
 
