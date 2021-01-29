@@ -20,15 +20,15 @@ public class TestSQLParser {
 
         parsedSQL = parser.parseQuery("SELECT c1,c2 FROM t1 WHERE c1 IN ('v1','v2','v3')");
         assert(parsedSQL.getFilters().get(0).getOperator() == SQLParser.ParsedSQL.FilterExpression.OPERATOR_IN);
-        assert(parsedSQL.getFilters().get(0).getValues().contains("v1"));
-        assert(parsedSQL.getFilters().get(0).getValues().contains("v2"));
-        assert(parsedSQL.getFilters().get(0).getValues().contains("v3"));
+        assert(parsedSQL.getFilters().get(0).getValues().contains("'v1'"));
+        assert(parsedSQL.getFilters().get(0).getValues().contains("'v2'"));
+        assert(parsedSQL.getFilters().get(0).getValues().contains("'v3'"));
 
         parsedSQL = parser.parseQuery("SELECT \"Product Category\",\"# of Orders\" " +
                 "WHERE \"Product Category\" NOT IN ('Outdoor', 'Clothing')");
         assert(parsedSQL.getFilters().get(0).getOperator() == SQLParser.ParsedSQL.FilterExpression.OPERATOR_NOT_IN);
-        assert(parsedSQL.getFilters().get(0).getValues().contains("Outdoor"));
-        assert(parsedSQL.getFilters().get(0).getValues().contains("Clothing"));
+        assert(parsedSQL.getFilters().get(0).getValues().contains("'Outdoor'"));
+        assert(parsedSQL.getFilters().get(0).getValues().contains("'Clothing'"));
 
         parsedSQL = parser.parseQuery("SELECT \"Product Category\",\"# of Orders\" " +
                 "WHERE \"Product Category\" NOT IN ('Outdoor', 'Clothing') AND \"Revenue\" NOT BETWEEN 1000 AND 10000");
@@ -58,13 +58,13 @@ public class TestSQLParser {
         assert(parsedSQL.getFilters().get(0).getValues().get(1).equals("6"));
 
         parsedSQL = parser.parseQuery("SELECT c1,c2,m1 FROM t1 WHERE c1 = 'Home'");
-        assert(parsedSQL.getFilters().get(0).getValues().get(0).equals("Home"));
+        assert(parsedSQL.getFilters().get(0).getValues().get(0).equals("'Home'"));
 
         parsedSQL = parser.parseQuery("SELECT c1,c2,m1 FROM t1 WHERE c1= 'Home'");
-        assert(parsedSQL.getFilters().get(0).getValues().get(0).equals("Home"));
+        assert(parsedSQL.getFilters().get(0).getValues().get(0).equals("'Home'"));
 
         parsedSQL = parser.parseQuery("SELECT c1,c2,m1 FROM t1 WHERE c1='Home '");
-        assert(parsedSQL.getFilters().get(0).getValues().get(0).equals("Home "));
+        assert(parsedSQL.getFilters().get(0).getValues().get(0).equals("'Home '"));
 
     }
 
@@ -110,6 +110,16 @@ public class TestSQLParser {
         SQLParser.ParsedSQL parsedSQL = parser.parseQuery("SELECT * FROM (SELECT \"PRODUCT_CATEGORY\", \"REVENUE\") " +
                 "SPARK_GEN_SUBQ_0 WHERE 1 = 0");
         assert(parsedSQL.getColumns().contains("PRODUCT_CATEGORY"));
+        assert(parsedSQL.getColumns().contains("REVENUE"));
+    }
+
+    @Test
+    public void testPreparedSQL() throws JSQLParserException {
+        SQLParser parser = new SQLParser();
+        SQLParser.ParsedSQL parsedSQL = parser.parseQuery("SELECT \"PRODUCT_CATEGORY\", \"REVENUE\"  WHERE " +
+                "\"PRODUCT_CATEGORY\" IN (?)");
+        parsedSQL = parser.parseQuery("SELECT \"PRODUCT_CATEGORY\", \"REVENUE\"  WHERE " +
+                "\"PRODUCT_CATEGORY\" = ? AND \"PRODUCT_NAME\" = '?' ");
         assert(parsedSQL.getColumns().contains("REVENUE"));
     }
 

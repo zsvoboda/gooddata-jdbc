@@ -452,7 +452,16 @@ public class Catalog {
                     throw new SQLException("Only =,<>,IN, and NOT IN " +
                             "operators are supported for attributes.");
                 CompatibilityFilter f;
-                List<String> values = sqlFilter.getValues();
+                List<String> quotedValues = sqlFilter.getValues();
+                List<String> unQuotedValues = quotedValues.stream().filter(e->!(e.startsWith("'") && e.endsWith("'")))
+                        .collect(Collectors.toList());
+
+                if(unQuotedValues.size()>0) {
+                    throw new SQLException(String.format("WHERE condition attribute values without quotes '%s'",
+                            unQuotedValues));
+                }
+                List<String> values = sqlFilter.getValues().stream().map(e->e.replace("'",""))
+                        .collect(Collectors.toList());
                 ValueAttributeFilterElements e = new ValueAttributeFilterElements(values);
                 if (sqlFilter.getOperator() == SQLParser.ParsedSQL.FilterExpression.OPERATOR_EQUAL) {
                     f = new PositiveAttributeFilter(catalogEntry.getGdObject(), e);

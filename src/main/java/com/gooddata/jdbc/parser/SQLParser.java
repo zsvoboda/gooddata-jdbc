@@ -170,7 +170,7 @@ public class SQLParser {
             org.apache.commons.jexl2.Expression jexlExpr = jexl.createExpression(e.toString());
             return jexlExpr.evaluate(new MapContext()).toString();
         }
-        return e.toString().replaceAll("'", "");
+        return e.toString();
     }
 
     /**
