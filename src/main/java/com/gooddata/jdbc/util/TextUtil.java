@@ -1,5 +1,8 @@
 package com.gooddata.jdbc.util;
 
+import com.gooddata.jdbc.catalog.Catalog;
+
+import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -80,6 +83,51 @@ public class TextUtil {
             throw new InvalidFormatException(String.format("Wrong column format: '%s'", columnName));
         }
     }
+
+    /**
+     * Finds all object uris in MAQL expression
+     * @param maqlExpression MAQL
+     * @return URI
+     * @throws InvalidFormatException syntax issue
+     */
+    public static List<String> findAllObjectUris(String maqlExpression) throws InvalidFormatException {
+        try {
+            List<String> uris = new ArrayList<>();
+            Pattern p = Pattern.compile("\\[(/gdc/md/[a-z0-9]+/obj/[0-9]+)]");
+            Matcher m = p.matcher(maqlExpression);
+            while (m.find()) {
+                for (int i = 1; i <= m.groupCount(); i++) {
+                    uris.add(m.group(i));
+                }
+            }
+            return uris;
+        } catch (IllegalStateException e) {
+            throw new InvalidFormatException(String.format("Wrong MAQL format: '%s'", maqlExpression));
+        }
+    }
+
+    /**
+     * Finds all element uris in MAQL expression
+     * @param maqlExpression MAQL
+     * @return URI
+     * @throws InvalidFormatException syntax issue
+     */
+    public static List<String> findAllElementUris(String maqlExpression) throws InvalidFormatException {
+        try {
+            List<String> uris = new ArrayList<>();
+            Pattern p = Pattern.compile("\\[(/gdc/md/[a-z0-9]+/obj/[0-9]+/elements\\?id=[0-9]+)]");
+            Matcher m = p.matcher(maqlExpression);
+            while (m.find()) {
+                for (int i = 1; i <= m.groupCount(); i++) {
+                    uris.add(m.group(i));
+                }
+            }
+            return uris;
+        } catch (IllegalStateException e) {
+            throw new InvalidFormatException(String.format("Wrong MAQL format: '%s'", maqlExpression));
+        }
+    }
+
 
     /**
      * Contains case insensitive

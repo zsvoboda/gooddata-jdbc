@@ -8,7 +8,9 @@ import com.gooddata.jdbc.parser.MaqlParser;
 import com.gooddata.jdbc.parser.SQLParser;
 import com.gooddata.jdbc.resultset.AbstractResultSet;
 import com.gooddata.jdbc.resultset.AfmResultSet;
+import com.gooddata.jdbc.resultset.MetadataResultSet;
 import com.gooddata.jdbc.util.TextUtil;
+import com.gooddata.sdk.model.executeafm.ObjQualifier;
 import com.gooddata.sdk.model.executeafm.afm.Afm;
 import com.gooddata.sdk.model.executeafm.afm.AttributeItem;
 import com.gooddata.sdk.model.executeafm.afm.MeasureItem;
@@ -25,8 +27,8 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.math.BigDecimal;
 import java.net.URL;
-import java.sql.*;
 import java.sql.Date;
+import java.sql.*;
 import java.util.*;
 import java.util.logging.Logger;
 
@@ -46,7 +48,7 @@ public class AfmStatement implements java.sql.Statement, PreparedStatement {
     private final Map<Integer, Object> preparedStatementParams = new HashMap<>();
 
     private boolean isClosed = false;
-    private AfmResultSet resultSet;
+    private ResultSet resultSet;
     private int maxRows = 0;
 
     private String sql;
@@ -78,11 +80,8 @@ public class AfmStatement implements java.sql.Statement, PreparedStatement {
      * @param columns AFM columns
      * @param filters AFM filters
      * @return AFM object
-     * @throws Catalog.DuplicateCatalogEntryException when there are multiple LDM object with a named mentioned in the parsed SQL
-     * @throws Catalog.CatalogEntryNotFoundException  when a SQL object (column) can't be resolved
      */
-    private Afm getAfm(List<CatalogEntry> columns, List<AfmFilter> filters) throws Catalog.DuplicateCatalogEntryException,
-            Catalog.CatalogEntryNotFoundException {
+    private Afm getAfm(List<CatalogEntry> columns, List<AfmFilter> filters) {
         LOGGER.info(String.format("getAfm columns='%s', filters='%s'", columns, filters));
         Afm afm = new Afm();
         for (CatalogEntry o : columns) {
@@ -107,8 +106,7 @@ public class AfmStatement implements java.sql.Statement, PreparedStatement {
         LOGGER.info(String.format("executeQuery sql='%s'", sql));
         try {
             this.sql = sql;
-            SQLParser parser = new SQLParser();
-            SQLParser.ParsedSQL parsedSql = parser.parseQuery(sql);
+            SQLParser.ParsedSQL parsedSql = SQLParser.parseQuery(sql);
             return execute(parsedSql);
         } catch (JSQLParserException | Catalog.CatalogEntryNotFoundException
                 | Catalog.DuplicateCatalogEntryException | TextUtil.InvalidFormatException e) {
@@ -122,9 +120,8 @@ public class AfmStatement implements java.sql.Statement, PreparedStatement {
     @Override
     public ResultSet executeQuery() throws SQLException {
         try {
-            SQLParser parser = new SQLParser();
-            SQLParser.ParsedSQL parsedSql = parser.parseQuery(this.sql);
-            // TBD replace prepared sql parameters here
+            SQLParser.ParsedSQL parsedSql = SQLParser.parseQuery(this.sql);
+            parsedSql = SQLParser.substitutePreparedParams(parsedSql, this.preparedStatementParams);
             return execute(parsedSql);
         } catch (JSQLParserException | Catalog.CatalogEntryNotFoundException
                 | Catalog.DuplicateCatalogEntryException | TextUtil.InvalidFormatException e) {
@@ -134,12 +131,13 @@ public class AfmStatement implements java.sql.Statement, PreparedStatement {
 
     /**
      * Execute either regular or prepared statement
+     *
      * @param parsedSql parsed SQL
      * @return ResultSet
      * @throws Catalog.DuplicateCatalogEntryException in case of duplicate catalog item
-     * @throws Catalog.CatalogEntryNotFoundException in case of non-existent catalog item
-     * @throws TextUtil.InvalidFormatException in case of invalid datetype format
-     * @throws SQLException other problems
+     * @throws Catalog.CatalogEntryNotFoundException  in case of non-existent catalog item
+     * @throws TextUtil.InvalidFormatException        in case of invalid datetype format
+     * @throws SQLException                           other problems
      */
     private ResultSet execute(SQLParser.ParsedSQL parsedSql) throws Catalog.DuplicateCatalogEntryException,
             Catalog.CatalogEntryNotFoundException, TextUtil.InvalidFormatException, SQLException {
@@ -178,9 +176,14 @@ public class AfmStatement implements java.sql.Statement, PreparedStatement {
                 return false;
             } else if (sql.trim().toLowerCase().startsWith("drop")) {
                 MaqlParser parser = new MaqlParser();
-                String parsedDropMetric = parser.parseDropMetric(sql);
+                String parsedDropMetric = parser.parseDropOrDescribeMetric(sql);
                 this.executeDropMetric(parsedDropMetric);
                 return false;
+            } else if (sql.trim().toLowerCase().startsWith("describe")) {
+                MaqlParser parser = new MaqlParser();
+                String parsedDropMetric = parser.parseDropOrDescribeMetric(sql);
+                this.resultSet = this.executeDescribeMetric(parsedDropMetric);
+                return true;
             } else {
                 this.resultSet = (AfmResultSet) this.executeQuery(sql);
                 return true;
@@ -229,9 +232,16 @@ public class AfmStatement implements java.sql.Statement, PreparedStatement {
         String maqlDefinition = this.metadata.getGoodDataRestConnection()
                 .replaceMaqlTitlesWithUris(parsedMaqlCreate, this.metadata.getCatalog());
 
-        CatalogEntry entry = this.metadata.getCatalog().findAfmColumn(parsedMaqlCreate.getName());
-        Metric m = this.gdMeta.getObjByUri(entry.getUri(), Metric.class);
-        this.metadata.getGoodDataRestConnection().updateMetric(m, maqlDefinition);
+        CatalogEntry ldmObj = this.metadata.getCatalog().findAfmColumn(parsedMaqlCreate.getName());
+        if(ldmObj.getType().equalsIgnoreCase("metric")) {
+            Metric m = this.gdMeta.getObjByUri(ldmObj.getUri(), Metric.class);
+            this.metadata.getGoodDataRestConnection().updateMetric(m, maqlDefinition);
+        }
+        else {
+            throw new Catalog.CatalogEntryNotFoundException(String.format("Metric '%s' not found",
+                    parsedMaqlCreate.getName()));
+        }
+
     }
 
 
@@ -246,8 +256,37 @@ public class AfmStatement implements java.sql.Statement, PreparedStatement {
             Catalog.CatalogEntryNotFoundException, Catalog.DuplicateCatalogEntryException, TextUtil.InvalidFormatException {
         LOGGER.info(String.format("executeDropMetric metricName='%s'", metricName));
         CatalogEntry ldmObj = this.metadata.getCatalog().findAfmColumn(metricName);
-        this.gdMeta.removeObjByUri(ldmObj.getUri());
-        this.metadata.getCatalog().remove(ldmObj);
+        if(ldmObj.getType().equalsIgnoreCase("metric")) {
+            this.gdMeta.removeObjByUri(ldmObj.getUri());
+            this.metadata.getCatalog().remove(ldmObj);
+        }
+        else {
+            throw new Catalog.CatalogEntryNotFoundException(String.format("Metric '%s' not found", metricName));
+        }
+    }
+
+    /**
+     * Execute DESCRIBE METRIC statement
+     *
+     * @param metricName described metric name
+     * @return ResultSet with one row and MAQL metric definition
+     * @throws Catalog.CatalogEntryNotFoundException  issues with resolving referenced objects
+     * @throws Catalog.DuplicateCatalogEntryException issues with resolving referenced objects
+     */
+    public ResultSet executeDescribeMetric(String metricName) throws
+            Catalog.CatalogEntryNotFoundException, Catalog.DuplicateCatalogEntryException, TextUtil.InvalidFormatException {
+        LOGGER.info(String.format("executeDescribeMetric metricName='%s'", metricName));
+        CatalogEntry ldmObj = this.metadata.getCatalog().findAfmColumn(metricName);
+        if(ldmObj.getType().equalsIgnoreCase("metric")) {
+            String maql = this.metadata.getCatalog().getMetricsPrettyPrint(this.gdMeta,
+                    this.metadata.getGoodDataRestConnection(),
+                    ldmObj.getUri());
+            return new MetadataResultSet(Arrays.asList(
+                    new MetadataResultSet.MetaDataColumn("result",Arrays.asList(maql))));
+        }
+        else {
+            throw new Catalog.CatalogEntryNotFoundException(String.format("Metric '%s' not found", metricName));
+        }
     }
 
     /**
@@ -380,7 +419,7 @@ public class AfmStatement implements java.sql.Statement, PreparedStatement {
      * {@inheritDoc}
      */
     @Override
-    public int getQueryTimeout() throws SQLException {
+    public int getQueryTimeout() {
         LOGGER.info("getQueryTimeout");
         return this.queryTimeout;
     }
@@ -389,7 +428,7 @@ public class AfmStatement implements java.sql.Statement, PreparedStatement {
      * {@inheritDoc}
      */
     @Override
-    public void setQueryTimeout(int seconds) throws SQLException {
+    public void setQueryTimeout(int seconds) {
         LOGGER.info(String.format("setQueryTimeout seconds='%d'", seconds));
         this.queryTimeout = seconds;
     }
@@ -650,113 +689,113 @@ public class AfmStatement implements java.sql.Statement, PreparedStatement {
     }
 
     @Override
-    public void setBoolean(int parameterIndex, boolean x) throws SQLException {
+    public void setBoolean(int parameterIndex, boolean x) {
         LOGGER.info(String.format("setBoolean parameterIndex='%d' x='%s'", parameterIndex, x));
         this.preparedStatementParams.put(parameterIndex, x);
     }
 
     @Override
-    public void setByte(int parameterIndex, byte x) throws SQLException {
+    public void setByte(int parameterIndex, byte x) {
         LOGGER.info(String.format("setByte parameterIndex='%d' x='%s'", parameterIndex, x));
         this.preparedStatementParams.put(parameterIndex, x);
     }
 
     @Override
-    public void setShort(int parameterIndex, short x) throws SQLException {
+    public void setShort(int parameterIndex, short x) {
         LOGGER.info(String.format("setShort parameterIndex='%d' x='%s'", parameterIndex, x));
         this.preparedStatementParams.put(parameterIndex, x);
     }
 
     @Override
-    public void setInt(int parameterIndex, int x) throws SQLException {
+    public void setInt(int parameterIndex, int x) {
         LOGGER.info(String.format("setInt parameterIndex='%d' x='%s'", parameterIndex, x));
         this.preparedStatementParams.put(parameterIndex, x);
     }
 
     @Override
-    public void setLong(int parameterIndex, long x) throws SQLException {
+    public void setLong(int parameterIndex, long x) {
         LOGGER.info(String.format("setLong parameterIndex='%d' x='%s'", parameterIndex, x));
         this.preparedStatementParams.put(parameterIndex, x);
     }
 
     @Override
-    public void setFloat(int parameterIndex, float x) throws SQLException {
+    public void setFloat(int parameterIndex, float x) {
         LOGGER.info(String.format("setFloat parameterIndex='%d' x='%s'", parameterIndex, x));
         this.preparedStatementParams.put(parameterIndex, x);
     }
 
     @Override
-    public void setDouble(int parameterIndex, double x) throws SQLException {
+    public void setDouble(int parameterIndex, double x) {
         LOGGER.info(String.format("setDouble parameterIndex='%d' x='%s'", parameterIndex, x));
         this.preparedStatementParams.put(parameterIndex, x);
     }
 
     @Override
-    public void setBigDecimal(int parameterIndex, BigDecimal x) throws SQLException {
+    public void setBigDecimal(int parameterIndex, BigDecimal x) {
         LOGGER.info(String.format("setBigDecimal parameterIndex='%d' x='%s'", parameterIndex, x));
         this.preparedStatementParams.put(parameterIndex, x);
     }
 
     @Override
-    public void setString(int parameterIndex, String x) throws SQLException {
+    public void setString(int parameterIndex, String x) {
         LOGGER.info(String.format("setString parameterIndex='%d' x='%s'", parameterIndex, x));
         this.preparedStatementParams.put(parameterIndex, x);
     }
 
     @Override
-    public void setBytes(int parameterIndex, byte[] x) throws SQLException {
-        LOGGER.info(String.format("setBytes parameterIndex='%d' x='%s'", parameterIndex, x));
+    public void setBytes(int parameterIndex, byte[] x) {
+        LOGGER.info(String.format("setBytes parameterIndex='%d' x='%s'", parameterIndex, Arrays.toString(x)));
         this.preparedStatementParams.put(parameterIndex, x);
     }
 
     @Override
-    public void setDate(int parameterIndex, Date x) throws SQLException {
+    public void setDate(int parameterIndex, Date x) {
         LOGGER.info(String.format("setDate parameterIndex='%d' x='%s'", parameterIndex, x));
         this.preparedStatementParams.put(parameterIndex, x);
     }
 
     @Override
-    public void setTime(int parameterIndex, Time x) throws SQLException {
+    public void setTime(int parameterIndex, Time x) {
         LOGGER.info(String.format("setTime parameterIndex='%d' x='%s'", parameterIndex, x));
         this.preparedStatementParams.put(parameterIndex, x);
     }
 
     @Override
-    public void setTimestamp(int parameterIndex, Timestamp x) throws SQLException {
+    public void setTimestamp(int parameterIndex, Timestamp x) {
         LOGGER.info(String.format("setTimestamp parameterIndex='%d' x='%s'", parameterIndex, x));
         this.preparedStatementParams.put(parameterIndex, x);
     }
 
     @Override
     public void setAsciiStream(int parameterIndex, InputStream x, int length) throws SQLException {
-        LOGGER.info(String.format("setAsciiStream"));
+        LOGGER.info("setAsciiStream");
         throw new SQLFeatureNotSupportedException("Statement.setAsciiStream is not supported yet.");
     }
 
     @Override
     public void setUnicodeStream(int parameterIndex, InputStream x, int length) throws SQLException {
-        LOGGER.info(String.format("setUnicodeStream"));
+        LOGGER.info("setUnicodeStream");
         throw new SQLFeatureNotSupportedException("Statement.setUnicodeStream is not supported yet.");
     }
 
     @Override
     public void setBinaryStream(int parameterIndex, InputStream x, int length) throws SQLException {
-        LOGGER.info(String.format("setBinaryStream"));
+        LOGGER.info("setBinaryStream");
         throw new SQLFeatureNotSupportedException("Statement.setBinaryStream is not supported yet.");
     }
 
     @Override
-    public void clearParameters() throws SQLException {
+    public void clearParameters() {
         this.preparedStatementParams.clear();
     }
 
     @Override
-    public void setObject(int parameterIndex, Object x, int targetSqlType) throws SQLException {
+    public void setObject(int parameterIndex, Object x, int targetSqlType) {
         this.setObject(parameterIndex, x);
     }
 
     @Override
-    public void setObject(int parameterIndex, Object x) throws SQLException {
+    public void setObject(int parameterIndex, Object x) {
         LOGGER.info(String.format("setObject parameterIndex='%d' x='%s'", parameterIndex, x));
         this.preparedStatementParams.put(parameterIndex, x);
     }
@@ -768,7 +807,7 @@ public class AfmStatement implements java.sql.Statement, PreparedStatement {
 
     @Override
     public void setCharacterStream(int parameterIndex, Reader reader, int length) throws SQLException {
-        LOGGER.info(String.format("setCharacterStream"));
+        LOGGER.info("setCharacterStream");
         throw new SQLFeatureNotSupportedException("Statement.setCharacterStream is not supported yet.");
     }
 
@@ -791,63 +830,63 @@ public class AfmStatement implements java.sql.Statement, PreparedStatement {
     }
 
     @Override
-    public void setArray(int parameterIndex, Array x) throws SQLException {
+    public void setArray(int parameterIndex, Array x) {
         LOGGER.info(String.format("setArray parameterIndex='%d' x='%s'", parameterIndex, x));
         this.preparedStatementParams.put(parameterIndex, x);
     }
 
     @Override
-    public ResultSetMetaData getMetaData() throws SQLException {
+    public ResultSetMetaData getMetaData() {
         return (ResultSetMetaData) this.metadata;
     }
 
     @Override
-    public void setDate(int parameterIndex, Date x, Calendar cal) throws SQLException {
+    public void setDate(int parameterIndex, Date x, Calendar cal) {
         this.setDate(parameterIndex, x);
     }
 
     @Override
-    public void setTime(int parameterIndex, Time x, Calendar cal) throws SQLException {
+    public void setTime(int parameterIndex, Time x, Calendar cal) {
         this.setTime(parameterIndex, x);
     }
 
     @Override
-    public void setTimestamp(int parameterIndex, Timestamp x, Calendar cal) throws SQLException {
+    public void setTimestamp(int parameterIndex, Timestamp x, Calendar cal) {
         setTimestamp(parameterIndex, x);
     }
 
     @Override
-    public void setNull(int parameterIndex, int sqlType, String typeName) throws SQLException {
+    public void setNull(int parameterIndex, int sqlType, String typeName) {
         LOGGER.info(String.format("setNull parameterIndex='%d' typeName='%s'", parameterIndex, typeName));
         this.preparedStatementParams.put(parameterIndex, null);
     }
 
     @Override
-    public void setURL(int parameterIndex, URL x) throws SQLException {
+    public void setURL(int parameterIndex, URL x) {
         LOGGER.info(String.format("setURL parameterIndex='%d' x='%s'", parameterIndex, x));
         this.preparedStatementParams.put(parameterIndex, x);
     }
 
     @Override
     public ParameterMetaData getParameterMetaData() throws SQLException {
-        LOGGER.info(String.format("getParameterMetaData"));
+        LOGGER.info("getParameterMetaData");
         throw new SQLFeatureNotSupportedException("Statement.getParameterMetaData is not supported yet.");
     }
 
     @Override
     public void setRowId(int parameterIndex, RowId x) throws SQLException {
-        LOGGER.info(String.format("setRowId"));
+        LOGGER.info("setRowId");
         throw new SQLFeatureNotSupportedException("Statement.setRowId is not supported yet.");
     }
 
     @Override
-    public void setNString(int parameterIndex, String value) throws SQLException {
+    public void setNString(int parameterIndex, String value) {
         this.setString(parameterIndex, value);
     }
 
     @Override
     public void setNCharacterStream(int parameterIndex, Reader value, long length) throws SQLException {
-        LOGGER.info(String.format("setNCharacterStream"));
+        LOGGER.info("setNCharacterStream");
         throw new SQLFeatureNotSupportedException("Statement.setNCharacterStream is not supported yet.");
     }
 
@@ -882,7 +921,7 @@ public class AfmStatement implements java.sql.Statement, PreparedStatement {
     }
 
     @Override
-    public void setObject(int parameterIndex, Object x, int targetSqlType, int scaleOrLength) throws SQLException {
+    public void setObject(int parameterIndex, Object x, int targetSqlType, int scaleOrLength) {
         this.setObject(parameterIndex, targetSqlType);
     }
 

@@ -2,6 +2,8 @@ package com.gooddata.jdbc.util;
 
 import org.testng.annotations.Test;
 
+import java.util.List;
+
 public class TestTextUtil {
 
     @Test
@@ -31,6 +33,27 @@ public class TestTextUtil {
                 .equals("/gdc/md/w2x7a9awsioch4l9lbzgjcn99hbkm61e/obj/386"));
         assert(!TextUtil.isGoodDataColumnWithUri("Revenue"));
     }
+
+
+    @Test
+    public void testFindUris() throws TextUtil.InvalidFormatException {
+        List<String> uris = TextUtil.findAllObjectUris("SELECT " +
+                "[/gdc/md/w2x7a9awsioch4l9lbzgjcn99hbkm61e/obj/465] " +
+                "WHERE [/gdc/md/w2x7a9awsioch4l9lbzgjcn99hbkm61e/obj/271] " +
+                "IN ([/gdc/md/w2x7a9awsioch4l9lbzgjcn99hbkm61e/obj/271/elements?id=48])");
+        assert (uris.contains("/gdc/md/w2x7a9awsioch4l9lbzgjcn99hbkm61e/obj/271"));
+        assert (uris.contains("/gdc/md/w2x7a9awsioch4l9lbzgjcn99hbkm61e/obj/465"));
+        assert (!uris.contains("/gdc/md/w2x7a9awsioch4l9lbzgjcn99hbkm61e/obj/271/elements?id=48"));
+
+        uris = TextUtil.findAllElementUris("SELECT " +
+                "[/gdc/md/w2x7a9awsioch4l9lbzgjcn99hbkm61e/obj/465] " +
+                "WHERE [/gdc/md/w2x7a9awsioch4l9lbzgjcn99hbkm61e/obj/271] " +
+                "IN ([/gdc/md/w2x7a9awsioch4l9lbzgjcn99hbkm61e/obj/271/elements?id=48])");
+        assert (!uris.contains("/gdc/md/w2x7a9awsioch4l9lbzgjcn99hbkm61e/obj/271"));
+        assert (!uris.contains("/gdc/md/w2x7a9awsioch4l9lbzgjcn99hbkm61e/obj/465"));
+        assert (uris.contains("/gdc/md/w2x7a9awsioch4l9lbzgjcn99hbkm61e/obj/271/elements?id=48"));
+    }
+
 
     @Test(expectedExceptions = { TextUtil.InvalidFormatException.class })
     public void testParseBoolException() throws TextUtil.InvalidFormatException {

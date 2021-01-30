@@ -48,7 +48,7 @@ public class TestMaqlParser {
     @Test
     public void testParseDropMetric() throws JSQLParserException {
         MaqlParser maqlParser = new MaqlParser();
-        String metric = maqlParser.parseDropMetric(
+        String metric = maqlParser.parseDropOrDescribeMetric(
                 "DROP METRIC \"test\"");
         assert("test".equals(metric));
     }
@@ -56,11 +56,11 @@ public class TestMaqlParser {
     @Test(expectedExceptions = { JSQLParserException.class })
     public void testUnquotedIdentifier() throws JSQLParserException {
         MaqlParser maqlParser = new MaqlParser();
-        maqlParser.parseDropMetric(
+        maqlParser.parseDropOrDescribeMetric(
                 "CREATE METRIC \"ORDER_AMOUNT_METRIC\" AS SELECT SUM(ORDER_QUANTITY * PRODUCT_PRICE)");
-        maqlParser.parseDropMetric(
+        maqlParser.parseDropOrDescribeMetric(
                 "ALTER METRIC \"ORDER_AMOUNT_METRIC\" AS SELECT SUM(\"ORDER_QUANTITY\" * PRODUCT_PRICE)");
-        maqlParser.parseDropMetric(
+        maqlParser.parseDropOrDescribeMetric(
                 "DROP METRIC ORDER_AMOUNT_METRIC");
 
     }

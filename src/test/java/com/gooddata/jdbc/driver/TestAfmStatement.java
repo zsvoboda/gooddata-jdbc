@@ -1,6 +1,7 @@
 package com.gooddata.jdbc.driver;
 
 import com.gooddata.jdbc.util.Parameters;
+import net.sf.jsqlparser.JSQLParserException;
 import org.testng.annotations.Test;
 
 import java.sql.DriverManager;
@@ -75,6 +76,46 @@ public class TestAfmStatement {
         }
     }
 
+    public void testRetreivePreparedStatement(String columns, String where, String columnNames, Object[] values) throws SQLException {
+        String s = columnNames != null && columnNames.trim().length() > 0 ? columnNames : columns;
+        List<String> columnnList = Arrays.stream(
+                s.split(", ")).map(i -> i.replaceAll("\"", "")
+                .trim())
+                .map(e -> e.split("::")[0])
+                .collect(Collectors.toList());
+        AfmStatement statement = (AfmStatement) this.afmConnection.prepareStatement("SELECT " + columns + " " + where);
+        for(int i=0; i< values.length; i++) {
+            statement.setObject(i+1, values[i]);
+        }
+        ResultSet resultSet = statement.executeQuery();
+
+
+        testFindColumnIndex(s, where, resultSet);
+        StringBuilder txtRow = new StringBuilder();
+        for (int i = 0; i < columnnList.size(); i++) {
+            if (i > 0)
+                txtRow.append(", ");
+            txtRow.append(resultSet.getMetaData().getColumnName(i + 1));
+        }
+        System.out.println(txtRow.toString());
+
+        int rowNum = 1;
+        while (resultSet.next()) {
+            txtRow = new StringBuilder();
+            for (int i = 0; i < columnnList.size(); i++) {
+                if (i > 0)
+                    txtRow.append(", ");
+                else {
+                    txtRow.append(rowNum++);
+                    txtRow.append("::");
+                }
+                txtRow.append(resultSet.getObject(columnnList.get(i)));
+            }
+            System.out.println(txtRow.toString());
+        }
+    }
+
+
     @Test
     public void testOrderBy() throws SQLException {
         testRetrieve("\"Product Category\", \"Product\", \"# of Orders\"",
@@ -116,12 +157,32 @@ public class TestAfmStatement {
     }
 
     @Test
-    public void testCREATE() throws SQLException {
+    public void testPreparedStatement() throws SQLException {
+        testRetreivePreparedStatement("\"Date (Date)\", Product, Revenue::INTEGER, \"# of Orders::INTEGER\"," +
+                " \"Product Category\"", " WHERE \"Product Category\" = ? " +
+                "AND \"# of Orders\" BETWEEN ? AND ? OFFSET 6 LIMIT 1", null, new Object[]{"Home", 3, 5});
+    }
+
+    @Test(expectedExceptions = { SQLException.class })
+    public void testErrors() throws SQLException {
+        testRetreivePreparedStatement("\"Date (Date)\", Product, Revenue::INTEGER, \"# of Orders::INTEGER\"," +
+                " \"Product Category\"", " WHERE \"Product Category\" = ? " +
+                "AND \"# of Orders\" BETWEEN ? AND ? OFFSET 6 LIMIT 1", null, new Object[]{"Home", 3});
+        testRetrieve("\"Date (Date)\", Product, Revenue::INTEGER, \"# of Orders::INTEGER\"," +
+                " \"Product Category\"", " WHERE \"Product Category\" = Home " +
+                "AND \"# of Orders\" BETWEEN 3 AND 5 OFFSET 6", null);
+    }
+
+
+    @Test
+    public void testCreateAlterDescribeDrop() throws SQLException {
         Statement statement = this.afmConnection.createStatement();
         statement.execute("CREATE METRIC \"testNGMetric\" AS SELECT SUM(\"Revenue\") " +
                 "BY \"Year (Date)\" ALL OTHER");
+        statement.execute("DESCRIBE METRIC \"testNGMetric\";");
         statement.execute("ALTER METRIC \"testNGMetric\" AS SELECT SUM(\"Revenue\") " +
                 "WHERE \"Product Category\" IN ('Home')");
+        statement.execute("DESCRIBE METRIC \"testNGMetric\";");
         statement.execute("DROP METRIC \"testNGMetric\";");
     }
 

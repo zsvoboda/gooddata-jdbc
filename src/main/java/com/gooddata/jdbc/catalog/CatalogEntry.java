@@ -21,6 +21,25 @@ public class CatalogEntry {
      * @param title      Catalog object title
      * @param type       Catalog object type
      * @param identifier Catalog object identifier
+     * @param defaultDisplayFormUri default display form uri for attributes
+     */
+    public CatalogEntry(String uri, String title, String type, String identifier, ObjQualifier gdObject,
+                        String defaultDisplayFormUri) {
+        this.uri = uri;
+        this.title = title;
+        this.type = type;
+        this.identifier = identifier;
+        this.gdObject = gdObject;
+        this.defaultDisplayFormUri = defaultDisplayFormUri;
+    }
+
+    /**
+     * Constructor
+     *
+     * @param uri        Catalog object URI
+     * @param title      Catalog object title
+     * @param type       Catalog object type
+     * @param identifier Catalog object identifier
      */
     public CatalogEntry(String uri, String title, String type, String identifier, ObjQualifier gdObject) {
         this.uri = uri;
@@ -54,12 +73,37 @@ public class CatalogEntry {
     }
 
     /**
+     * Constructor
+     * @param uri        Catalog object URI
+     * @param title      Catalog object title
+     * @param type       Catalog object type
+     * @param identifier Catalog object identifier
+     * @param gdObject   Original gd object
+     * @param defaultDisplayFormUri default display form uri for attributes
+     * @param dataType   Datatype
+     * @param size       Datatype size
+     * @param precision  Datatype precision
+     */
+    public CatalogEntry(String uri, String title, String type, String identifier, ObjQualifier gdObject,
+                        String defaultDisplayFormUri, String dataType, int size, int precision) {
+        this.identifier = identifier;
+        this.uri = uri;
+        this.title = title;
+        this.type = type;
+        this.dataType = dataType;
+        this.size = size;
+        this.precision = precision;
+        this.gdObject = gdObject;
+    }
+
+
+    /**
      * Clone catalog object entry (when it needs to be modified externally)
      * @return catalog entry clone
      */
     public CatalogEntry cloneEntry() {
-        return new CatalogEntry(this.uri, this.title, this.type, this.identifier, this.gdObject, this.dataType,
-                this.size, this.precision);
+        return new CatalogEntry(this.uri, this.title, this.type, this.identifier, this.gdObject,
+                this.defaultDisplayFormUri, this.dataType, this.size, this.precision);
     }
 
     public String getUri() {
@@ -125,13 +169,19 @@ public class CatalogEntry {
         this.precision = precision;
     }
 
+    public String getDefaultDisplayFormUri() {
+        return defaultDisplayFormUri;
+    }
+
     private String identifier;
     private String uri;
     private String title;
     private String type;
     private String dataType;
+    private String defaultDisplayFormUri;
     private int size;
     private int precision;
     private final ObjQualifier gdObject;
+
 
 }

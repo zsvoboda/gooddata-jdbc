@@ -2,6 +2,7 @@ package com.gooddata.jdbc.catalog;
 
 import com.gooddata.jdbc.parser.DataTypeParser;
 import com.gooddata.jdbc.parser.SQLParser;
+import com.gooddata.jdbc.rest.GoodDataRestConnection;
 import com.gooddata.jdbc.util.TextUtil;
 import com.gooddata.sdk.model.executeafm.UriObjQualifier;
 import com.gooddata.sdk.model.executeafm.afm.filter.*;
@@ -19,6 +20,8 @@ import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -89,7 +92,7 @@ public class Catalog {
             this.afmEntries.put(displayForm.getUri(), e);
             this.maqlEntries.put(attribute.getUri(), new CatalogEntry(attribute.getUri(),
                     attribute.getTitle(), attribute.getCategory(), attribute.getIdentifier(),
-                    new UriObjQualifier(attribute.getUri())));
+                    new UriObjQualifier(attribute.getUri()),displayForm.getUri()));
         }
         else {
             LOGGER.info(String.format("Skipping attribute title='%s'", attribute.getTitle()));
@@ -481,6 +484,54 @@ public class Catalog {
         }
         return afmFilters;
     }
+
+    /**
+     * Prints metric with substituted uris for names
+     * @param gdMeta GD metadata service
+     * @param gdRest GD REST connection
+     * @param uri metric uri
+     * @return metric MAQL with resolved URIs
+     */
+    public  String getMetricsPrettyPrint(MetadataService gdMeta, GoodDataRestConnection gdRest, String uri)
+            throws CatalogEntryNotFoundException, TextUtil.InvalidFormatException {
+        Metric m = gdMeta.getObjByUri(uri, Metric.class);
+        if(!m.getCategory().equalsIgnoreCase("metric")) {
+            throw new CatalogEntryNotFoundException(String.format("Metric with uri '%s' not found.", uri));
+        }
+        String e = m.getExpression();
+        List<String> objUris = TextUtil.findAllObjectUris(e);
+        for( String objUri: objUris) {
+            CatalogEntry obj = this.maqlEntries.get(objUri);
+            if(obj != null)
+                e = e.replace(String.format("[%s]", objUri), String.format("\"%s\"", obj.getTitle()));
+        }
+        List<String> elementUris = TextUtil.findAllElementUris(e);
+        for(String elementUri: elementUris) {
+            // The attribute lement URI has ID of attribute but can be only looked up via display form
+            // We must switch the URI part from attribute uri to display form uri
+            String[] components = elementUri.split("\\?");
+            if(components == null || components.length != 2) {
+                throw new CatalogEntryNotFoundException(String.format("Invalid attribute element uri format '%s'",
+                        elementUri));
+            }
+            CatalogEntry attribute = this.maqlEntries.get(components[0].replace("/elements",""));
+            if(attribute == null) {
+                throw new CatalogEntryNotFoundException(String.format("Attribute with uri '%s' not found.",
+                        elementUri));
+            }
+            String displayFormUri = attribute.getDefaultDisplayFormUri();
+            if(displayFormUri == null) {
+                throw new CatalogEntryNotFoundException(String.format("Attribute with uri '%s' doesn't have default display form.",
+                        elementUri));
+            }
+            String text = gdRest.getAttributeElementText(String.format("%s/elements?%s", displayFormUri, components[1]));
+            if(text != null)
+                e = e.replace(String.format("[%s]", elementUri), String.format("'%s'", text));
+        }
+        //TBD lookup variables
+        return e;
+    }
+
 
     /**
      * Duplicate LDM object exception is thrown when there are multiple LDM objects with the same title

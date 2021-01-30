@@ -153,21 +153,22 @@ public class MaqlParser {
     }
 
     /**
-     * Parse DROP METRIC statement
-     * @param maql DROP METRIC statement text
+     * Parse DROP | DESCRIBE METRIC statement
+     * @param maql DROP | DESCRIBE METRIC statement text
      * @return dropped metric URI
      * @throws JSQLParserException syntax error
      */
-    public String parseDropMetric(String maql) throws JSQLParserException {
+    public String parseDropOrDescribeMetric(String maql) throws JSQLParserException {
         String sqlWithNoNewlines = maql.replaceAll("\n"," ");
         Pattern p = Pattern.compile(
-                "^\\s?drop\\s+metric\\s+\"(.*?)\"\\s?[;]?\\s?$",
+                "^\\s?(drop|describe)\\s+metric\\s+\"(.*?)\"\\s?[;]?\\s?$",
                 Pattern.CASE_INSENSITIVE);
         Matcher m = p.matcher(sqlWithNoNewlines);
         boolean b = m.matches();
-        if (!b || m.groupCount() != 1)
-            throw new JSQLParserException(String.format("Wrong DROP METRIC syntax (e.g. no quoted names of metrics or identifiers): '%s'", maql));
-        return m.group(1);
+        if (!b || m.groupCount() != 2)
+            throw new JSQLParserException(String.format("Wrong DROP METRIC syntax (e.g. no quoted names of " +
+                    "metrics or identifiers): '%s'", maql));
+        return m.group(2);
     }
 
 

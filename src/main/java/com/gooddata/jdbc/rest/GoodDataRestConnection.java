@@ -90,6 +90,40 @@ public class GoodDataRestConnection {
         return maqlDefinition;
     }
 
+    // Attribute elements cache
+    private final Map<String, String> attributeElementsCache = new HashMap<>();
+
+    /**
+     * Get AttributeElement by uri
+     *
+     * @param attributeElementUri AttributeElement uri
+     * @return value AttributeElement value
+     */
+    public String getAttributeElementText(String attributeElementUri)
+            throws Catalog.CatalogEntryNotFoundException {
+        if(this.attributeElementsCache.containsKey(attributeElementUri))
+            return this.attributeElementsCache.get(attributeElementUri);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        ResponseEntity<JsonNode> response = this.gdRestTemplate.getForEntity(attributeElementUri,
+                JsonNode.class);
+        if (response.getStatusCode() == HttpStatus.OK) {
+            String value = Objects.requireNonNull(response.getBody())
+                    .get("attributeElements")
+                    .get("elements")
+                    .get(0)
+                    .get("title")
+                    .textValue();
+            this.attributeElementsCache.put(attributeElementUri, value);
+            return value;
+        }
+        else {
+            throw new Catalog.CatalogEntryNotFoundException(
+                    String.format("Getting AttributeElement for uri '%s' failed.", attributeElementUri));
+        }
+    }
+
+
     /**
      * Lookups AttributeDisplayForm URIs for values
      *

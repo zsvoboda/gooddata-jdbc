@@ -1,6 +1,7 @@
 package com.gooddata.jdbc.parser;
 
 import com.gooddata.jdbc.catalog.Catalog;
+import com.sun.istack.NotNull;
 import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.expression.*;
 import net.sf.jsqlparser.expression.operators.conditional.OrExpression;
@@ -11,11 +12,10 @@ import net.sf.jsqlparser.statement.select.*;
 import org.apache.commons.jexl2.JexlEngine;
 import org.apache.commons.jexl2.MapContext;
 
-import java.sql.Types;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.sql.*;
+import java.sql.Date;
+import java.text.SimpleDateFormat;
+import java.util.*;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -84,6 +84,48 @@ public class SQLParser {
             public void setValues(List<String> values) {
                 this.values = values;
             }
+
+            private final SimpleDateFormat dtf = new SimpleDateFormat("yyyy-MM-dd");
+
+            private String substitutePreparedParameterValue(Object v) throws SQLException {
+                if(v instanceof String) {
+                    return String.format("'%s'", v);
+                } else if (v instanceof Date || v instanceof Time || v instanceof Timestamp) {
+                    return dtf.format((Date) v);
+                } else if (v instanceof Array) {
+                    Object[] s = (Object[]) ((Array) v).getArray();
+                    String[] elements = new String[s.length];
+                    for(int i = 0; i < s.length; i++) {
+                        elements[i] = substitutePreparedParameterValue(s[i]);
+                    }
+                    return String.join(",", elements);
+                }
+                else {
+                    return String.format("%s", v);
+                }
+            }
+
+            public int substitutePreparedParameterValues(Map<Integer,Object> preparedStatementParams, int offset)
+                    throws SQLException {
+                List<String> newValues = new ArrayList<>();
+                for (int j = 0; j < this.values.size(); j++) {
+                    String value = this.values.get(j);
+                    if (value.equals("?")) {
+                        if (preparedStatementParams.containsKey(offset)) {
+                            newValues.add(substitutePreparedParameterValue(preparedStatementParams.get(offset++)));
+                        } else {
+                            throw new SQLException(String.format("Not enough prepared call parameters. " +
+                                    "Can't find parameter at position '%d'", offset));
+                        }
+                    }
+                    else {
+                        newValues.add(value);
+                    }
+                }
+                this.values = newValues;
+                return offset;
+            }
+
 
             private int operator;
             private String column;
@@ -174,12 +216,29 @@ public class SQLParser {
     }
 
     /**
+     *
+     * @param sql parsed SQL
+     * @param preparedStatementParams Map of JDBC prepared parameters (starts with idx 1)
+     * @return parsed sql with substituted prepared statement's placeholders ('?')
+     * @throws SQLException
+     */
+    public static SQLParser.ParsedSQL substitutePreparedParams(@NotNull SQLParser.ParsedSQL sql,
+                                                               @NotNull Map<Integer, Object> preparedStatementParams) throws SQLException {
+        int idx = 1;
+        List<SQLParser.ParsedSQL.FilterExpression> filters = sql.getFilters();
+        for (SQLParser.ParsedSQL.FilterExpression filter : filters) {
+            idx = filter.substitutePreparedParameterValues(preparedStatementParams, idx);
+        }
+        return sql;
+    }
+
+    /**
      * Main parser method for SELECT queries
      * @param query SQL query
      * @return parsed SQL query
      * @throws JSQLParserException wrong syntax
      */
-    public ParsedSQL parseQuery(String query) throws JSQLParserException {
+    public static ParsedSQL parseQuery(String query) throws JSQLParserException {
         SQLParser.LOGGER.fine(String.format("Parsing query '%s'", query));
         final List<ParsedSQL> results = new ArrayList<>();
         net.sf.jsqlparser.statement.Statement st = CCJSqlParserUtil.parse(query);

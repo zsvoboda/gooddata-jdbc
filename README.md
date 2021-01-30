@@ -32,10 +32,14 @@ and it expects the following JDBC URL format
     - supports simple expressions like ```(2+5)*3```
 - ORDER BY - standard support (e.g. ```ORDER BY 1 ASC, 2 DESC``` or ```ORDER BY "Product" ASC, "Product Category" DESC``` )
 - LIMIT, OFFSET standard support (e.g. ```LIMIT 100 OFFSET 35```)
+- Prepared statements (Connection.prepareStatement + statement.setXY)
+    - This is a fake implementation that does the same as execution of regular statement with parameters substitution. 
+      No performance benefits.   
 - MAQL
     - supports ```CREATE METRIC <name> AS <maql>```
     - supports ```ALTER METRIC <name> AS <maql>```
     - supports ```DROP METRIC <name>```
+    - supports ```DESCRIBE METRIC <name>```
     - make sure you quote all identifiers in double quotes
 
 ### Example
