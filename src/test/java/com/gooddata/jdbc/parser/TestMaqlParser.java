@@ -48,9 +48,9 @@ public class TestMaqlParser {
     @Test
     public void testParseDropMetric() throws JSQLParserException {
         MaqlParser maqlParser = new MaqlParser();
-        String metric = maqlParser.parseDropOrDescribeMetric(
+        MaqlParser.Describe metric = maqlParser.parseDropOrDescribeMetric(
                 "DROP METRIC \"test\"");
-        assert("test".equals(metric));
+        assert("test".equals(metric.getName()));
     }
 
     @Test(expectedExceptions = { JSQLParserException.class })

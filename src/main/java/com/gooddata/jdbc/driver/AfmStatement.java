@@ -10,7 +10,6 @@ import com.gooddata.jdbc.resultset.AbstractResultSet;
 import com.gooddata.jdbc.resultset.AfmResultSet;
 import com.gooddata.jdbc.resultset.MetadataResultSet;
 import com.gooddata.jdbc.util.TextUtil;
-import com.gooddata.sdk.model.executeafm.ObjQualifier;
 import com.gooddata.sdk.model.executeafm.afm.Afm;
 import com.gooddata.sdk.model.executeafm.afm.AttributeItem;
 import com.gooddata.sdk.model.executeafm.afm.MeasureItem;
@@ -176,13 +175,17 @@ public class AfmStatement implements java.sql.Statement, PreparedStatement {
                 return false;
             } else if (sql.trim().toLowerCase().startsWith("drop")) {
                 MaqlParser parser = new MaqlParser();
-                String parsedDropMetric = parser.parseDropOrDescribeMetric(sql);
-                this.executeDropMetric(parsedDropMetric);
+                MaqlParser.Describe parsedDropMetric = parser.parseDropOrDescribeMetric(sql);
+                this.executeDropMetric(parsedDropMetric.getName());
                 return false;
             } else if (sql.trim().toLowerCase().startsWith("describe")) {
                 MaqlParser parser = new MaqlParser();
-                String parsedDropMetric = parser.parseDropOrDescribeMetric(sql);
-                this.resultSet = this.executeDescribeMetric(parsedDropMetric);
+                MaqlParser.Describe parsedDropMetric = parser.parseDropOrDescribeMetric(sql);
+                if(parsedDropMetric.getType().equalsIgnoreCase("metric")) {
+                    this.resultSet = this.executeDescribeMetric(parsedDropMetric.getName());
+                } else if(parsedDropMetric.getType().equalsIgnoreCase("variable")) {
+                    this.resultSet = this.executeDescribeVariable(parsedDropMetric.getName());
+                }
                 return true;
             } else {
                 this.resultSet = (AfmResultSet) this.executeQuery(sql);
@@ -278,7 +281,7 @@ public class AfmStatement implements java.sql.Statement, PreparedStatement {
         LOGGER.info(String.format("executeDescribeMetric metricName='%s'", metricName));
         CatalogEntry ldmObj = this.metadata.getCatalog().findAfmColumn(metricName);
         if(ldmObj.getType().equalsIgnoreCase("metric")) {
-            String maql = this.metadata.getCatalog().getMetricsPrettyPrint(this.gdMeta,
+            String maql = this.metadata.getCatalog().getMetricPrettyPrint(this.gdMeta,
                     this.metadata.getGoodDataRestConnection(),
                     ldmObj.getUri());
             return new MetadataResultSet(Arrays.asList(
@@ -286,6 +289,30 @@ public class AfmStatement implements java.sql.Statement, PreparedStatement {
         }
         else {
             throw new Catalog.CatalogEntryNotFoundException(String.format("Metric '%s' not found", metricName));
+        }
+    }
+
+    /**
+     * Execute DESCRIBE VARIABLE statement
+     *
+     * @param variableName described variable name
+     * @return ResultSet with one row and MAQL metric definition
+     * @throws Catalog.CatalogEntryNotFoundException  issues with resolving referenced objects
+     * @throws Catalog.DuplicateCatalogEntryException issues with resolving referenced objects
+     */
+    public ResultSet executeDescribeVariable(String variableName) throws
+            Catalog.CatalogEntryNotFoundException, Catalog.DuplicateCatalogEntryException, TextUtil.InvalidFormatException {
+        LOGGER.info(String.format("executeDescribeVariable variableName='%s'", variableName));
+        CatalogEntry ldmObj = this.metadata.getCatalog().findMaqlColumn(variableName);
+        if(ldmObj.getType().equalsIgnoreCase("prompt")) {
+            String maql = this.metadata.getCatalog().getVariablePrettyPrint(
+                    this.metadata.getGoodDataRestConnection(),
+                    ldmObj.getUri());
+            return new MetadataResultSet(Arrays.asList(
+                    new MetadataResultSet.MetaDataColumn("result",Arrays.asList(maql))));
+        }
+        else {
+            throw new Catalog.CatalogEntryNotFoundException(String.format("Variable '%s' not found", variableName));
         }
     }
 

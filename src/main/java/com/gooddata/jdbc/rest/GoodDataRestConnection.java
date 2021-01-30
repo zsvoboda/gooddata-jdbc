@@ -1,5 +1,6 @@
 package com.gooddata.jdbc.rest;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -8,6 +9,7 @@ import com.gooddata.jdbc.catalog.Catalog;
 import com.gooddata.jdbc.catalog.CatalogEntry;
 import com.gooddata.jdbc.parser.MaqlParser;
 import com.gooddata.jdbc.util.TextUtil;
+import com.gooddata.sdk.model.executeafm.ObjQualifier;
 import com.gooddata.sdk.model.md.Metric;
 import com.gooddata.sdk.model.project.Project;
 import org.springframework.http.*;
@@ -169,6 +171,103 @@ public class GoodDataRestConnection {
             }
         } catch (IOException e) {
             throw new Catalog.CatalogEntryNotFoundException(e);
+        }
+    }
+
+    public static class Variable implements ObjQualifier {
+
+        public Variable(String uri, String identifier, String title, String expression) {
+            this.uri = uri;
+            this.identifier = identifier;
+            this.title = title;
+            this.expression = expression;
+        }
+
+        public String getUri() {
+            return uri;
+        }
+
+        public String getIdentifier() {
+            return identifier;
+        }
+
+        public String getExpression() {
+            return expression;
+        }
+
+        public String getTitle() {
+            return title;
+        }
+
+        private final String uri;
+        private final String title;
+        private final String identifier;
+        private final String expression;
+    }
+
+    /**
+     * Get variable
+     * @param  requestUri variable URI
+     * @return variable
+     */
+    public CatalogEntry getVariable(String requestUri, String expression) throws Catalog.CatalogEntryNotFoundException {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        ResponseEntity<JsonNode> response = this.gdRestTemplate.getForEntity(requestUri,
+                JsonNode.class);
+        if (response.getStatusCode() == HttpStatus.OK) {
+            JsonNode meta = Objects.requireNonNull(response.getBody())
+                    .get("prompt")
+                    .get("meta");
+            JsonNode content = Objects.requireNonNull(response.getBody())
+                    .get("prompt")
+                    .get("content");
+            String uri = meta.get("uri").textValue();
+            String title = meta.get("title").textValue();
+            String identifier = meta.get("identifier").textValue();
+            String type = content.get("type").textValue();
+            return new CatalogEntry(uri, title, "prompt", identifier,
+                    new Variable(uri, identifier, title, expression), type,0,0);
+        }
+        else {
+            throw new Catalog.CatalogEntryNotFoundException(
+                    String.format("Getting variable for requestUri '%s' failed.", requestUri));
+        }
+    }
+
+    /**
+     * List variables
+     * @param  workspaceUri workspace ID
+     * @param  workspaceUri workspace ID
+     * @return list of variables
+     */
+    public List<CatalogEntry> getVariables(String workspaceUri)
+            throws SQLException {
+        try {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        String uri = String.format("%s/variables/search", workspaceUri)
+                .replace("/projects/","/md/");
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode requestObj = mapper.readTree("{\"variablesSearch\": { \"variables\": [], \"context\": []}}");
+        ResponseEntity<JsonNode> response = this.gdRestTemplate.postForEntity(uri, requestObj,
+                JsonNode.class);
+        if (response.getStatusCode() == HttpStatus.OK) {
+            List<CatalogEntry> variableEntries = new ArrayList<>();
+            ArrayNode variables = (ArrayNode) Objects.requireNonNull(response.getBody()).get("variables");
+            for (JsonNode variable : variables) {
+                String variableExpression = variable.get("expression").textValue();
+                String variableUri = variable.get("prompt").textValue();
+                variableEntries.add(this.getVariable(variableUri, variableExpression));
+            }
+            return variableEntries;
+        }
+        else {
+            throw new SQLException(
+                    String.format("Getting variables for uri '%s' failed."));
+        }
+        } catch (JsonProcessingException | Catalog.CatalogEntryNotFoundException e) {
+            throw new SQLException(e);
         }
     }
 

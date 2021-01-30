@@ -58,6 +58,7 @@ public class AfmDatabaseMetaData implements java.sql.DatabaseMetaData {
         this.gdRestTemplate = gdRestTemplate;
         this.schemas = Schema.populateSchemas(this.gd);
         Schema schema = findSchemaByUri(String.format("/gdc/projects/%s", workspaceId));
+        this.setActiveWorkspace(schema);
         this.setSchema(schema.getSchemaName());
     }
 
@@ -105,7 +106,7 @@ public class AfmDatabaseMetaData implements java.sql.DatabaseMetaData {
         this.catalog = AfmDriver.getCachedCatalog(schema.getSchemaUri());
         if(this.catalog == null) {
             this.catalog = new Catalog();
-            this.catalog.populateAsync(gd, schema.getSchemaUri());
+            this.catalog.populateAsync(gd, this.gdRestConnection, schema.getSchemaUri());
             AfmDriver.cacheCatalog(schema.getSchemaUri(), this.catalog);
         }
         this.setActiveWorkspace(schema);

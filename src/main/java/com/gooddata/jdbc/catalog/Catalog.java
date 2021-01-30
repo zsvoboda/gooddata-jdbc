@@ -15,6 +15,7 @@ import com.gooddata.sdk.model.project.Project;
 import com.gooddata.sdk.service.GoodData;
 import com.gooddata.sdk.service.md.MetadataService;
 import org.apache.commons.lang3.ArrayUtils;
+import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
 import java.sql.SQLException;
@@ -45,6 +46,7 @@ public class Catalog {
             SQLParser.ParsedSQL.FilterExpression.OPERATOR_IN,
             SQLParser.ParsedSQL.FilterExpression.OPERATOR_NOT_IN
     };
+
     private final int[] METRIC_FILTER_OPERATORS = new int[] {
             SQLParser.ParsedSQL.FilterExpression.OPERATOR_EQUAL,
             SQLParser.ParsedSQL.FilterExpression.OPERATOR_NOT_EQUAL,
@@ -139,17 +141,19 @@ public class Catalog {
     private class PopulateExecutor extends Thread {
 
         private GoodData gd;
+        private GoodDataRestConnection gdRest;
         private String workspaceUri;
 
-        public PopulateExecutor(GoodData gd, String workspaceUri) {
+        public PopulateExecutor(GoodData gd, GoodDataRestConnection gdRest, String workspaceUri) {
             this.gd = gd;
+            this.gdRest = gdRest;
             this.workspaceUri = workspaceUri;
         }
 
         @Override
         public void run() {
             try {
-                populateSync(this.gd, this.workspaceUri);
+                populateSync(this.gd, this.gdRest, this.workspaceUri);
             } catch (SQLException e) {
                 // TBD better error handling
                 System.err.println(e);
@@ -172,11 +176,12 @@ public class Catalog {
      * Populates the catalog of attributes and metrics
      *
      * @param gd        Gooddata reference
+     * @param gdRest    Gooddata REST connection
      * @param workspaceUri GoodData workspace URI
      * @throws SQLException generic issue
      */
-    public void populateAsync(GoodData gd, String workspaceUri) throws SQLException {
-        PopulateExecutor exec = new PopulateExecutor(gd, workspaceUri);
+    public void populateAsync(GoodData gd, GoodDataRestConnection gdRest, String workspaceUri) throws SQLException {
+        PopulateExecutor exec = new PopulateExecutor(gd, gdRest, workspaceUri);
         exec.start();
     }
 
@@ -184,10 +189,11 @@ public class Catalog {
      * Populates the catalog of attributes and metrics
      *
      * @param gd        Gooddata reference
+     * @param gdRest    Gooddata REST connection
      * @param workspaceUri GoodData workspace URI
      * @throws SQLException generic issue
      */
-    public synchronized void populateSync(GoodData gd, String workspaceUri) throws SQLException {
+    public synchronized void populateSync(GoodData gd, GoodDataRestConnection gdRest, String workspaceUri) throws SQLException {
         LOGGER.info(String.format("Populating catalog for schema '%s'", workspaceUri));
         LOGGER.info("Catalog lock acquired.");
         this.isCatalogPopulated = false;
@@ -214,6 +220,13 @@ public class Catalog {
         for (Entry fact : factEntries) {
             this.addFact(fact);
         }
+
+        LOGGER.info("Fetching variables.");
+        List<CatalogEntry> variableEntries = gdRest.getVariables(workspaceUri);
+        for (CatalogEntry variable : variableEntries) {
+            this.maqlEntries.put(variable.getUri(), variable);
+        }
+
         this.isCatalogPopulated = true;
         LOGGER.info(String.format("Catalog population finished. Fetched '%d' AFM and '%d' objects.",
                 this.afmEntries.size(), this.maqlEntries.size()));
@@ -492,13 +505,44 @@ public class Catalog {
      * @param uri metric uri
      * @return metric MAQL with resolved URIs
      */
-    public  String getMetricsPrettyPrint(MetadataService gdMeta, GoodDataRestConnection gdRest, String uri)
+    public  String getMetricPrettyPrint(MetadataService gdMeta, GoodDataRestConnection gdRest, String uri)
             throws CatalogEntryNotFoundException, TextUtil.InvalidFormatException {
         Metric m = gdMeta.getObjByUri(uri, Metric.class);
         if(!m.getCategory().equalsIgnoreCase("metric")) {
             throw new CatalogEntryNotFoundException(String.format("Metric with uri '%s' not found.", uri));
         }
         String e = m.getExpression();
+        e = substituteUris(gdRest, e);
+        return e;
+    }
+
+    /**
+     * Prints variable with substituted uris for names
+     * @param gdRest GD REST connection
+     * @param uri metric uri
+     * @return metric MAQL with resolved URIs
+     */
+    public  String getVariablePrettyPrint(GoodDataRestConnection gdRest, String uri)
+            throws CatalogEntryNotFoundException, TextUtil.InvalidFormatException {
+        CatalogEntry e = this.maqlEntries.get(uri);
+        if(!e.getType().equalsIgnoreCase("prompt")) {
+            throw new CatalogEntryNotFoundException(String.format("Variable with uri '%s' not found.", uri));
+        }
+        GoodDataRestConnection.Variable v = (GoodDataRestConnection.Variable)e.getGdObject();
+        String expr = substituteUris(gdRest, v.getExpression());
+        return expr;
+    }
+
+    /**
+     * Substitute URIs for names
+     * @param gdRest GD REST connection
+     * @param e String with the URIs
+     * @return String with URIs replaced with names
+     * @throws TextUtil.InvalidFormatException
+     * @throws CatalogEntryNotFoundException
+     */
+    private String substituteUris(GoodDataRestConnection gdRest, String e) throws TextUtil.InvalidFormatException,
+            CatalogEntryNotFoundException {
         List<String> objUris = TextUtil.findAllObjectUris(e);
         for( String objUri: objUris) {
             CatalogEntry obj = this.maqlEntries.get(objUri);
@@ -507,7 +551,7 @@ public class Catalog {
         }
         List<String> elementUris = TextUtil.findAllElementUris(e);
         for(String elementUri: elementUris) {
-            // The attribute lement URI has ID of attribute but can be only looked up via display form
+            // The attribute element URI has ID of attribute but can be only looked up via display form
             // We must switch the URI part from attribute uri to display form uri
             String[] components = elementUri.split("\\?");
             if(components == null || components.length != 2) {
@@ -528,7 +572,6 @@ public class Catalog {
             if(text != null)
                 e = e.replace(String.format("[%s]", elementUri), String.format("'%s'", text));
         }
-        //TBD lookup variables
         return e;
     }
 

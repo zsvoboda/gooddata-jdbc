@@ -35,12 +35,12 @@ and it expects the following JDBC URL format
 - Prepared statements (Connection.prepareStatement + statement.setXY)
     - This is a fake implementation that does the same as execution of regular statement with parameters substitution. 
       No performance benefits.   
-- MAQL
-    - supports ```CREATE METRIC <name> AS <maql>```
-    - supports ```ALTER METRIC <name> AS <maql>```
-    - supports ```DROP METRIC <name>```
-    - supports ```DESCRIBE METRIC <name>```
-    - make sure you quote all identifiers in double quotes
+- MAQL support (make sure you quote all identifiers in double quotes)
+    - ```CREATE METRIC <name> AS <maql>```
+    - ```ALTER METRIC <name> AS <maql>```
+    - ```DROP METRIC <name>```
+    - ```DESCRIBE METRIC <name>```
+    - ```DESCRIBE VARIABLE <name>```
 
 ### Example
 ```
