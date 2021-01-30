@@ -1,7 +1,6 @@
 package com.gooddata.jdbc.driver;
 
 import com.gooddata.jdbc.util.Parameters;
-import net.sf.jsqlparser.JSQLParserException;
 import org.testng.annotations.Test;
 
 import java.sql.DriverManager;
@@ -27,7 +26,7 @@ public class TestAfmStatement {
         this.afmConnection = (AfmConnection) DriverManager.getConnection(url, p.getUsername(), p.getPassword());
     }
 
-    public void testFindColumnIndex(String columns, String where, ResultSet resultSet) throws SQLException {
+    public void testFindColumnIndex(String columns, ResultSet resultSet) throws SQLException {
         final List<String> columnnList = Arrays.stream(columns.split(", "))
                 .map(i -> i.replaceAll("\"", "")
                         .trim())
@@ -51,7 +50,7 @@ public class TestAfmStatement {
         Statement statement = this.afmConnection.createStatement();
         ResultSet resultSet = statement.executeQuery("SELECT " + columns + " " + where);
 
-        testFindColumnIndex(s, where, resultSet);
+        testFindColumnIndex(s, resultSet);
         StringBuilder txtRow = new StringBuilder();
         for (int i = 0; i < columnnList.size(); i++) {
             if (i > 0)
@@ -90,7 +89,7 @@ public class TestAfmStatement {
         ResultSet resultSet = statement.executeQuery();
 
 
-        testFindColumnIndex(s, where, resultSet);
+        testFindColumnIndex(s, resultSet);
         StringBuilder txtRow = new StringBuilder();
         for (int i = 0; i < columnnList.size(); i++) {
             if (i > 0)
@@ -123,7 +122,7 @@ public class TestAfmStatement {
     }
 
     @Test
-    public void testPrecision() throws SQLException {
+    public void testPrecision() {
         //testRetrieve("\"PRODUCT_NAME\", \"ORDER_AMOUNT_METRIC\"","", null);
     }
 

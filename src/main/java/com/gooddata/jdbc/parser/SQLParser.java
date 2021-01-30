@@ -12,8 +12,8 @@ import net.sf.jsqlparser.statement.select.*;
 import org.apache.commons.jexl2.JexlEngine;
 import org.apache.commons.jexl2.MapContext;
 
-import java.sql.*;
 import java.sql.Date;
+import java.sql.*;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.logging.Logger;
@@ -108,8 +108,7 @@ public class SQLParser {
             public int substitutePreparedParameterValues(Map<Integer,Object> preparedStatementParams, int offset)
                     throws SQLException {
                 List<String> newValues = new ArrayList<>();
-                for (int j = 0; j < this.values.size(); j++) {
-                    String value = this.values.get(j);
+                for (String value : this.values) {
                     if (value.equals("?")) {
                         if (preparedStatementParams.containsKey(offset)) {
                             newValues.add(substitutePreparedParameterValue(preparedStatementParams.get(offset++)));
@@ -117,8 +116,7 @@ public class SQLParser {
                             throw new SQLException(String.format("Not enough prepared call parameters. " +
                                     "Can't find parameter at position '%d'", offset));
                         }
-                    }
-                    else {
+                    } else {
                         newValues.add(value);
                     }
                 }
@@ -148,8 +146,8 @@ public class SQLParser {
                 return column;
             }
 
-            private String order;
-            private String column;
+            private final String order;
+            private final String column;
         }
 
         private final List<String> columns;
@@ -220,7 +218,7 @@ public class SQLParser {
      * @param sql parsed SQL
      * @param preparedStatementParams Map of JDBC prepared parameters (starts with idx 1)
      * @return parsed sql with substituted prepared statement's placeholders ('?')
-     * @throws SQLException
+     * @throws SQLException when the substitution fails
      */
     public static SQLParser.ParsedSQL substitutePreparedParams(@NotNull SQLParser.ParsedSQL sql,
                                                                @NotNull Map<Integer, Object> preparedStatementParams) throws SQLException {
@@ -270,11 +268,6 @@ public class SQLParser {
                         }
 
                         public void visit(SubSelect subSelect) {
-                            /*
-                            errors.add(new JSQLParserException(
-                                    String.format("Subqueries queries aren't supported sql='%s'.", query)
-                            ));
-                            */
                             try {
                                 // handling SPARK SUBQUERY format
                                 // SELECT * FROM (<original select>) SPARK_GEN_SUBQ_0 WHERE 1=0

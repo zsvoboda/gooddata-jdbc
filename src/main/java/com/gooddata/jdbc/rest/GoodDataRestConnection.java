@@ -238,7 +238,6 @@ public class GoodDataRestConnection {
     /**
      * List variables
      * @param  workspaceUri workspace ID
-     * @param  workspaceUri workspace ID
      * @return list of variables
      */
     public List<CatalogEntry> getVariables(String workspaceUri)
@@ -264,7 +263,7 @@ public class GoodDataRestConnection {
         }
         else {
             throw new SQLException(
-                    String.format("Getting variables for uri '%s' failed."));
+                    "Getting variables for uri '%s' failed.");
         }
         } catch (JsonProcessingException | Catalog.CatalogEntryNotFoundException e) {
             throw new SQLException(e);

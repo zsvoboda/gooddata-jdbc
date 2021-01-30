@@ -114,7 +114,7 @@ public class AfmDriver implements java.sql.Driver {
      * {@inheritDoc}
      */
     @Override
-    public DriverPropertyInfo[] getPropertyInfo(String url, Properties info) throws SQLException {
+    public DriverPropertyInfo[] getPropertyInfo(String url, Properties info) {
         LOGGER.info(String.format("getPropertyInfo: url='%s' info='%s'", url, info));
         return new DriverPropertyInfo[]{};
     }
@@ -124,7 +124,7 @@ public class AfmDriver implements java.sql.Driver {
      */
     @Override
     public int getMajorVersion() {
-        LOGGER.info(String.format("getMajorVersion"));
+        LOGGER.info("getMajorVersion");
         return MAJOR_VERSION;
     }
 
@@ -133,7 +133,7 @@ public class AfmDriver implements java.sql.Driver {
      */
     @Override
     public int getMinorVersion() {
-        LOGGER.info(String.format("getMinorVersion"));
+        LOGGER.info("getMinorVersion");
         return MINOR_VERSION;
     }
 
@@ -142,7 +142,7 @@ public class AfmDriver implements java.sql.Driver {
      */
     @Override
     public boolean jdbcCompliant() {
-        LOGGER.info(String.format("jdbcCompliant"));
+        LOGGER.info("jdbcCompliant");
         return false;
     }
 
@@ -151,7 +151,7 @@ public class AfmDriver implements java.sql.Driver {
      */
     @Override
     public Logger getParentLogger() {
-        LOGGER.info(String.format("getParentLogger"));
+        LOGGER.info("getParentLogger");
         return LOGGER;
     }
 

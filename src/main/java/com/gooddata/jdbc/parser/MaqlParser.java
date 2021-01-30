@@ -92,9 +92,8 @@ public class MaqlParser {
      */
     public ParsedCreateMetricStatement parseMaql(String metricName, String metricMaql) throws JSQLParserException {
         List<String> factsMetricsOrAttributeTitles = new ArrayList<>();
-        String s = metricMaql;
         Pattern p1 = Pattern.compile("(\".*?\")+");
-        Matcher m1 = p1.matcher(s);
+        Matcher m1 = p1.matcher(metricMaql);
         while (m1.find()) {
             for (int i = 1; i <= m1.groupCount(); i++) {
                 factsMetricsOrAttributeTitles.add(m1.group(i).replaceAll("\"",""));
@@ -152,7 +151,7 @@ public class MaqlParser {
         return parseMaql(metricName, metricMaql);
     }
 
-    public class Describe {
+    public static class Describe {
 
         public Describe(String name, String type) {
             this.name = name;

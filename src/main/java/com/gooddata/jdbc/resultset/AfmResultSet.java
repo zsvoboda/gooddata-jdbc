@@ -47,9 +47,9 @@ public class AfmResultSet extends AbstractResultSet implements ResultSet {
 	// JDBC statement
 	private final Statement statement;
 	// SQL LIMIT
-	private int sqlLimit = 0;
+	private final int sqlLimit;
 	// SQL OFFSET
-	private int sqlOffset = 0;
+	private final int sqlOffset;
 	// Order BY elements
 	private final List<SortItem> orderBys;
 
@@ -89,7 +89,7 @@ public class AfmResultSet extends AbstractResultSet implements ResultSet {
 			List<Dimension> dimensions = new ArrayList<>();
 			dimensions.add(new Dimension(this.columns.stream()
 					.filter(i->i.getType().equals("attributeDisplayForm"))
-					.map(i->i.getIdentifier()).collect(Collectors.toList())));
+					.map(CatalogEntry::getIdentifier).collect(Collectors.toList())));
 			dimensions.add(new Dimension("measureGroup"));
 			e = new Execution(afm, new ResultSpec(dimensions,this.orderBys));
 		}

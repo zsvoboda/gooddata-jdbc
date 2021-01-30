@@ -15,20 +15,18 @@ import com.gooddata.sdk.model.project.Project;
 import com.gooddata.sdk.service.GoodData;
 import com.gooddata.sdk.service.md.MetadataService;
 import org.apache.commons.lang3.ArrayUtils;
-import org.springframework.web.client.RestTemplate;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.logging.Logger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
  * GoodData objects catalog. Includes both AFM (display form, metric) and LDM (attribute, fact, metric) objects
  */
-public class Catalog {
+public class Catalog implements Serializable {
 
     private final static Logger LOGGER = Logger.getLogger(Catalog.class.getName());
     /**
@@ -140,9 +138,9 @@ public class Catalog {
 
     private class PopulateExecutor extends Thread {
 
-        private GoodData gd;
-        private GoodDataRestConnection gdRest;
-        private String workspaceUri;
+        private final GoodData gd;
+        private final GoodDataRestConnection gdRest;
+        private final String workspaceUri;
 
         public PopulateExecutor(GoodData gd, GoodDataRestConnection gdRest, String workspaceUri) {
             this.gd = gd;
@@ -156,7 +154,7 @@ public class Catalog {
                 populateSync(this.gd, this.gdRest, this.workspaceUri);
             } catch (SQLException e) {
                 // TBD better error handling
-                System.err.println(e);
+                e.printStackTrace();
             }
         }
     }
@@ -178,9 +176,8 @@ public class Catalog {
      * @param gd        Gooddata reference
      * @param gdRest    Gooddata REST connection
      * @param workspaceUri GoodData workspace URI
-     * @throws SQLException generic issue
      */
-    public void populateAsync(GoodData gd, GoodDataRestConnection gdRest, String workspaceUri) throws SQLException {
+    public void populateAsync(GoodData gd, GoodDataRestConnection gdRest, String workspaceUri) {
         PopulateExecutor exec = new PopulateExecutor(gd, gdRest, workspaceUri);
         exec.start();
     }
@@ -369,7 +366,7 @@ public class Catalog {
                     else {
                         l = columns.stream().filter(i -> i.getTitle().equals(orderColumn)).collect(Collectors.toList());
                     }
-                    if(l.size() > 1 || l.size() <= 0) {
+                    if(l.size() != 1) {
                         throw new SQLException(String.format("Can't uniquely resolve the ORDER BY column '%s'",
                                 orderColumn));
                     }
@@ -380,7 +377,7 @@ public class Catalog {
             }
             if(c.getType().equals("metric")) {
                 sortItems.add(new MeasureSortItem(orderByElement.getOrder().toLowerCase(),
-                        Arrays.asList(new MeasureLocatorItem(c.getIdentifier()))));
+                        Collections.singletonList(new MeasureLocatorItem(c.getIdentifier()))));
             }
             else {
                 sortItems.add(new AttributeSortItem(orderByElement.getOrder().toLowerCase(),
@@ -529,8 +526,7 @@ public class Catalog {
             throw new CatalogEntryNotFoundException(String.format("Variable with uri '%s' not found.", uri));
         }
         GoodDataRestConnection.Variable v = (GoodDataRestConnection.Variable)e.getGdObject();
-        String expr = substituteUris(gdRest, v.getExpression());
-        return expr;
+        return substituteUris(gdRest, v.getExpression());
     }
 
     /**
@@ -538,8 +534,8 @@ public class Catalog {
      * @param gdRest GD REST connection
      * @param e String with the URIs
      * @return String with URIs replaced with names
-     * @throws TextUtil.InvalidFormatException
-     * @throws CatalogEntryNotFoundException
+     * @throws TextUtil.InvalidFormatException invalid URI format
+     * @throws CatalogEntryNotFoundException non-existent catalog entries
      */
     private String substituteUris(GoodDataRestConnection gdRest, String e) throws TextUtil.InvalidFormatException,
             CatalogEntryNotFoundException {
@@ -554,7 +550,7 @@ public class Catalog {
             // The attribute element URI has ID of attribute but can be only looked up via display form
             // We must switch the URI part from attribute uri to display form uri
             String[] components = elementUri.split("\\?");
-            if(components == null || components.length != 2) {
+            if(components.length != 2) {
                 throw new CatalogEntryNotFoundException(String.format("Invalid attribute element uri format '%s'",
                         elementUri));
             }

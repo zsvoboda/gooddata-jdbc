@@ -150,7 +150,7 @@ public class AfmStatement implements java.sql.Statement, PreparedStatement {
 
     @Override
     public boolean execute() throws SQLException {
-        this.resultSet = (AfmResultSet) this.executeQuery();
+        this.resultSet = this.executeQuery();
         return true;
     }
 
@@ -188,7 +188,7 @@ public class AfmStatement implements java.sql.Statement, PreparedStatement {
                 }
                 return true;
             } else {
-                this.resultSet = (AfmResultSet) this.executeQuery(sql);
+                this.resultSet = this.executeQuery(sql);
                 return true;
             }
         } catch (Catalog.CatalogEntryNotFoundException |
@@ -309,7 +309,7 @@ public class AfmStatement implements java.sql.Statement, PreparedStatement {
                     this.metadata.getGoodDataRestConnection(),
                     ldmObj.getUri());
             return new MetadataResultSet(Arrays.asList(
-                    new MetadataResultSet.MetaDataColumn("result",Arrays.asList(maql))));
+                    new MetadataResultSet.MetaDataColumn("result", Arrays.asList(maql))));
         }
         else {
             throw new Catalog.CatalogEntryNotFoundException(String.format("Variable '%s' not found", variableName));

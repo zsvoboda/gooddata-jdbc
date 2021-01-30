@@ -3,12 +3,13 @@ package com.gooddata.jdbc.catalog;
 import com.gooddata.jdbc.parser.SQLParser;
 import com.gooddata.sdk.model.executeafm.ObjQualifier;
 
+import java.io.Serializable;
 import java.util.logging.Logger;
 
 /**
  * Catalog entry - holds LDM or AFM object
  */
-public class CatalogEntry {
+public class CatalogEntry implements Serializable {
 
     private final static Logger LOGGER = Logger.getLogger(CatalogEntry.class.getName());
     public static String DEFAULT_ATTRIBUTE_DATATYPE = "VARCHAR(255)";
