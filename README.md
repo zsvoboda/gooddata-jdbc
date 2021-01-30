@@ -51,6 +51,8 @@ WHERE "Customer State" IN ('CA','MA');
 
 SELECT "Product Category", "Product", "# of Orders" ORDER BY 3 ASC LIMIT 10 OFFSET 3;
 
+DECRIBE METRIC "Total Revenue by State";
+
 DROP METRIC "Total Revenue by State";
 ```
 
