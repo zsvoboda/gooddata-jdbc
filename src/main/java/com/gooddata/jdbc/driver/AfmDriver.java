@@ -4,6 +4,7 @@ import com.gooddata.jdbc.catalog.Catalog;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.DriverPropertyInfo;
 import java.sql.SQLException;
@@ -24,6 +25,12 @@ public class AfmDriver implements java.sql.Driver {
     public final static int MINOR_VERSION = 5;
     public final static String VERSION = String.format("%x.%x", MAJOR_VERSION, MINOR_VERSION);
     public static final String GDJDBC_DIR = String.format("%s/.gdjdbc",System.getProperty("user.home"));
+
+    private static Driver registeredDriver;
+
+    private static boolean isRegistered() {
+        return registeredDriver != null;
+    }
 
     /**
      * Setups the logging from the ~/.logging config file
@@ -57,8 +64,15 @@ public class AfmDriver implements java.sql.Driver {
             LOGGER.info("You can configure java.logging in the  ~/.logging file.");
         }
         try {
-            LOGGER.info("GooodData Workspace JDBC Driver started");
-            DriverManager.registerDriver(new AfmDriver());
+            if (isRegistered()) {
+                throw new IllegalStateException("Driver is already registered. It can only be registered once.");
+            } else {
+                LOGGER.info("GooodData Workspace JDBC Driver started");
+                AfmDriver registeredDriver = new AfmDriver();
+                DriverManager.registerDriver(registeredDriver);
+                AfmDriver.registeredDriver = registeredDriver;
+            }
+
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -95,7 +109,9 @@ public class AfmDriver implements java.sql.Driver {
     @Override
     public boolean acceptsURL(String url) {
         LOGGER.info(String.format("acceptsURL: url='%s'", url));
-        return url.startsWith("jdbc:gd:");
+        boolean b = url.startsWith("jdbc:gd:");
+        LOGGER.info(String.format("acceptsURL: returning='%b'", b));
+        return b;
     }
 
     /**
