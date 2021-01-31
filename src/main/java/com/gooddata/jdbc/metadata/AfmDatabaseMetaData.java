@@ -1,21 +1,14 @@
 package com.gooddata.jdbc.metadata;
 
 import com.gooddata.jdbc.catalog.Catalog;
-import com.gooddata.jdbc.catalog.CatalogEntry;
 import com.gooddata.jdbc.catalog.Schema;
 import com.gooddata.jdbc.driver.AfmConnection;
 import com.gooddata.jdbc.driver.AfmDriver;
 import com.gooddata.jdbc.rest.GoodDataRestConnection;
-import com.gooddata.jdbc.util.TextUtil;
 import com.gooddata.sdk.model.project.Project;
 import com.gooddata.sdk.service.GoodData;
 import org.springframework.web.client.RestTemplate;
 
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.ObjectOutputStream;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.sql.*;
 import java.util.List;
 import java.util.logging.Logger;
@@ -106,13 +99,18 @@ public class AfmDatabaseMetaData implements java.sql.DatabaseMetaData {
     public void setSchema(String schemaName) throws SQLException {
         LOGGER.info(String.format("AfmDatabaseMetaData::setSchema '%s'", schemaName));
         this.schema = findSchemaByName(schemaName);
-        this.catalog = AfmDriver.getCachedCatalog(schema.getSchemaUri());
+
+        this.catalog = AfmDriver.getCatalog(this.schema.getSchemaUri());
         if(this.catalog == null) {
-            LOGGER.info(String.format("Cached catalog for schema '%s' not found.", schemaName));
+            LOGGER.info(String.format("Cached catalog not found. " +
+                    "Creating new catalog for schema '%s'.",this.schema.getSchemaUri()));
             this.catalog = new Catalog(gd, this.gdRestConnection, schema);
+            LOGGER.info(String.format("Storing catalog for schema '%s' to cache.",
+                    this.schema.getSchemaUri()));
+            AfmDriver.cacheCatalog(this.schema.getSchemaUri(), this.catalog);
+        } else {
+            LOGGER.info(String.format("Cached catalog found for schema '%s'.", this.schema.getSchemaUri()));
         }
-        LOGGER.info("Storing catalog to cache.");
-        AfmDriver.cacheCatalog(schema.getSchemaUri(), this.catalog);
     }
 
     public String getSchema() {
@@ -1136,7 +1134,7 @@ public class AfmDatabaseMetaData implements java.sql.DatabaseMetaData {
                                 String tableNamePattern,
                                 String columnNamePattern) {
         //LOGGER.info(String.format("getColumns catalog='%s' schemaPattern='%s' tableNamePattern='%s' columnNamePattern='%s'", catalog, schemaPattern, tableNamePattern, columnNamePattern));
-        return AfmDatabaseMetadataResultSets.columnResultSet(this.catalog, this.getWorkspaceForSchema(this.schema));
+        return AfmDatabaseMetadataResultSets.columnResultSet(this.getCatalog(), this.getWorkspaceForSchema(this.schema));
     }
 
     /**

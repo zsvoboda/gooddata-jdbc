@@ -81,7 +81,7 @@ public class AfmStatement implements java.sql.Statement, PreparedStatement {
      * @param filters AFM filters
      * @return AFM object
      */
-    private Afm getAfm(List<CatalogEntry> columns, List<AfmFilter> filters) {
+    private Afm getAfm(List<CatalogEntry> columns, List<AfmFilter> filters) throws SQLException {
         LOGGER.info(String.format("getAfm columns='%s', filters='%s'", columns, filters));
         Afm afm = new Afm();
         for (CatalogEntry o : columns) {

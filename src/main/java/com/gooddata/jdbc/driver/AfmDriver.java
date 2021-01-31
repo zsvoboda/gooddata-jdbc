@@ -23,6 +23,7 @@ public class AfmDriver implements java.sql.Driver {
     public final static int MAJOR_VERSION = 0;
     public final static int MINOR_VERSION = 5;
     public final static String VERSION = String.format("%x.%x", MAJOR_VERSION, MINOR_VERSION);
+    public static final String GDJDBC_DIR = String.format("%s/.gdjdbc",System.getProperty("user.home"));
 
     /**
      * Setups the logging from the ~/.logging config file
@@ -32,11 +33,21 @@ public class AfmDriver implements java.sql.Driver {
     static void setupLogging() throws IOException {
         Logger log = Logger.getGlobal();
         FileInputStream fis = new FileInputStream(String.format("%s/.logging",
-                System.getProperty("user.home")));
-        //FileInputStream fis = new FileInputStream("/.logging");
+                GDJDBC_DIR));
         LogManager.getLogManager().readConfiguration(fis);
         log.setUseParentHandlers(false);
         fis.close();
+    }
+
+    // Catalog cache
+    private static final Map<String, Catalog> catalogs = new HashMap<>();
+
+    public static Catalog getCatalog(String key) {
+        return catalogs.get(key);
+    }
+
+    public static void cacheCatalog(String key, Catalog c) {
+        catalogs.put(key, c);
     }
 
     static {
@@ -53,35 +64,12 @@ public class AfmDriver implements java.sql.Driver {
         }
     }
 
-    // Caching catalogs by schema
-    private static final Map<String, Catalog> catalogCache = new HashMap<>();
-
     /**
      * Default constructor
      */
     public AfmDriver() {
         LOGGER.info("AfmDriver");
     }
-
-	/**
-	 * Returns cached catalog or NULL
-	 * @param schema schema key
-	 * @return cached catalog
-	 */
-	public static Catalog getCachedCatalog(String schema) {
-        LOGGER.info(String.format("getCachedCatalog: schema='%s'", schema));
-	    return catalogCache.get(schema);
-	}
-
-	/**
-	 * Cache catalog
-	 * @param schema schema key
-	 * @param catalog catalog to cache
-	 */
-	public static void cacheCatalog(String schema, Catalog catalog) {
-        LOGGER.info(String.format("cacheCatalog: schema='%s'", schema));
-	    catalogCache.put(schema, catalog);
-	}
 
     /**
      * {@inheritDoc}

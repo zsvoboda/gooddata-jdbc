@@ -1,5 +1,6 @@
 package com.gooddata.jdbc.catalog;
 
+import com.gooddata.jdbc.driver.AfmDriver;
 import com.gooddata.jdbc.parser.DataTypeParser;
 import com.gooddata.jdbc.parser.SQLParser;
 import com.gooddata.jdbc.rest.GoodDataRestConnection;
@@ -31,13 +32,14 @@ import java.util.stream.Collectors;
 public class Catalog implements Serializable {
 
     private final static Logger LOGGER = Logger.getLogger(Catalog.class.getName());
-
-    /**
-     * AFM objects (displayForms, and metrics)
-     */
-    private Map<String, CatalogEntry> entries = new HashMap<>();
-
+    // Caching catalogs by schema
+    private static final Map<String, Map<String, CatalogEntry>> entriesCache = new HashMap<>();
+    private static final String SERIALIZATION_EXTENSION = ".gdcat";
     private final Comparator<CatalogEntry> CatalogEntryComparator = Comparator.comparing(CatalogEntry::getTitle);
+
+    private final GoodData gd;
+    private final GoodDataRestConnection gdRest;
+
     private final int[] ATTRIBUTE_FILTER_OPERATORS = new int[]{
             SQLParser.ParsedSQL.FilterExpression.OPERATOR_EQUAL,
             SQLParser.ParsedSQL.FilterExpression.OPERATOR_NOT_EQUAL,
@@ -56,25 +58,49 @@ public class Catalog implements Serializable {
             SQLParser.ParsedSQL.FilterExpression.OPERATOR_NOT_BETWEEN
     };
 
+    /**
+     * AFM objects (displayForms, and metrics)
+     */
+    private Map<String, CatalogEntry> entries = new HashMap<>();
     // Is catalog populated?
-    private boolean isCatalogPopulated = true;
+    private boolean isCatalogPopulated = false;
 
     /**
      * Constructor
      */
     public Catalog(GoodData gd, GoodDataRestConnection gdRest, Schema schema) throws SQLException {
-        try {
-            LOGGER.info(String.format("Trying to deserialize catalog for workspace '%s'.",
+        this.gd = gd;
+        this.gdRest = gdRest;
+        LOGGER.info(String.format("Getting cached catalog entries for schema '%s'.",
+                schema.getSchemaUri()));
+        /*
+        this.isCatalogPopulated = false;
+        this.entries = entriesCache.get(schema.getSchemaUri());
+        if (this.entries == null) {
+            LOGGER.info(String.format("Cached catalog entries for schema '%s' not found.",
                     schema.getSchemaUri()));
-           this.entries = this.deserialize(TextUtil
-                    .extractWorkspaceIdFromWorkspaceUri(schema.getSchemaUri()));
-            LOGGER.info("Catalog successfully  deserialized.");
-        } catch (IOException e) {
-            LOGGER.info("Catalog deserialization failed. Creating new one.");
-            this.populate(gd, gdRest, schema.getSchemaUri());
-        } catch (ClassNotFoundException | TextUtil.InvalidFormatException e) {
-            throw new SQLException(e);
+            LOGGER.info(String.format("Trying to deserialize catalog entries from permanent cache for workspace '%s'.",
+                    schema.getSchemaUri()));
+            try {
+                this.entries = this.deserialize(TextUtil
+                        .extractWorkspaceIdFromWorkspaceUri(schema.getSchemaUri()));
+                this.isCatalogPopulated = true;
+                LOGGER.info("Catalog successfully deserialized from permanent cache.");
+            } catch (IOException e) {
+                // do nothing and continue to population of ne
+                LOGGER.info("Catalog entries deserialization failed. Populating new one.");
+            } catch (ClassNotFoundException | TextUtil.InvalidFormatException e) {
+                throw new SQLException(e);
+            }
+            // Either no cached entries found and populate from scratch
+            // or deserialized catalog asynchronous refresh
+            this.populateSync(gd, gdRest, schema.getSchemaUri());
+        } else {
+            this.isCatalogPopulated = true;
+            LOGGER.info(String.format("Cached catalog for schema '%s' found.", schema.getSchemaUri()));
         }
+         */
+        this.populate(schema.getSchemaUri());
     }
 
     /**
@@ -98,7 +124,7 @@ public class Catalog implements Serializable {
             LOGGER.info(String.format("Default display form title='%s'", displayForm.getTitle()));
             CatalogEntry e = new CatalogEntry(attribute.getUri(),
                     attribute.getTitle(), attribute.getCategory(), attribute.getIdentifier(),
-                    new UriObjQualifier(attribute.getUri()),  new UriObjQualifier(displayForm.getUri()));
+                    new UriObjQualifier(attribute.getUri()), new UriObjQualifier(displayForm.getUri()));
             //TODO getting default display form only
             e.setDataType(CatalogEntry.DEFAULT_ATTRIBUTE_DATATYPE);
             c.put(attribute.getUri(), e);
@@ -107,13 +133,12 @@ public class Catalog implements Serializable {
         }
     }
 
-
     /**
      * Adds metric to catalog
      *
      * @param metric metric to add
      */
-    private void addMetric(Entry metric, Map<String,CatalogEntry> c) {
+    private void addMetric(Entry metric, Map<String, CatalogEntry> c) {
         CatalogEntry e = new CatalogEntry(metric.getUri(),
                 metric.getTitle(), metric.getCategory(), metric.getIdentifier(),
                 new UriObjQualifier(metric.getUri()));
@@ -147,7 +172,7 @@ public class Catalog implements Serializable {
     }
 
     public synchronized void waitForCatalogPopulationFinished() {
-        while (!this.isCatalogPopulated) {
+        while (!this.isCatalogPopulated()) {
             try {
                 wait();
             } catch (InterruptedException e) {
@@ -160,36 +185,45 @@ public class Catalog implements Serializable {
     /**
      * Populates the catalog of attributes and metrics
      *
-     * @param gd           Gooddata reference
-     * @param gdRest       Gooddata REST connection
      * @param workspaceUri GoodData workspace URI
-     *
      */
-    public void populate(GoodData gd, GoodDataRestConnection gdRest, String workspaceUri) {
-        CatalogRefreshExecutor exec = new CatalogRefreshExecutor(this, gd, gdRest, workspaceUri);
+    public void populate(String workspaceUri) {
+        CatalogRefreshExecutor exec = new CatalogRefreshExecutor(this, workspaceUri);
         exec.start();
+    }
+
+    public synchronized boolean isCatalogPopulated() {
+        return this.isCatalogPopulated;
+    }
+
+    public synchronized void setIsCatalogPopulated(boolean b) {
+        this.isCatalogPopulated = b;
+    }
+
+    public synchronized void setEntries(Map<String,CatalogEntry> m) {
+        this.entries = m;
     }
 
     /**
      * Populates the catalog of attributes and metrics
      *
-     * @param gd           Gooddata reference
-     * @param gdRest       Gooddata REST connection
      * @param workspaceUri GoodData workspace URI
      * @throws SQLException generic issue
      */
-    public synchronized void populateSync(GoodData gd, GoodDataRestConnection gdRest, String workspaceUri) throws SQLException {
+    protected synchronized void populateSync(String workspaceUri) throws SQLException {
         LOGGER.info(String.format("Populating catalog for schema '%s'", workspaceUri));
-        if(this.entries.size() == 0) {
+        if (this.entries.size() == 0) {
             // Must block all queries if the catalog is empty
             LOGGER.info("Catalog lock acquired.");
-            this.isCatalogPopulated = false;
+            this.setIsCatalogPopulated(false);
         } else {
+            LOGGER.info("Populating new catalog without locking. " +
+                    "Queries will run against old catalog.");
             // if there is something in the catalog, the queries can use the old content
-            this.isCatalogPopulated = true;
+            this.setIsCatalogPopulated(true);
         }
-        this.entries = this.populateCatalogEntries(gd, gdRest, workspaceUri);
-        this.isCatalogPopulated = true;
+        this.setEntries(this.populateCatalogEntries(workspaceUri));
+        this.setIsCatalogPopulated(true);
         notifyAll();
         LOGGER.info("Catalog lock released");
     }
@@ -197,21 +231,19 @@ public class Catalog implements Serializable {
     /**
      * Populate new entries map
      *
-     * @param gd           Gooddata reference
-     * @param gdRest       Gooddata REST connection
      * @param workspaceUri GoodData workspace URI
      * @return new entries Map
      * @throws SQLException generic issue
      */
-    private Map<String,CatalogEntry> populateCatalogEntries(GoodData gd, GoodDataRestConnection gdRest, String workspaceUri) throws SQLException {
+    private Map<String, CatalogEntry> populateCatalogEntries(String workspaceUri) throws SQLException {
         LOGGER.info(String.format("Refreshing catalog for workspace uri '%s'", workspaceUri));
-        Map<String,CatalogEntry> newCatalog = new HashMap<>();
+        Map<String, CatalogEntry> newCatalog = new HashMap<>();
 
-        Project workspace = gd.getProjectService().getProjectByUri(workspaceUri);
+        Project workspace = this.gd.getProjectService().getProjectByUri(workspaceUri);
         if (workspace == null) {
             throw new SQLException(String.format("Workspace '%s' doesn't exist.", workspaceUri));
         }
-        MetadataService gdMeta = gd.getMetadataService();
+        MetadataService gdMeta = this.gd.getMetadataService();
         LOGGER.info("Fetching metrics.");
         Collection<Entry> metricEntries = gdMeta.find(workspace, Metric.class);
 
@@ -221,8 +253,28 @@ public class Catalog implements Serializable {
 
         LOGGER.info("Fetching attributes.");
         Collection<Entry> attributeEntries = gdMeta.find(workspace, Attribute.class);
-        for (Entry attribute : attributeEntries) {
-            this.addAttribute(gdMeta.getObjByUri(attribute.getUri(), Attribute.class), newCatalog);
+        List<String> attributeUris = attributeEntries.stream().map(a->a.getUri())
+                .collect(Collectors.toList());
+        Collection<Obj> attributes = new ArrayList<>();
+        List<String> uriBatch = new ArrayList<>();
+        for(String attributeUri: attributeUris) {
+            if(uriBatch.size()<50) {
+                uriBatch.add(attributeUri);
+            } else {
+                Collection<Obj> batchResult = gdMeta.getObjsByUris(workspace, uriBatch);
+                attributes.addAll(batchResult);
+                uriBatch.clear();
+            }
+        }
+        if(uriBatch.size()>0) {
+            Collection<Obj> batchResult = gdMeta.getObjsByUris(workspace, uriBatch);
+            attributes.addAll(batchResult);
+            uriBatch.clear();
+        }
+
+        for (Obj obj : attributes) {
+            Attribute attribute = (Attribute)obj;
+            this.addAttribute(attribute, newCatalog);
         }
 
         LOGGER.info("Fetching facts.");
@@ -232,12 +284,12 @@ public class Catalog implements Serializable {
         }
 
         LOGGER.info("Fetching variables.");
-        List<CatalogEntry> variableEntries = gdRest.getVariables(workspaceUri);
+        List<CatalogEntry> variableEntries = this.gdRest.getVariables(workspaceUri);
         for (CatalogEntry variable : variableEntries) {
             newCatalog.put(variable.getUri(), variable);
         }
+        /*
         LOGGER.info(String.format("Catalog refresh finished. Fetched '%d' objects.", newCatalog.size()));
-
         LOGGER.info(String.format("Serializing catalog for workspace '%s'.", workspaceUri));
         try {
             this.serialize(TextUtil.extractWorkspaceIdFromWorkspaceUri(workspaceUri), newCatalog);
@@ -245,23 +297,21 @@ public class Catalog implements Serializable {
             throw new SQLException(e);
         }
         LOGGER.info(String.format("Catalog serialization finished for workspace '%s'.", workspaceUri));
+        */
         return newCatalog;
     }
 
-    private static final String SERIALIZATION_DIR = ".gdjdbc";
-    private static final String SERIALIZATION_EXTENSION = ".gdcat";
-
     private void ensureSerializationDirectory() throws IOException {
         Files.createDirectories(Paths.get(String.format("%s/%s",
-                System.getProperty("user.home"), SERIALIZATION_DIR)));
+                System.getProperty("user.home"), AfmDriver.GDJDBC_DIR)));
     }
 
     private void serialize(String schema, Map<String, CatalogEntry> c) throws IOException {
         LOGGER.info(String.format("Serializing catalog '%s'", schema));
         ensureSerializationDirectory();
 
-        FileOutputStream fileOut = new FileOutputStream(String.format("%s/%s/%s.%s",
-                System.getProperty("user.home"), SERIALIZATION_DIR, schema, SERIALIZATION_EXTENSION));
+        FileOutputStream fileOut = new FileOutputStream(String.format("%s/%s.%s",
+                AfmDriver.GDJDBC_DIR, schema, SERIALIZATION_EXTENSION));
         ObjectOutputStream out = new ObjectOutputStream(fileOut);
         out.writeObject(c);
         out.close();
@@ -273,14 +323,14 @@ public class Catalog implements Serializable {
     private Map<String, CatalogEntry> deserialize(String schema) throws IOException, ClassNotFoundException {
         LOGGER.info(String.format("Deserializing catalog '%s'", schema));
         ensureSerializationDirectory();
-        FileInputStream fileIn = new FileInputStream(String.format("%s/%s/%s.%s",
-                System.getProperty("user.home"), SERIALIZATION_DIR, schema, SERIALIZATION_EXTENSION));
+        FileInputStream fileIn = new FileInputStream(String.format("%s/%s.%s",
+                AfmDriver.GDJDBC_DIR, schema, SERIALIZATION_EXTENSION));
         ObjectInputStream in = new ObjectInputStream(fileIn);
         Object o = in.readObject();
         in.close();
         fileIn.close();
         LOGGER.info(String.format("Catalog '%s' deserialized successfully.", schema));
-        return (Map<String, CatalogEntry>)o;
+        return (Map<String, CatalogEntry>) o;
     }
 
     /**
@@ -550,7 +600,7 @@ public class Catalog implements Serializable {
      * @return metric MAQL with resolved URIs
      */
     public String getVariablePrettyPrint(GoodDataRestConnection gdRest, String uri)
-            throws CatalogEntryNotFoundException, TextUtil.InvalidFormatException {
+            throws CatalogEntryNotFoundException, TextUtil.InvalidFormatException{
         CatalogEntry e = this.entries.get(uri);
         if (!e.getType().equalsIgnoreCase("prompt")) {
             throw new CatalogEntryNotFoundException(String.format("Variable with uri '%s' not found.", uri));

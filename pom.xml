@@ -6,7 +6,7 @@
     <artifactId>gooddata-jdbc</artifactId>
     <name>gooddata-jdbc</name>
     <description>GoodData workspace JDBC driver</description>
-    <version>0.77-SNAPSHOT</version>
+    <version>0.77</version>
     <url>https://github.com/zsvoboda/gooddata-jdbc</url>
 
     <licenses>

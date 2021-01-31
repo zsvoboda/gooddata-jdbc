@@ -18,10 +18,10 @@ public class CatalogEntry implements Serializable {
     /**
      * Constructor
      *
-     * @param uri        Catalog object URI
-     * @param title      Catalog object title
-     * @param type       Catalog object type
-     * @param identifier Catalog object identifier
+     * @param uri                Catalog object URI
+     * @param title              Catalog object title
+     * @param type               Catalog object type
+     * @param identifier         Catalog object identifier
      * @param defaultDisplayForm default display form for attributes
      */
     public CatalogEntry(String uri, String title, String type, String identifier, ObjQualifier gdObject,
@@ -52,6 +52,7 @@ public class CatalogEntry implements Serializable {
 
     /**
      * Constructor
+     *
      * @param uri        Catalog object URI
      * @param title      Catalog object title
      * @param type       Catalog object type
@@ -75,15 +76,16 @@ public class CatalogEntry implements Serializable {
 
     /**
      * Constructor
-     * @param uri        Catalog object URI
-     * @param title      Catalog object title
-     * @param type       Catalog object type
-     * @param identifier Catalog object identifier
-     * @param gdObject   Original gd object
+     *
+     * @param uri                Catalog object URI
+     * @param title              Catalog object title
+     * @param type               Catalog object type
+     * @param identifier         Catalog object identifier
+     * @param gdObject           Original gd object
      * @param defaultDisplayForm default display form  for attributes
-     * @param dataType   Datatype
-     * @param size       Datatype size
-     * @param precision  Datatype precision
+     * @param dataType           Datatype
+     * @param size               Datatype size
+     * @param precision          Datatype precision
      */
     public CatalogEntry(String uri, String title, String type, String identifier, ObjQualifier gdObject,
                         ObjQualifier defaultDisplayForm, String dataType, int size, int precision) {
@@ -101,6 +103,7 @@ public class CatalogEntry implements Serializable {
 
     /**
      * Clone catalog object entry (when it needs to be modified externally)
+     *
      * @return catalog entry clone
      */
     public CatalogEntry cloneEntry() {
@@ -172,7 +175,7 @@ public class CatalogEntry implements Serializable {
     }
 
     public ObjQualifier getDefaultDisplayForm() {
-        return defaultDisplayForm;
+        return this.defaultDisplayForm;
     }
 
     private String identifier;
@@ -184,6 +187,5 @@ public class CatalogEntry implements Serializable {
     private int size;
     private int precision;
     private final ObjQualifier gdObject;
-
 
 }

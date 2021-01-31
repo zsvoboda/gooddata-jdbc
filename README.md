@@ -16,9 +16,6 @@ and it expects the following JDBC URL format
 
 ``` jdbc:gd://<your-gooddata-domain-name>/gdc/projects/<your-gooddata-project-id> ```
 
-Please be patient during the first use. The initial load can take 1 or 2 minutes on top of workspaces 
-with large LDM. Subsequent starts are much faster (seconds). 
-
 ### Supported features
 - You don't use FROM clause. Just list of columns in the ```SELECT <column-list> ``` 
   and ```WHERE <conditions> ```
