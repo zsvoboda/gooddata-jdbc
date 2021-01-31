@@ -65,7 +65,8 @@ public class AfmDatabaseMetaData implements java.sql.DatabaseMetaData {
         this.gdRestTemplate = gdRestTemplate;
         this.schemas = Schema.populateSchemas(this.gd);
         Schema schema = findSchemaByUri(String.format("/gdc/projects/%s", workspaceId));
-        this.setActiveWorkspace(schema);
+        this.gdRestConnection = new GoodDataRestConnection(this.gdRestTemplate,
+                this.getWorkspaceForSchema(schema));
         this.setSchema(schema.getSchemaName());
     }
 
@@ -102,37 +103,16 @@ public class AfmDatabaseMetaData implements java.sql.DatabaseMetaData {
         return this.gd.getProjectService().getProjectByUri(schema.getSchemaUri());
     }
 
-    private void setActiveWorkspace(Schema schema) {
-        this.gdRestConnection = new GoodDataRestConnection(this.gdRestTemplate,
-                this.getWorkspaceForSchema(schema));
-    }
-
     public void setSchema(String schemaName) throws SQLException {
         LOGGER.info(String.format("AfmDatabaseMetaData::setSchema '%s'", schemaName));
         this.schema = findSchemaByName(schemaName);
         this.catalog = AfmDriver.getCachedCatalog(schema.getSchemaUri());
         if(this.catalog == null) {
             LOGGER.info(String.format("Cached catalog for schema '%s' not found.", schemaName));
-            Catalog tryDeserialize = new Catalog();
-            try {
-                LOGGER.info(String.format("Trying to deserialize catalog for '%s'.", schemaName));
-                tryDeserialize.deserialize(TextUtil
-                        .extractWorkspaceIdFromWorkspaceUri(schema.getSchemaUri()));
-                LOGGER.info("Catalog successfully  deserialized.");
-                this.catalog = tryDeserialize;
-            } catch (IOException e) {
-                LOGGER.info("Catalog deserialization failed. Creating new one.");
-                this.catalog = new Catalog();
-                LOGGER.info("Starting async catalog population.");
-                this.catalog.populateAsync(gd, this.gdRestConnection, schema.getSchemaUri());
-            } catch (ClassNotFoundException | TextUtil.InvalidFormatException e) {
-                throw new SQLException(e);
-            }
+            this.catalog = new Catalog(gd, this.gdRestConnection, schema);
         }
         LOGGER.info("Storing catalog to cache.");
         AfmDriver.cacheCatalog(schema.getSchemaUri(), this.catalog);
-        LOGGER.info("Setting active workspace.");
-        this.setActiveWorkspace(schema);
     }
 
     public String getSchema() {

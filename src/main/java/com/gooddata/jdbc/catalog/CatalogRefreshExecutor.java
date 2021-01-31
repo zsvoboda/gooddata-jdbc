@@ -5,7 +5,10 @@ import com.gooddata.sdk.service.GoodData;
 
 import java.sql.SQLException;
 
-class CatalogRefreshExecutor extends Thread {
+/**
+ * Thread for asynchronous catalog refresh
+ */
+public class CatalogRefreshExecutor extends Thread {
 
     private final Catalog catalog;
     private final GoodData gd;

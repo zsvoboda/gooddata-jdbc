@@ -62,7 +62,19 @@ public class Catalog implements Serializable {
     /**
      * Constructor
      */
-    public Catalog() {
+    public Catalog(GoodData gd, GoodDataRestConnection gdRest, Schema schema) throws SQLException {
+        try {
+            LOGGER.info(String.format("Trying to deserialize catalog for workspace '%s'.",
+                    schema.getSchemaUri()));
+           this.entries = this.deserialize(TextUtil
+                    .extractWorkspaceIdFromWorkspaceUri(schema.getSchemaUri()));
+            LOGGER.info("Catalog successfully  deserialized.");
+        } catch (IOException e) {
+            LOGGER.info("Catalog deserialization failed. Creating new one.");
+            this.populate(gd, gdRest, schema.getSchemaUri());
+        } catch (ClassNotFoundException | TextUtil.InvalidFormatException e) {
+            throw new SQLException(e);
+        }
     }
 
     /**
@@ -79,7 +91,7 @@ public class Catalog implements Serializable {
      *
      * @param attribute attribute to add
      */
-    public void addAttribute(Attribute attribute) {
+    private void addAttribute(Attribute attribute, Map<String, CatalogEntry> c) {
         LOGGER.info(String.format("Adding attribute title='%s'", attribute.getTitle()));
         if (attribute.getDisplayForms().size() > 0) {
             DisplayForm displayForm = attribute.getDefaultDisplayForm();
@@ -89,23 +101,24 @@ public class Catalog implements Serializable {
                     new UriObjQualifier(attribute.getUri()),  new UriObjQualifier(displayForm.getUri()));
             //TODO getting default display form only
             e.setDataType(CatalogEntry.DEFAULT_ATTRIBUTE_DATATYPE);
-            this.entries.put(attribute.getUri(), e);
+            c.put(attribute.getUri(), e);
         } else {
             LOGGER.info(String.format("Skipping attribute title='%s'", attribute.getTitle()));
         }
     }
+
 
     /**
      * Adds metric to catalog
      *
      * @param metric metric to add
      */
-    private void addMetric(Entry metric) {
+    private void addMetric(Entry metric, Map<String,CatalogEntry> c) {
         CatalogEntry e = new CatalogEntry(metric.getUri(),
                 metric.getTitle(), metric.getCategory(), metric.getIdentifier(),
                 new UriObjQualifier(metric.getUri()));
         e.setDataType(CatalogEntry.DEFAULT_METRIC_DATATYPE);
-        this.entries.put(metric.getUri(), e);
+        c.put(metric.getUri(), e);
     }
 
     /**
@@ -126,11 +139,11 @@ public class Catalog implements Serializable {
      *
      * @param fact metric to add
      */
-    private void addFact(Entry fact) {
+    private void addFact(Entry fact, Map<String, CatalogEntry> c) {
         CatalogEntry e = new CatalogEntry(fact.getUri(),
                 fact.getTitle(), fact.getCategory(), fact.getIdentifier(),
                 new UriObjQualifier(fact.getUri()));
-        this.entries.put(fact.getUri(), e);
+        c.put(fact.getUri(), e);
     }
 
     public synchronized void waitForCatalogPopulationFinished() {
@@ -150,8 +163,9 @@ public class Catalog implements Serializable {
      * @param gd           Gooddata reference
      * @param gdRest       Gooddata REST connection
      * @param workspaceUri GoodData workspace URI
+     *
      */
-    public void populateAsync(GoodData gd, GoodDataRestConnection gdRest, String workspaceUri) {
+    public void populate(GoodData gd, GoodDataRestConnection gdRest, String workspaceUri) {
         CatalogRefreshExecutor exec = new CatalogRefreshExecutor(this, gd, gdRest, workspaceUri);
         exec.start();
     }
@@ -166,8 +180,33 @@ public class Catalog implements Serializable {
      */
     public synchronized void populateSync(GoodData gd, GoodDataRestConnection gdRest, String workspaceUri) throws SQLException {
         LOGGER.info(String.format("Populating catalog for schema '%s'", workspaceUri));
-        LOGGER.info("Catalog lock acquired.");
-        this.isCatalogPopulated = false;
+        if(this.entries.size() == 0) {
+            // Must block all queries if the catalog is empty
+            LOGGER.info("Catalog lock acquired.");
+            this.isCatalogPopulated = false;
+        } else {
+            // if there is something in the catalog, the queries can use the old content
+            this.isCatalogPopulated = true;
+        }
+        this.entries = this.populateCatalogEntries(gd, gdRest, workspaceUri);
+        this.isCatalogPopulated = true;
+        notifyAll();
+        LOGGER.info("Catalog lock released");
+    }
+
+    /**
+     * Populate new entries map
+     *
+     * @param gd           Gooddata reference
+     * @param gdRest       Gooddata REST connection
+     * @param workspaceUri GoodData workspace URI
+     * @return new entries Map
+     * @throws SQLException generic issue
+     */
+    private Map<String,CatalogEntry> populateCatalogEntries(GoodData gd, GoodDataRestConnection gdRest, String workspaceUri) throws SQLException {
+        LOGGER.info(String.format("Refreshing catalog for workspace uri '%s'", workspaceUri));
+        Map<String,CatalogEntry> newCatalog = new HashMap<>();
+
         Project workspace = gd.getProjectService().getProjectByUri(workspaceUri);
         if (workspace == null) {
             throw new SQLException(String.format("Workspace '%s' doesn't exist.", workspaceUri));
@@ -177,36 +216,36 @@ public class Catalog implements Serializable {
         Collection<Entry> metricEntries = gdMeta.find(workspace, Metric.class);
 
         for (Entry metric : metricEntries) {
-            this.addMetric(metric);
+            this.addMetric(metric, newCatalog);
         }
 
         LOGGER.info("Fetching attributes.");
         Collection<Entry> attributeEntries = gdMeta.find(workspace, Attribute.class);
         for (Entry attribute : attributeEntries) {
-            this.addAttribute(gdMeta.getObjByUri(attribute.getUri(), Attribute.class));
+            this.addAttribute(gdMeta.getObjByUri(attribute.getUri(), Attribute.class), newCatalog);
         }
 
         LOGGER.info("Fetching facts.");
         Collection<Entry> factEntries = gdMeta.find(workspace, Fact.class);
         for (Entry fact : factEntries) {
-            this.addFact(fact);
+            this.addFact(fact, newCatalog);
         }
 
         LOGGER.info("Fetching variables.");
         List<CatalogEntry> variableEntries = gdRest.getVariables(workspaceUri);
         for (CatalogEntry variable : variableEntries) {
-            this.entries.put(variable.getUri(), variable);
+            newCatalog.put(variable.getUri(), variable);
         }
+        LOGGER.info(String.format("Catalog refresh finished. Fetched '%d' objects.", newCatalog.size()));
+
+        LOGGER.info(String.format("Serializing catalog for workspace '%s'.", workspaceUri));
         try {
-            this.serialize(TextUtil.extractWorkspaceIdFromWorkspaceUri(workspaceUri));
+            this.serialize(TextUtil.extractWorkspaceIdFromWorkspaceUri(workspaceUri), newCatalog);
         } catch (TextUtil.InvalidFormatException | IOException e) {
             throw new SQLException(e);
         }
-        this.isCatalogPopulated = true;
-        LOGGER.info(String.format("Catalog population finished. Fetched '%d' objects.",
-                this.entries.size()));
-        notifyAll();
-        LOGGER.info("Catalog lock released");
+        LOGGER.info(String.format("Catalog serialization finished for workspace '%s'.", workspaceUri));
+        return newCatalog;
     }
 
     private static final String SERIALIZATION_DIR = ".gdjdbc";
@@ -217,44 +256,37 @@ public class Catalog implements Serializable {
                 System.getProperty("user.home"), SERIALIZATION_DIR)));
     }
 
-    public void serialize(String schema) throws IOException {
+    private void serialize(String schema, Map<String, CatalogEntry> c) throws IOException {
         LOGGER.info(String.format("Serializing catalog '%s'", schema));
         ensureSerializationDirectory();
-        serializeObject(schema, this.entries);
-        LOGGER.info(String.format("Catalog '%s' serialized successfully.", schema));
-    }
 
-    public void deserialize(String schema) throws IOException, ClassNotFoundException {
-        LOGGER.info(String.format("Deserializing catalog '%s'", schema));
-        ensureSerializationDirectory();
-        this.entries = (Map<String, CatalogEntry>) deserializeObject(schema);
-        LOGGER.info(String.format("Catalog '%s' deserialized successfully.", schema));
-    }
-
-    private void serializeObject(String schema, Object o) throws IOException {
         FileOutputStream fileOut = new FileOutputStream(String.format("%s/%s/%s.%s",
                 System.getProperty("user.home"), SERIALIZATION_DIR, schema, SERIALIZATION_EXTENSION));
         ObjectOutputStream out = new ObjectOutputStream(fileOut);
-        out.writeObject(o);
+        out.writeObject(c);
         out.close();
         fileOut.close();
+
+        LOGGER.info(String.format("Catalog '%s' serialized successfully.", schema));
     }
 
-    private Object deserializeObject(String schema) throws IOException,
-            ClassNotFoundException {
+    private Map<String, CatalogEntry> deserialize(String schema) throws IOException, ClassNotFoundException {
+        LOGGER.info(String.format("Deserializing catalog '%s'", schema));
+        ensureSerializationDirectory();
         FileInputStream fileIn = new FileInputStream(String.format("%s/%s/%s.%s",
                 System.getProperty("user.home"), SERIALIZATION_DIR, schema, SERIALIZATION_EXTENSION));
         ObjectInputStream in = new ObjectInputStream(fileIn);
         Object o = in.readObject();
         in.close();
         fileIn.close();
-        return o;
+        LOGGER.info(String.format("Catalog '%s' deserialized successfully.", schema));
+        return (Map<String, CatalogEntry>)o;
     }
 
     /**
-     * Get all AFM entries
+     * Get all entries
      *
-     * @return AFM objects collection
+     * @return objects collection
      */
     public Collection<CatalogEntry> entries() {
         return this.entries.values().stream().sorted(CatalogEntryComparator)
@@ -266,7 +298,7 @@ public class Catalog implements Serializable {
     }
 
     /**
-     * Finds AFM object by title
+     * Finds object by title
      *
      * @param name AFM object name
      * @return the AFM object
