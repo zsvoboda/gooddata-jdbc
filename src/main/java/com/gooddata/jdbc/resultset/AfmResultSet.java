@@ -88,8 +88,8 @@ public class AfmResultSet extends AbstractResultSet implements ResultSet {
 		if (this.orderBys != null && this.orderBys.size() > 0) {
 			List<Dimension> dimensions = new ArrayList<>();
 			dimensions.add(new Dimension(this.columns.stream()
-					.filter(i->i.getType().equals("attributeDisplayForm"))
-					.map(CatalogEntry::getIdentifier).collect(Collectors.toList())));
+					.filter(i->i.getType().equals("attribute"))
+					.map(i->i.getDefaultDisplayForm().getUri()).collect(Collectors.toList())));
 			dimensions.add(new Dimension("measureGroup"));
 			e = new Execution(afm, new ResultSpec(dimensions,this.orderBys));
 		}

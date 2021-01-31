@@ -16,6 +16,7 @@ import org.springframework.http.*;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.sql.SQLException;
 import java.util.*;
 
@@ -59,7 +60,7 @@ public class GoodDataRestConnection {
         // Replace all metric titles in the MAQL definition with their URIs
         for(String metricFactAttribute: parsedMaqlCreate.getLdmObjectTitles()) {
             //lookup attribute in LDM
-            CatalogEntry ldmObj = catalog.findMaqlColumn(metricFactAttribute);
+            CatalogEntry ldmObj = catalog.findByName(metricFactAttribute);
             String replaceWhat = String.format("\"%s\"", metricFactAttribute);
             maqlDefinition = maqlDefinition.replace(
                     replaceWhat,
@@ -75,9 +76,9 @@ public class GoodDataRestConnection {
                 throw new Catalog.CatalogEntryNotFoundException(
                         "The value '%s' can't be associated with any attribute.");
             //lookup display form in AFM
-            CatalogEntry ldmObj = catalog.findAfmColumn(attributeName);
+            CatalogEntry attribute = catalog.findByName(attributeName);
             String replaceWhat = String.format("'%s'", value);
-            Map<String, String> lookup = lookupAttributeElements(ldmObj.getUri(),
+            Map<String, String> lookup = lookupAttributeElements(attribute.getDefaultDisplayForm().getUri(),
                             Collections.singletonList(value));
             if(lookup == null || lookup.size() == 0)
                 throw new Catalog.CatalogEntryNotFoundException(
@@ -174,7 +175,7 @@ public class GoodDataRestConnection {
         }
     }
 
-    public static class Variable implements ObjQualifier {
+    public static class Variable implements ObjQualifier, Serializable {
 
         public Variable(String uri, String identifier, String title, String expression) {
             this.uri = uri;

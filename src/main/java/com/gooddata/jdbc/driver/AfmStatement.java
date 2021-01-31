@@ -10,6 +10,7 @@ import com.gooddata.jdbc.resultset.AbstractResultSet;
 import com.gooddata.jdbc.resultset.AfmResultSet;
 import com.gooddata.jdbc.resultset.MetadataResultSet;
 import com.gooddata.jdbc.util.TextUtil;
+import com.gooddata.sdk.model.executeafm.ObjQualifier;
 import com.gooddata.sdk.model.executeafm.afm.Afm;
 import com.gooddata.sdk.model.executeafm.afm.AttributeItem;
 import com.gooddata.sdk.model.executeafm.afm.MeasureItem;
@@ -84,48 +85,18 @@ public class AfmStatement implements java.sql.Statement, PreparedStatement {
         LOGGER.info(String.format("getAfm columns='%s', filters='%s'", columns, filters));
         Afm afm = new Afm();
         for (CatalogEntry o : columns) {
-            if (o.getType().equalsIgnoreCase("attributeDisplayForm")) {
-                afm.addAttribute(new AttributeItem(o.getGdObject(), o.getIdentifier()));
+            if (o.getType().equalsIgnoreCase("attribute")) {
+                ObjQualifier displayForm = o.getDefaultDisplayForm();
+                afm.addAttribute(new AttributeItem(displayForm, displayForm.getUri()));
             } else if (o.getType().equalsIgnoreCase("metric")) {
                 afm.addMeasure(new MeasureItem(new SimpleMeasureDefinition(o.getGdObject()),
-                        o.getIdentifier()));
+                        o.getUri()));
             }
         }
         for (AfmFilter f : filters) {
             afm.addFilter(f.getFilterObj());
         }
         return afm;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public ResultSet executeQuery(String sql) throws SQLException {
-        LOGGER.info(String.format("executeQuery sql='%s'", sql));
-        try {
-            this.sql = sql;
-            SQLParser.ParsedSQL parsedSql = SQLParser.parseQuery(sql);
-            return execute(parsedSql);
-        } catch (JSQLParserException | Catalog.CatalogEntryNotFoundException
-                | Catalog.DuplicateCatalogEntryException | TextUtil.InvalidFormatException e) {
-            throw new SQLException(e);
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public ResultSet executeQuery() throws SQLException {
-        try {
-            SQLParser.ParsedSQL parsedSql = SQLParser.parseQuery(this.sql);
-            parsedSql = SQLParser.substitutePreparedParams(parsedSql, this.preparedStatementParams);
-            return execute(parsedSql);
-        } catch (JSQLParserException | Catalog.CatalogEntryNotFoundException
-                | Catalog.DuplicateCatalogEntryException | TextUtil.InvalidFormatException e) {
-            throw new SQLException(e);
-        }
     }
 
     /**
@@ -148,10 +119,38 @@ public class AfmStatement implements java.sql.Statement, PreparedStatement {
                 parsedSql.getLimit(), parsedSql.getOffset());
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public ResultSet executeQuery(String sql) throws SQLException {
+        LOGGER.info(String.format("executeQuery sql='%s'", sql));
+        boolean b = this.execute(sql);
+        if(b) {
+            return this.resultSet;
+        }
+        else {
+            throw new SQLException("Unknown error.");
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public ResultSet executeQuery() throws SQLException {
+        boolean b = this.execute(this.sql);
+        if(b) {
+            return this.resultSet;
+        }
+        else {
+            throw new SQLException("Unknown error.");
+        }
+    }
+
     @Override
     public boolean execute() throws SQLException {
-        this.resultSet = this.executeQuery();
-        return true;
+        return this.execute(this.sql);
     }
 
     /**
@@ -188,7 +187,11 @@ public class AfmStatement implements java.sql.Statement, PreparedStatement {
                 }
                 return true;
             } else {
-                this.resultSet = this.executeQuery(sql);
+                this.sql = sql;
+                SQLParser.ParsedSQL parsedSql = SQLParser.parseQuery(sql);
+                parsedSql = SQLParser.substitutePreparedParams(parsedSql,
+                        this.preparedStatementParams);
+                this.resultSet = this.execute(parsedSql);
                 return true;
             }
         } catch (Catalog.CatalogEntryNotFoundException |
@@ -235,7 +238,7 @@ public class AfmStatement implements java.sql.Statement, PreparedStatement {
         String maqlDefinition = this.metadata.getGoodDataRestConnection()
                 .replaceMaqlTitlesWithUris(parsedMaqlCreate, this.metadata.getCatalog());
 
-        CatalogEntry ldmObj = this.metadata.getCatalog().findAfmColumn(parsedMaqlCreate.getName());
+        CatalogEntry ldmObj = this.metadata.getCatalog().findByName(parsedMaqlCreate.getName());
         if(ldmObj.getType().equalsIgnoreCase("metric")) {
             Metric m = this.gdMeta.getObjByUri(ldmObj.getUri(), Metric.class);
             this.metadata.getGoodDataRestConnection().updateMetric(m, maqlDefinition);
@@ -258,10 +261,10 @@ public class AfmStatement implements java.sql.Statement, PreparedStatement {
     public void executeDropMetric(String metricName) throws
             Catalog.CatalogEntryNotFoundException, Catalog.DuplicateCatalogEntryException, TextUtil.InvalidFormatException {
         LOGGER.info(String.format("executeDropMetric metricName='%s'", metricName));
-        CatalogEntry ldmObj = this.metadata.getCatalog().findAfmColumn(metricName);
+        CatalogEntry ldmObj = this.metadata.getCatalog().findByName(metricName);
         if(ldmObj.getType().equalsIgnoreCase("metric")) {
             this.gdMeta.removeObjByUri(ldmObj.getUri());
-            this.metadata.getCatalog().remove(ldmObj);
+            this.metadata.getCatalog().removeEntry(ldmObj);
         }
         else {
             throw new Catalog.CatalogEntryNotFoundException(String.format("Metric '%s' not found", metricName));
@@ -279,7 +282,7 @@ public class AfmStatement implements java.sql.Statement, PreparedStatement {
     public ResultSet executeDescribeMetric(String metricName) throws
             Catalog.CatalogEntryNotFoundException, Catalog.DuplicateCatalogEntryException, TextUtil.InvalidFormatException {
         LOGGER.info(String.format("executeDescribeMetric metricName='%s'", metricName));
-        CatalogEntry ldmObj = this.metadata.getCatalog().findAfmColumn(metricName);
+        CatalogEntry ldmObj = this.metadata.getCatalog().findByName(metricName);
         if(ldmObj.getType().equalsIgnoreCase("metric")) {
             String maql = this.metadata.getCatalog().getMetricPrettyPrint(this.gdMeta,
                     this.metadata.getGoodDataRestConnection(),
@@ -303,7 +306,7 @@ public class AfmStatement implements java.sql.Statement, PreparedStatement {
     public ResultSet executeDescribeVariable(String variableName) throws
             Catalog.CatalogEntryNotFoundException, Catalog.DuplicateCatalogEntryException, TextUtil.InvalidFormatException {
         LOGGER.info(String.format("executeDescribeVariable variableName='%s'", variableName));
-        CatalogEntry ldmObj = this.metadata.getCatalog().findMaqlColumn(variableName);
+        CatalogEntry ldmObj = this.metadata.getCatalog().findByName(variableName);
         if(ldmObj.getType().equalsIgnoreCase("prompt")) {
             String maql = this.metadata.getCatalog().getVariablePrettyPrint(
                     this.metadata.getGoodDataRestConnection(),

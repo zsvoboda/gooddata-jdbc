@@ -16,8 +16,10 @@ import com.gooddata.sdk.service.GoodData;
 import com.gooddata.sdk.service.md.MetadataService;
 import org.apache.commons.lang3.ArrayUtils;
 
-import java.io.Serializable;
+import java.io.*;
 import java.math.BigDecimal;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.logging.Logger;
@@ -29,23 +31,21 @@ import java.util.stream.Collectors;
 public class Catalog implements Serializable {
 
     private final static Logger LOGGER = Logger.getLogger(Catalog.class.getName());
+
     /**
      * AFM objects (displayForms, and metrics)
      */
-    private final Map<String, CatalogEntry> afmEntries = new HashMap<>();
-    /**
-     * LDM objects (facts, metrics and attributes)
-     */
-    private final Map<String, CatalogEntry> maqlEntries = new HashMap<>();
+    private Map<String, CatalogEntry> entries = new HashMap<>();
+
     private final Comparator<CatalogEntry> CatalogEntryComparator = Comparator.comparing(CatalogEntry::getTitle);
-    private final int[] ATTRIBUTE_FILTER_OPERATORS = new int[] {
+    private final int[] ATTRIBUTE_FILTER_OPERATORS = new int[]{
             SQLParser.ParsedSQL.FilterExpression.OPERATOR_EQUAL,
             SQLParser.ParsedSQL.FilterExpression.OPERATOR_NOT_EQUAL,
             SQLParser.ParsedSQL.FilterExpression.OPERATOR_IN,
             SQLParser.ParsedSQL.FilterExpression.OPERATOR_NOT_IN
     };
 
-    private final int[] METRIC_FILTER_OPERATORS = new int[] {
+    private final int[] METRIC_FILTER_OPERATORS = new int[]{
             SQLParser.ParsedSQL.FilterExpression.OPERATOR_EQUAL,
             SQLParser.ParsedSQL.FilterExpression.OPERATOR_NOT_EQUAL,
             SQLParser.ParsedSQL.FilterExpression.OPERATOR_GREATER,
@@ -57,7 +57,7 @@ public class Catalog implements Serializable {
     };
 
     // Is catalog populated?
-    private boolean isCatalogPopulated = false;
+    private boolean isCatalogPopulated = true;
 
     /**
      * Constructor
@@ -67,15 +67,16 @@ public class Catalog implements Serializable {
 
     /**
      * Removes object from catalog
+     *
      * @param c object to remove
      */
-    public void remove(CatalogEntry c) {
-        this.afmEntries.remove(c.getUri());
-        this.maqlEntries.remove(c.getUri());
+    public void removeEntry(CatalogEntry c) {
+        this.entries.remove(c.getUri());
     }
 
     /**
      * Adds attribute to catalog
+     *
      * @param attribute attribute to add
      */
     public void addAttribute(Attribute attribute) {
@@ -83,37 +84,33 @@ public class Catalog implements Serializable {
         if (attribute.getDisplayForms().size() > 0) {
             DisplayForm displayForm = attribute.getDefaultDisplayForm();
             LOGGER.info(String.format("Default display form title='%s'", displayForm.getTitle()));
-            CatalogEntry e = new CatalogEntry(displayForm.getUri(),
-                    attribute.getTitle(), displayForm.getCategory(), displayForm.getIdentifier(),
-                    new UriObjQualifier(displayForm.getUri()));
-            //TODO getting default display form only
-            // under the attribute title
-            e.setDataType(CatalogEntry.DEFAULT_ATTRIBUTE_DATATYPE);
-            this.afmEntries.put(displayForm.getUri(), e);
-            this.maqlEntries.put(attribute.getUri(), new CatalogEntry(attribute.getUri(),
+            CatalogEntry e = new CatalogEntry(attribute.getUri(),
                     attribute.getTitle(), attribute.getCategory(), attribute.getIdentifier(),
-                    new UriObjQualifier(attribute.getUri()),displayForm.getUri()));
-        }
-        else {
+                    new UriObjQualifier(attribute.getUri()),  new UriObjQualifier(displayForm.getUri()));
+            //TODO getting default display form only
+            e.setDataType(CatalogEntry.DEFAULT_ATTRIBUTE_DATATYPE);
+            this.entries.put(attribute.getUri(), e);
+        } else {
             LOGGER.info(String.format("Skipping attribute title='%s'", attribute.getTitle()));
         }
     }
 
     /**
      * Adds metric to catalog
+     *
      * @param metric metric to add
      */
-    public void addMetric(Entry metric) {
+    private void addMetric(Entry metric) {
         CatalogEntry e = new CatalogEntry(metric.getUri(),
                 metric.getTitle(), metric.getCategory(), metric.getIdentifier(),
                 new UriObjQualifier(metric.getUri()));
         e.setDataType(CatalogEntry.DEFAULT_METRIC_DATATYPE);
-        this.afmEntries.put(metric.getUri(), e);
-        this.maqlEntries.put(metric.getUri(), e);
+        this.entries.put(metric.getUri(), e);
     }
 
     /**
      * Adds metric to catalog
+     *
      * @param metric metric to add
      */
     public void addMetric(Metric metric) {
@@ -121,42 +118,19 @@ public class Catalog implements Serializable {
                 metric.getTitle(), metric.getCategory(), metric.getIdentifier(),
                 new UriObjQualifier(metric.getUri()));
         e.setDataType(CatalogEntry.DEFAULT_METRIC_DATATYPE);
-        this.afmEntries.put(metric.getUri(), e);
-        this.maqlEntries.put(metric.getUri(), e);
+        this.entries.put(metric.getUri(), e);
     }
 
     /**
      * Adds fact to catalog
+     *
      * @param fact metric to add
      */
-    public void addFact(Entry fact) {
+    private void addFact(Entry fact) {
         CatalogEntry e = new CatalogEntry(fact.getUri(),
                 fact.getTitle(), fact.getCategory(), fact.getIdentifier(),
                 new UriObjQualifier(fact.getUri()));
-        this.maqlEntries.put(fact.getUri(), e);
-    }
-
-    private class PopulateExecutor extends Thread {
-
-        private final GoodData gd;
-        private final GoodDataRestConnection gdRest;
-        private final String workspaceUri;
-
-        public PopulateExecutor(GoodData gd, GoodDataRestConnection gdRest, String workspaceUri) {
-            this.gd = gd;
-            this.gdRest = gdRest;
-            this.workspaceUri = workspaceUri;
-        }
-
-        @Override
-        public void run() {
-            try {
-                populateSync(this.gd, this.gdRest, this.workspaceUri);
-            } catch (SQLException e) {
-                // TBD better error handling
-                e.printStackTrace();
-            }
-        }
+        this.entries.put(fact.getUri(), e);
     }
 
     public synchronized void waitForCatalogPopulationFinished() {
@@ -173,20 +147,20 @@ public class Catalog implements Serializable {
     /**
      * Populates the catalog of attributes and metrics
      *
-     * @param gd        Gooddata reference
-     * @param gdRest    Gooddata REST connection
+     * @param gd           Gooddata reference
+     * @param gdRest       Gooddata REST connection
      * @param workspaceUri GoodData workspace URI
      */
     public void populateAsync(GoodData gd, GoodDataRestConnection gdRest, String workspaceUri) {
-        PopulateExecutor exec = new PopulateExecutor(gd, gdRest, workspaceUri);
+        CatalogRefreshExecutor exec = new CatalogRefreshExecutor(this, gd, gdRest, workspaceUri);
         exec.start();
     }
 
     /**
      * Populates the catalog of attributes and metrics
      *
-     * @param gd        Gooddata reference
-     * @param gdRest    Gooddata REST connection
+     * @param gd           Gooddata reference
+     * @param gdRest       Gooddata REST connection
      * @param workspaceUri GoodData workspace URI
      * @throws SQLException generic issue
      */
@@ -221,14 +195,60 @@ public class Catalog implements Serializable {
         LOGGER.info("Fetching variables.");
         List<CatalogEntry> variableEntries = gdRest.getVariables(workspaceUri);
         for (CatalogEntry variable : variableEntries) {
-            this.maqlEntries.put(variable.getUri(), variable);
+            this.entries.put(variable.getUri(), variable);
         }
-
+        try {
+            this.serialize(TextUtil.extractWorkspaceIdFromWorkspaceUri(workspaceUri));
+        } catch (TextUtil.InvalidFormatException | IOException e) {
+            throw new SQLException(e);
+        }
         this.isCatalogPopulated = true;
-        LOGGER.info(String.format("Catalog population finished. Fetched '%d' AFM and '%d' objects.",
-                this.afmEntries.size(), this.maqlEntries.size()));
+        LOGGER.info(String.format("Catalog population finished. Fetched '%d' objects.",
+                this.entries.size()));
         notifyAll();
         LOGGER.info("Catalog lock released");
+    }
+
+    private static final String SERIALIZATION_DIR = ".gdjdbc";
+    private static final String SERIALIZATION_EXTENSION = ".gdcat";
+
+    private void ensureSerializationDirectory() throws IOException {
+        Files.createDirectories(Paths.get(String.format("%s/%s",
+                System.getProperty("user.home"), SERIALIZATION_DIR)));
+    }
+
+    public void serialize(String schema) throws IOException {
+        LOGGER.info(String.format("Serializing catalog '%s'", schema));
+        ensureSerializationDirectory();
+        serializeObject(schema, this.entries);
+        LOGGER.info(String.format("Catalog '%s' serialized successfully.", schema));
+    }
+
+    public void deserialize(String schema) throws IOException, ClassNotFoundException {
+        LOGGER.info(String.format("Deserializing catalog '%s'", schema));
+        ensureSerializationDirectory();
+        this.entries = (Map<String, CatalogEntry>) deserializeObject(schema);
+        LOGGER.info(String.format("Catalog '%s' deserialized successfully.", schema));
+    }
+
+    private void serializeObject(String schema, Object o) throws IOException {
+        FileOutputStream fileOut = new FileOutputStream(String.format("%s/%s/%s.%s",
+                System.getProperty("user.home"), SERIALIZATION_DIR, schema, SERIALIZATION_EXTENSION));
+        ObjectOutputStream out = new ObjectOutputStream(fileOut);
+        out.writeObject(o);
+        out.close();
+        fileOut.close();
+    }
+
+    private Object deserializeObject(String schema) throws IOException,
+            ClassNotFoundException {
+        FileInputStream fileIn = new FileInputStream(String.format("%s/%s/%s.%s",
+                System.getProperty("user.home"), SERIALIZATION_DIR, schema, SERIALIZATION_EXTENSION));
+        ObjectInputStream in = new ObjectInputStream(fileIn);
+        Object o = in.readObject();
+        in.close();
+        fileIn.close();
+        return o;
     }
 
     /**
@@ -236,19 +256,13 @@ public class Catalog implements Serializable {
      *
      * @return AFM objects collection
      */
-    public Collection<CatalogEntry> afmEntries() {
-        return this.afmEntries.values().stream().sorted(CatalogEntryComparator)
+    public Collection<CatalogEntry> entries() {
+        return this.entries.values().stream().sorted(CatalogEntryComparator)
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Get all LDM entries
-     *
-     * @return LDM objects collection
-     */
-    public Collection<CatalogEntry> maqlEntries() {
-        return this.maqlEntries.values().stream().sorted(CatalogEntryComparator)
-                .collect(Collectors.toList());
+    public CatalogEntry get(String uri) {
+        return this.entries.get(uri);
     }
 
     /**
@@ -259,39 +273,26 @@ public class Catalog implements Serializable {
      * @throws DuplicateCatalogEntryException in case when there are multiple AFM objects with the same title
      * @throws CatalogEntryNotFoundException  in case when a matching object doesn't exist
      */
-    public CatalogEntry findAfmColumn(String name) throws DuplicateCatalogEntryException,
+    public CatalogEntry findByName(String name) throws DuplicateCatalogEntryException,
             CatalogEntryNotFoundException, TextUtil.InvalidFormatException {
-        return this.findColumn(name, this.afmEntries);
-    }
-
-    /**
-     * Finds MAQL object by title
-     *
-     * @param name MAQL object name
-     * @return the MAQL object
-     * @throws DuplicateCatalogEntryException in case when there are multiple AFM objects with the same title
-     * @throws CatalogEntryNotFoundException  in case when a matching object doesn't exist
-     */
-    public CatalogEntry findMaqlColumn(String name) throws DuplicateCatalogEntryException,
-            CatalogEntryNotFoundException, TextUtil.InvalidFormatException {
-        return this.findColumn(name, this.maqlEntries);
+        return this.findColumn(name, this.entries);
     }
 
     /**
      * Finds catalog object (metric, fact, attribute, display form)
      *
-     * @param name object name
+     * @param name    object name
      * @param catalog MAQL or AFM object catalog
      * @return LDM object
      * @throws DuplicateCatalogEntryException in case when there are multiple catalog objects with the same title
      * @throws CatalogEntryNotFoundException  in case when a matching object doesn't exist
      */
-    public CatalogEntry findColumn(String name, Map<String,CatalogEntry> catalog) throws DuplicateCatalogEntryException,
+    public CatalogEntry findColumn(String name, Map<String, CatalogEntry> catalog) throws DuplicateCatalogEntryException,
             CatalogEntryNotFoundException, TextUtil.InvalidFormatException {
-        if(TextUtil.isGoodDataColumnWithUri(name)) {
+        if (TextUtil.isGoodDataColumnWithUri(name)) {
             String uri = TextUtil.extractGoodDataUriFromColumnName(name);
             CatalogEntry c = catalog.get(uri);
-            if(c != null) {
+            if (c != null) {
                 return c.cloneEntry();
             } else {
                 throw new CatalogEntryNotFoundException(String.format("Catalog object with uri '%s' not found.", name));
@@ -316,9 +317,9 @@ public class Catalog implements Serializable {
      *
      * @param sql parsed SQL statement
      * @return list of AFM objects
-     * @throws DuplicateCatalogEntryException in case when there are multiple AFM objects with the same title
-     * @throws CatalogEntryNotFoundException  in case when a matching object doesn't exist
-     * @throws TextUtil.InvalidFormatException  generic problem
+     * @throws DuplicateCatalogEntryException  in case when there are multiple AFM objects with the same title
+     * @throws CatalogEntryNotFoundException   in case when a matching object doesn't exist
+     * @throws TextUtil.InvalidFormatException generic problem
      */
     public List<CatalogEntry> resolveAfmColumns(SQLParser.ParsedSQL sql)
             throws DuplicateCatalogEntryException,
@@ -327,11 +328,10 @@ public class Catalog implements Serializable {
         List<String> columns = sql.getColumns();
         for (String column : columns) {
             SQLParser.ParsedColumnName parsedColumn = SQLParser.parseColumnWithDataTypeSpecifier(column);
-            CatalogEntry newColumn = findAfmColumn(parsedColumn.getName());
-            if(parsedColumn.getDatatype() != null) {
+            CatalogEntry newColumn = findByName(parsedColumn.getName());
+            if (parsedColumn.getDatatype() != null) {
                 newColumn.setDataType(parsedColumn.getDatatype());
-            }
-            else {
+            } else {
                 if (newColumn.getType().equals("metric")) {
                     newColumn.setDataType(CatalogEntry.DEFAULT_METRIC_DATATYPE);
                 } else {
@@ -347,26 +347,24 @@ public class Catalog implements Serializable {
                                           List<CatalogEntry> columns) throws SQLException {
         List<SQLParser.ParsedSQL.OrderByExpression> orderBys = parsedSql.getOrderBys();
         List<SortItem> sortItems = new ArrayList<>();
-        for(SQLParser.ParsedSQL.OrderByExpression orderByElement: orderBys) {
+        for (SQLParser.ParsedSQL.OrderByExpression orderByElement : orderBys) {
             CatalogEntry c;
             String orderColumn = orderByElement.getColumn();
             try {
                 int order = Integer.parseInt(orderColumn);
-                if(order <= 0 || order > columns.size())
+                if (order <= 0 || order > columns.size())
                     throw new SQLException(String.format("ORDER BY column '%s' is too high.", orderColumn));
                 c = columns.get(order - 1);
-            }
-            catch (NumberFormatException e) {
+            } catch (NumberFormatException e) {
                 List<CatalogEntry> l;
                 try {
                     if (TextUtil.isGoodDataColumnWithUri(orderColumn)) {
                         String uri = TextUtil.extractGoodDataUriFromColumnName(orderColumn);
                         l = columns.stream().filter(i -> i.getUri().equals(uri)).collect(Collectors.toList());
-                    }
-                    else {
+                    } else {
                         l = columns.stream().filter(i -> i.getTitle().equals(orderColumn)).collect(Collectors.toList());
                     }
-                    if(l.size() != 1) {
+                    if (l.size() != 1) {
                         throw new SQLException(String.format("Can't uniquely resolve the ORDER BY column '%s'",
                                 orderColumn));
                     }
@@ -375,13 +373,12 @@ public class Catalog implements Serializable {
                     throw new SQLException(e1);
                 }
             }
-            if(c.getType().equals("metric")) {
+            if (c.getType().equals("metric")) {
                 sortItems.add(new MeasureSortItem(orderByElement.getOrder().toLowerCase(),
                         Collections.singletonList(new MeasureLocatorItem(c.getIdentifier()))));
-            }
-            else {
+            } else {
                 sortItems.add(new AttributeSortItem(orderByElement.getOrder().toLowerCase(),
-                        c.getIdentifier()));
+                        c.getDefaultDisplayForm().getUri()));
             }
         }
         return sortItems;
@@ -431,12 +428,12 @@ public class Catalog implements Serializable {
         List<SQLParser.ParsedSQL.FilterExpression> sqlFilters = sql.getFilters();
         for (SQLParser.ParsedSQL.FilterExpression sqlFilter : sqlFilters) {
             String sqlFilterColumnName = sqlFilter.getColumn();
-            CatalogEntry catalogEntry = findAfmColumn(sqlFilterColumnName);
+            CatalogEntry catalogEntry = findByName(sqlFilterColumnName);
 
             if (catalogEntry.getType().equalsIgnoreCase("metric")) {
-                if(!ArrayUtils.contains(METRIC_FILTER_OPERATORS, sqlFilter.getOperator()))
-                        throw new SQLException("Only =,<>,>=,<=,>,<,BETWEEN, and NOT BETWEEN " +
-                                "operators are supported for metrics.");
+                if (!ArrayUtils.contains(METRIC_FILTER_OPERATORS, sqlFilter.getOperator()))
+                    throw new SQLException("Only =,<>,>=,<=,>,<,BETWEEN, and NOT BETWEEN " +
+                            "operators are supported for metrics.");
                 if (sqlFilter.getOperator() == SQLParser.ParsedSQL.FilterExpression.OPERATOR_BETWEEN ||
                         sqlFilter.getOperator() == SQLParser.ParsedSQL.FilterExpression.OPERATOR_NOT_BETWEEN) {
                     BigDecimal valueStart = DataTypeParser.parseBigDecimal(sqlFilter.getValues().get(0));
@@ -461,31 +458,30 @@ public class Catalog implements Serializable {
                 }
 
             } else {
-                if(!ArrayUtils.contains(ATTRIBUTE_FILTER_OPERATORS, sqlFilter.getOperator()))
+                if (!ArrayUtils.contains(ATTRIBUTE_FILTER_OPERATORS, sqlFilter.getOperator()))
                     throw new SQLException("Only =,<>,IN, and NOT IN " +
                             "operators are supported for attributes.");
                 CompatibilityFilter f;
                 List<String> quotedValues = sqlFilter.getValues();
-                List<String> unQuotedValues = quotedValues.stream().filter(e->!(e.startsWith("'") && e.endsWith("'")))
+                List<String> unQuotedValues = quotedValues.stream().filter(e -> !(e.startsWith("'") && e.endsWith("'")))
                         .collect(Collectors.toList());
 
-                if(unQuotedValues.size()>0) {
+                if (unQuotedValues.size() > 0) {
                     throw new SQLException(String.format("WHERE condition attribute values without quotes '%s'",
                             unQuotedValues));
                 }
-                List<String> values = sqlFilter.getValues().stream().map(e->e.replace("'",""))
+                List<String> values = sqlFilter.getValues().stream().map(e -> e.replace("'", ""))
                         .collect(Collectors.toList());
                 ValueAttributeFilterElements e = new ValueAttributeFilterElements(values);
                 if (sqlFilter.getOperator() == SQLParser.ParsedSQL.FilterExpression.OPERATOR_EQUAL) {
-                    f = new PositiveAttributeFilter(catalogEntry.getGdObject(), e);
+                    f = new PositiveAttributeFilter(catalogEntry.getDefaultDisplayForm(), e);
                 } else if (sqlFilter.getOperator() == SQLParser.ParsedSQL.FilterExpression.OPERATOR_NOT_EQUAL) {
-                    f = new NegativeAttributeFilter(catalogEntry.getGdObject(), e);
+                    f = new NegativeAttributeFilter(catalogEntry.getDefaultDisplayForm(), e);
                 } else if (sqlFilter.getOperator() == SQLParser.ParsedSQL.FilterExpression.OPERATOR_IN) {
-                    f = new PositiveAttributeFilter(catalogEntry.getGdObject(), e);
-                }  else if (sqlFilter.getOperator() == SQLParser.ParsedSQL.FilterExpression.OPERATOR_NOT_IN) {
-                    f = new NegativeAttributeFilter(catalogEntry.getGdObject(), e);
-                }
-                else {
+                    f = new PositiveAttributeFilter(catalogEntry.getDefaultDisplayForm(), e);
+                } else if (sqlFilter.getOperator() == SQLParser.ParsedSQL.FilterExpression.OPERATOR_NOT_IN) {
+                    f = new NegativeAttributeFilter(catalogEntry.getDefaultDisplayForm(), e);
+                } else {
                     throw new SQLException(String.format(
                             "Unsupported attribute filter operator '%d'", sqlFilter.getOperator()));
                 }
@@ -497,15 +493,16 @@ public class Catalog implements Serializable {
 
     /**
      * Prints metric with substituted uris for names
+     *
      * @param gdMeta GD metadata service
      * @param gdRest GD REST connection
-     * @param uri metric uri
+     * @param uri    metric uri
      * @return metric MAQL with resolved URIs
      */
-    public  String getMetricPrettyPrint(MetadataService gdMeta, GoodDataRestConnection gdRest, String uri)
+    public String getMetricPrettyPrint(MetadataService gdMeta, GoodDataRestConnection gdRest, String uri)
             throws CatalogEntryNotFoundException, TextUtil.InvalidFormatException {
         Metric m = gdMeta.getObjByUri(uri, Metric.class);
-        if(!m.getCategory().equalsIgnoreCase("metric")) {
+        if (!m.getCategory().equalsIgnoreCase("metric")) {
             throw new CatalogEntryNotFoundException(String.format("Metric with uri '%s' not found.", uri));
         }
         String e = m.getExpression();
@@ -515,57 +512,59 @@ public class Catalog implements Serializable {
 
     /**
      * Prints variable with substituted uris for names
+     *
      * @param gdRest GD REST connection
-     * @param uri metric uri
+     * @param uri    metric uri
      * @return metric MAQL with resolved URIs
      */
-    public  String getVariablePrettyPrint(GoodDataRestConnection gdRest, String uri)
+    public String getVariablePrettyPrint(GoodDataRestConnection gdRest, String uri)
             throws CatalogEntryNotFoundException, TextUtil.InvalidFormatException {
-        CatalogEntry e = this.maqlEntries.get(uri);
-        if(!e.getType().equalsIgnoreCase("prompt")) {
+        CatalogEntry e = this.entries.get(uri);
+        if (!e.getType().equalsIgnoreCase("prompt")) {
             throw new CatalogEntryNotFoundException(String.format("Variable with uri '%s' not found.", uri));
         }
-        GoodDataRestConnection.Variable v = (GoodDataRestConnection.Variable)e.getGdObject();
+        GoodDataRestConnection.Variable v = (GoodDataRestConnection.Variable) e.getGdObject();
         return substituteUris(gdRest, v.getExpression());
     }
 
     /**
      * Substitute URIs for names
+     *
      * @param gdRest GD REST connection
-     * @param e String with the URIs
+     * @param e      String with the URIs
      * @return String with URIs replaced with names
      * @throws TextUtil.InvalidFormatException invalid URI format
-     * @throws CatalogEntryNotFoundException non-existent catalog entries
+     * @throws CatalogEntryNotFoundException   non-existent catalog entries
      */
     private String substituteUris(GoodDataRestConnection gdRest, String e) throws TextUtil.InvalidFormatException,
             CatalogEntryNotFoundException {
         List<String> objUris = TextUtil.findAllObjectUris(e);
-        for( String objUri: objUris) {
-            CatalogEntry obj = this.maqlEntries.get(objUri);
-            if(obj != null)
+        for (String objUri : objUris) {
+            CatalogEntry obj = this.entries.get(objUri);
+            if (obj != null)
                 e = e.replace(String.format("[%s]", objUri), String.format("\"%s\"", obj.getTitle()));
         }
         List<String> elementUris = TextUtil.findAllElementUris(e);
-        for(String elementUri: elementUris) {
+        for (String elementUri : elementUris) {
             // The attribute element URI has ID of attribute but can be only looked up via display form
             // We must switch the URI part from attribute uri to display form uri
             String[] components = elementUri.split("\\?");
-            if(components.length != 2) {
+            if (components.length != 2) {
                 throw new CatalogEntryNotFoundException(String.format("Invalid attribute element uri format '%s'",
                         elementUri));
             }
-            CatalogEntry attribute = this.maqlEntries.get(components[0].replace("/elements",""));
-            if(attribute == null) {
+            CatalogEntry attribute = this.entries.get(components[0].replace("/elements", ""));
+            if (attribute == null) {
                 throw new CatalogEntryNotFoundException(String.format("Attribute with uri '%s' not found.",
                         elementUri));
             }
-            String displayFormUri = attribute.getDefaultDisplayFormUri();
-            if(displayFormUri == null) {
+            String displayFormUri = attribute.getDefaultDisplayForm().getUri();
+            if (displayFormUri == null) {
                 throw new CatalogEntryNotFoundException(String.format("Attribute with uri '%s' doesn't have default display form.",
                         elementUri));
             }
             String text = gdRest.getAttributeElementText(String.format("%s/elements?%s", displayFormUri, components[1]));
-            if(text != null)
+            if (text != null)
                 e = e.replace(String.format("[%s]", elementUri), String.format("'%s'", text));
         }
         return e;
@@ -588,6 +587,7 @@ public class Catalog implements Serializable {
         public CatalogEntryNotFoundException(String e) {
             super(e);
         }
+
         public CatalogEntryNotFoundException(Exception e) {
             super(e);
         }

@@ -2,13 +2,14 @@ package com.gooddata.jdbc.catalog;
 
 import com.gooddata.sdk.model.executeafm.afm.filter.CompatibilityFilter;
 
+import java.io.Serializable;
 import java.util.List;
 import java.util.logging.Logger;
 
 /**
  * Represents AFM filter
  */
-public class AfmFilter {
+public class AfmFilter implements Serializable {
 
     private final static Logger LOGGER = Logger.getLogger(AfmFilter.class.getName());
 

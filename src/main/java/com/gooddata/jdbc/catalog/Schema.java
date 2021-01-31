@@ -5,11 +5,12 @@ import com.gooddata.sdk.model.project.Project;
 import com.gooddata.sdk.service.GoodData;
 import com.gooddata.sdk.service.project.ProjectService;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class Schema {
+public class Schema implements Serializable {
 
     private final String schemaName;
     private final String schemaUri;

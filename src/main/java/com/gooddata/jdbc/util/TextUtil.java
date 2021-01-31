@@ -126,6 +126,20 @@ public class TextUtil {
         }
     }
 
+    public static String extractWorkspaceIdFromWorkspaceUri(String workspaceUri) throws InvalidFormatException {
+        try {
+            Pattern p = Pattern.compile("^\\s?/gdc/projects/([a-z0-9]+)\\s?$");
+            Matcher m = p.matcher(workspaceUri);
+            boolean b = m.matches();
+            int groupCnt = m.groupCount();
+            if (!b || groupCnt != 1)
+                throw new InvalidFormatException(String.format("Wrong workspace URI format: '%s'", workspaceUri));
+            return m.group(1);
+        } catch (IllegalStateException e) {
+            throw new InvalidFormatException(String.format("Wrong workspace URI format: '%s'", workspaceUri));
+        }
+    }
+
 
     /**
      * Contains case insensitive

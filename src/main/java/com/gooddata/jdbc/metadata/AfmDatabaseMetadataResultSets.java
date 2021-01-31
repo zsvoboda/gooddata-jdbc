@@ -113,79 +113,83 @@ public class AfmDatabaseMetadataResultSets {
      */
     static MetadataResultSet columnResultSet(Catalog catalog, Project workspace) {
 
-        List<String> columns = catalog.afmEntries().stream()
-                .map(CatalogEntry::getTitle).collect(Collectors.toList());
-        List<String> nil = columns.stream()
+        List<CatalogEntry> attributesAndMetrics = catalog.entries().stream()
+                .filter(e->e.getType().equals("metric") || e.getType().equals("attribute"))
+                .collect(Collectors.toList());
+
+        List<String> nil = attributesAndMetrics.stream()
                 .map(e -> (String) null)
                 .collect(Collectors.toList());
-        List<String> empty = columns.stream()
+        List<String> empty = attributesAndMetrics.stream()
                 .map(e -> "")
                 .collect(Collectors.toList());
-        List<String> ordinal = IntStream.range(1, columns.size() + 1)
+        List<String> ordinal = IntStream.range(1, attributesAndMetrics.size() + 1)
                 .boxed().map(e -> Integer.toString(e)).collect(Collectors.toList());
 
         List<MetadataResultSet.MetaDataColumn> data = Arrays.asList(
                 new MetadataResultSet.MetaDataColumn("TABLE_CAT",
-                        columns.stream()
+                        attributesAndMetrics.stream()
                                 .map(e -> "")
                                 .collect(Collectors.toList())),
                 new MetadataResultSet.MetaDataColumn("TABLE_SCHEM",
-                        columns.stream()
+                        attributesAndMetrics.stream()
                                 .map(e -> workspace.getTitle())
                                 .collect(Collectors.toList())),
                 new MetadataResultSet.MetaDataColumn("TABLE_NAME",
-                        columns.stream()
+                        attributesAndMetrics.stream()
                                 .map(e -> AfmResultSetMetaData.UNIVERSAL_TABLE_NAME)
                                 .collect(Collectors.toList())),
                 new MetadataResultSet.MetaDataColumn("COLUMN_NAME",
-                        columns),
+                        attributesAndMetrics.stream()
+                                .map(e->e.getTitle())
+                                .collect(Collectors.toList())),
                 new MetadataResultSet.MetaDataColumn("DATA_TYPE", "INTEGER",
-                        catalog.afmEntries().stream()
+                        attributesAndMetrics.stream()
                                 .map(e -> Integer.toString(
                                         SQLParser.convertSQLDataTypeNameToJavaSQLType(e.getDataType())))
                                 .collect(Collectors.toList())),
                 new MetadataResultSet.MetaDataColumn("TYPE_NAME",
-                        catalog.afmEntries().stream()
+                        attributesAndMetrics.stream()
                                 .map(CatalogEntry::getDataType)
                                 .collect(Collectors.toList())),
                 new MetadataResultSet.MetaDataColumn("COLUMN_SIZE", "INTEGER",
-                        catalog.afmEntries().stream()
+                        attributesAndMetrics.stream()
                                 .map(e -> Integer.toString(e.getSize()))
                                 .collect(Collectors.toList())),
                 new MetadataResultSet.MetaDataColumn("BUFFER_LENGTH", "INTEGER",
-                        catalog.afmEntries().stream()
+                        attributesAndMetrics.stream()
                                 .map(e -> Integer.toString(e.getSize() + e.getPrecision()))
                                 .collect(Collectors.toList())),
                 new MetadataResultSet.MetaDataColumn("DECIMAL_DIGITS", "INTEGER",
-                        catalog.afmEntries().stream()
+                        attributesAndMetrics.stream()
                                 .map(e -> Integer.toString(e.getPrecision()))
                                 .collect(Collectors.toList())),
                 new MetadataResultSet.MetaDataColumn("NUM_PREC_RADIX", "INTEGER",
-                        catalog.afmEntries().stream()
+                        attributesAndMetrics.stream()
                                 .map(e -> e.getType().equalsIgnoreCase("metric")
                                         ? "10" : null)
                                 .collect(Collectors.toList())),
                 new MetadataResultSet.MetaDataColumn("NULLABLE", "INTEGER",
-                        columns.stream()
+                        attributesAndMetrics.stream()
                                 .map(e -> "1")
                                 .collect(Collectors.toList())),
                 new MetadataResultSet.MetaDataColumn("REMARKS", nil),
                 new MetadataResultSet.MetaDataColumn("COLUMN_DEF", empty),
                 new MetadataResultSet.MetaDataColumn("SQL_DATA_TYPE", "INTEGER",
-                        catalog.afmEntries().stream()
+                        attributesAndMetrics.stream()
                                 .map(e -> Integer.toString(
                                         SQLParser.convertSQLDataTypeNameToJavaSQLType(e.getDataType())))
                                 .collect(Collectors.toList())),
                 new MetadataResultSet.MetaDataColumn("SQL_DATETIME_SUB", "INTEGER", nil),
                 new MetadataResultSet.MetaDataColumn("CHAR_OCTET_LENGTH", "INTEGER",
-                        catalog.afmEntries().stream()
+                        attributesAndMetrics.stream()
                                 .map(e -> e.getType().equals("metric") ?
                                         null
                                         : Integer.toString(e.getSize()))
                                 .collect(Collectors.toList())),
                 new MetadataResultSet.MetaDataColumn("ORDINAL_POSITION", "INTEGER", ordinal),
                 new MetadataResultSet.MetaDataColumn("IS_NULLABLE",
-                        columns.stream()
+                        attributesAndMetrics.stream()
                                 .map(e -> "YES")
                                 .collect(Collectors.toList())),
                 new MetadataResultSet.MetaDataColumn("SCOPE_CATALOG", nil),
@@ -193,11 +197,11 @@ public class AfmDatabaseMetadataResultSets {
                 new MetadataResultSet.MetaDataColumn("SCOPE_TABLE", nil),
                 new MetadataResultSet.MetaDataColumn("SOURCE_DATA_TYPE", nil),
                 new MetadataResultSet.MetaDataColumn("IS_AUTOINCREMENT",
-                        columns.stream()
+                        attributesAndMetrics.stream()
                                 .map(e -> "NO")
                                 .collect(Collectors.toList())),
                 new MetadataResultSet.MetaDataColumn("IS_GENERATEDCOLUMN",
-                        columns.stream()
+                        attributesAndMetrics.stream()
                                 .map(e -> "NO")
                                 .collect(Collectors.toList()))
         );

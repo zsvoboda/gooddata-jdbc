@@ -148,10 +148,11 @@ public class TestAfmStatement {
         testRetrieve("Revenue::INTEGER", " WHERE \"Product Category\" IN ('Home')",
                 null);
         testRetrieve("\"[/gdc/md/w2x7a9awsioch4l9lbzgjcn99hbkm61e/obj/465]::INTEGER\"",
-                " WHERE \"[/gdc/md/w2x7a9awsioch4l9lbzgjcn99hbkm61e/obj/272]\" IN ('Home')",
+                " WHERE \"[/gdc/md/w2x7a9awsioch4l9lbzgjcn99hbkm61e/obj/271]\" IN ('Home')",
                 "Revenue");
-        testRetrieve("\"[/gdc/md/w2x7a9awsioch4l9lbzgjcn99hbkm61e/obj/272]\", \"[/gdc/md/w2x7a9awsioch4l9lbzgjcn99hbkm61e/obj/465]\"::INTEGER",
-                " WHERE \"[/gdc/md/w2x7a9awsioch4l9lbzgjcn99hbkm61e/obj/272]\" IN ('Home')",
+        testRetrieve("\"[/gdc/md/w2x7a9awsioch4l9lbzgjcn99hbkm61e/obj/271]\", " +
+                        "\"[/gdc/md/w2x7a9awsioch4l9lbzgjcn99hbkm61e/obj/465]\"::INTEGER",
+                " WHERE \"[/gdc/md/w2x7a9awsioch4l9lbzgjcn99hbkm61e/obj/271]\" IN ('Home')",
                 "Product Category, Revenue");
     }
 
@@ -184,6 +185,5 @@ public class TestAfmStatement {
         statement.execute("DESCRIBE METRIC \"testNGMetric\";");
         statement.execute("DROP METRIC \"testNGMetric\";");
     }
-
 
 }

@@ -1,14 +1,21 @@
 package com.gooddata.jdbc.metadata;
 
 import com.gooddata.jdbc.catalog.Catalog;
+import com.gooddata.jdbc.catalog.CatalogEntry;
 import com.gooddata.jdbc.catalog.Schema;
 import com.gooddata.jdbc.driver.AfmConnection;
 import com.gooddata.jdbc.driver.AfmDriver;
 import com.gooddata.jdbc.rest.GoodDataRestConnection;
+import com.gooddata.jdbc.util.TextUtil;
 import com.gooddata.sdk.model.project.Project;
 import com.gooddata.sdk.service.GoodData;
 import org.springframework.web.client.RestTemplate;
 
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.sql.*;
 import java.util.List;
 import java.util.logging.Logger;
@@ -105,10 +112,26 @@ public class AfmDatabaseMetaData implements java.sql.DatabaseMetaData {
         this.schema = findSchemaByName(schemaName);
         this.catalog = AfmDriver.getCachedCatalog(schema.getSchemaUri());
         if(this.catalog == null) {
-            this.catalog = new Catalog();
-            this.catalog.populateAsync(gd, this.gdRestConnection, schema.getSchemaUri());
-            AfmDriver.cacheCatalog(schema.getSchemaUri(), this.catalog);
+            LOGGER.info(String.format("Cached catalog for schema '%s' not found.", schemaName));
+            Catalog tryDeserialize = new Catalog();
+            try {
+                LOGGER.info(String.format("Trying to deserialize catalog for '%s'.", schemaName));
+                tryDeserialize.deserialize(TextUtil
+                        .extractWorkspaceIdFromWorkspaceUri(schema.getSchemaUri()));
+                LOGGER.info("Catalog successfully  deserialized.");
+                this.catalog = tryDeserialize;
+            } catch (IOException e) {
+                LOGGER.info("Catalog deserialization failed. Creating new one.");
+                this.catalog = new Catalog();
+                LOGGER.info("Starting async catalog population.");
+                this.catalog.populateAsync(gd, this.gdRestConnection, schema.getSchemaUri());
+            } catch (ClassNotFoundException | TextUtil.InvalidFormatException e) {
+                throw new SQLException(e);
+            }
         }
+        LOGGER.info("Storing catalog to cache.");
+        AfmDriver.cacheCatalog(schema.getSchemaUri(), this.catalog);
+        LOGGER.info("Setting active workspace.");
         this.setActiveWorkspace(schema);
     }
 

@@ -22,16 +22,16 @@ public class CatalogEntry implements Serializable {
      * @param title      Catalog object title
      * @param type       Catalog object type
      * @param identifier Catalog object identifier
-     * @param defaultDisplayFormUri default display form uri for attributes
+     * @param defaultDisplayForm default display form for attributes
      */
     public CatalogEntry(String uri, String title, String type, String identifier, ObjQualifier gdObject,
-                        String defaultDisplayFormUri) {
+                        ObjQualifier defaultDisplayForm) {
         this.uri = uri;
         this.title = title;
         this.type = type;
         this.identifier = identifier;
         this.gdObject = gdObject;
-        this.defaultDisplayFormUri = defaultDisplayFormUri;
+        this.defaultDisplayForm = defaultDisplayForm;
     }
 
     /**
@@ -80,13 +80,13 @@ public class CatalogEntry implements Serializable {
      * @param type       Catalog object type
      * @param identifier Catalog object identifier
      * @param gdObject   Original gd object
-     * @param defaultDisplayFormUri default display form uri for attributes
+     * @param defaultDisplayForm default display form  for attributes
      * @param dataType   Datatype
      * @param size       Datatype size
      * @param precision  Datatype precision
      */
     public CatalogEntry(String uri, String title, String type, String identifier, ObjQualifier gdObject,
-                        String defaultDisplayFormUri, String dataType, int size, int precision) {
+                        ObjQualifier defaultDisplayForm, String dataType, int size, int precision) {
         this.identifier = identifier;
         this.uri = uri;
         this.title = title;
@@ -95,6 +95,7 @@ public class CatalogEntry implements Serializable {
         this.size = size;
         this.precision = precision;
         this.gdObject = gdObject;
+        this.defaultDisplayForm = defaultDisplayForm;
     }
 
 
@@ -104,7 +105,7 @@ public class CatalogEntry implements Serializable {
      */
     public CatalogEntry cloneEntry() {
         return new CatalogEntry(this.uri, this.title, this.type, this.identifier, this.gdObject,
-                this.defaultDisplayFormUri, this.dataType, this.size, this.precision);
+                this.defaultDisplayForm, this.dataType, this.size, this.precision);
     }
 
     public String getUri() {
@@ -170,8 +171,8 @@ public class CatalogEntry implements Serializable {
         this.precision = precision;
     }
 
-    public String getDefaultDisplayFormUri() {
-        return defaultDisplayFormUri;
+    public ObjQualifier getDefaultDisplayForm() {
+        return defaultDisplayForm;
     }
 
     private String identifier;
@@ -179,7 +180,7 @@ public class CatalogEntry implements Serializable {
     private String title;
     private String type;
     private String dataType;
-    private String defaultDisplayFormUri;
+    private ObjQualifier defaultDisplayForm;
     private int size;
     private int precision;
     private final ObjQualifier gdObject;

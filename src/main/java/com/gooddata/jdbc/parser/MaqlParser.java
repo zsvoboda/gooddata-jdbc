@@ -38,24 +38,12 @@ public class MaqlParser {
             return metricMaqlDefinition;
         }
 
-        public void setMetricMaqlDefinition(String metricMaqlDefinition) {
-            this.metricMaqlDefinition = metricMaqlDefinition;
-        }
-
         public List<String> getLdmObjectTitles() {
             return ldmObjectTitles;
         }
 
-        public void setLdmObjectTitles(List<String> ldmObjectTitles) {
-            this.ldmObjectTitles = ldmObjectTitles;
-        }
-
         public List<String> getAttributeElementValues() {
             return attributeElementValues;
-        }
-
-        public void setAttributeElementValues(List<String> attributeElementValues) {
-            this.attributeElementValues = attributeElementValues;
         }
 
         public String getName() {
@@ -70,15 +58,10 @@ public class MaqlParser {
             return attributeElementToAttributeNameLookup;
         }
 
-        public void setAttributeElementToAttributeNameLookup(Map<String,
-                String> attributeElementToAttributeNameLookup) {
-            this.attributeElementToAttributeNameLookup = attributeElementToAttributeNameLookup;
-        }
-
-        private String metricMaqlDefinition;
-        private List<String> ldmObjectTitles;
-        private List<String> attributeElementValues;
-        private Map<String, String> attributeElementToAttributeNameLookup;
+        private final String metricMaqlDefinition;
+        private final List<String> ldmObjectTitles;
+        private final List<String> attributeElementValues;
+        private final Map<String, String> attributeElementToAttributeNameLookup;
 
         private String name;
     }
